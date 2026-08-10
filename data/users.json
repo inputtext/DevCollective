@@ -1,0 +1,113 @@
+[
+  {
+    "id": "user_student_1",
+    "name": "Piyush Kanojiya",
+    "email": "kanojiyapk524@gmail.com",
+    "passwordHash": "$2b$10$3lAr5ijw4pxuH/VkWEbNB.eJKF4N2PWTuoIYVVobwbowokooQOQfW",
+    "role": "student",
+    "college": "Institute of Technology",
+    "branch": "Computer Science",
+    "academicYear": "3rd Year",
+    "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    "bio": "Passionate student developer building full-stack web & AI apps.",
+    "rep": 2500,
+    "level": 18,
+    "streakDays": 42,
+    "githubUrl": "https://github.com/kanojiyapk",
+    "linkedinUrl": "https://linkedin.com/in/piyush-kanojiya",
+    "skills": [
+      "React",
+      "TypeScript",
+      "Node.js",
+      "Python",
+      "AI/ML"
+    ],
+    "selectedDomains": [
+      "Software Dev",
+      "AI/ML"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-09T15:20:14.139Z"
+  },
+  {
+    "id": "user_mentor_1",
+    "name": "Rahul Sharma",
+    "email": "rahul.mentor@college.edu",
+    "passwordHash": "$2b$10$layKQzG5EtEzEow6P1uuUufyiMgd.DP.T8wyAZACSoDxgEdScxf62",
+    "role": "mentor",
+    "college": "Stanford CS",
+    "branch": "Computer Science",
+    "academicYear": "Graduate / Alumni",
+    "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+    "bio": "Senior Software Engineer & Student Mentor. Helping devs scale projects.",
+    "rep": 8400,
+    "level": 32,
+    "streakDays": 120,
+    "githubUrl": "https://github.com/rahulsharma",
+    "linkedinUrl": "https://linkedin.com/in/rahulsharma",
+    "skills": [
+      "System Design",
+      "React",
+      "Go",
+      "Cloud Architecture"
+    ],
+    "selectedDomains": [
+      "System Design",
+      "Backend"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-09T15:20:14.247Z"
+  },
+  {
+    "id": "user_admin_1",
+    "name": "Platform Administrator",
+    "email": "admin@devcollective.edu",
+    "passwordHash": "$2b$10$sG.oXuN9uIFLpADOE6SL3.9yMK/81HI4j.oTOuvE2GoHDiv2/sjTu",
+    "role": "admin",
+    "college": "DevCollective Central",
+    "branch": "Administration",
+    "academicYear": "Faculty / Admin",
+    "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+    "bio": "DevCollective Platform Admin. Managing verifications, roles, and ecosystem health.",
+    "rep": 15000,
+    "level": 50,
+    "streakDays": 365,
+    "githubUrl": "https://github.com/devcollective-admin",
+    "linkedinUrl": "https://linkedin.com/company/devcollective",
+    "skills": [
+      "Governance",
+      "Security",
+      "DevOps",
+      "Community Management"
+    ],
+    "selectedDomains": [
+      "Platform Admin"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-09T15:20:14.345Z"
+  },
+  {
+    "id": "user_1786288814449_pw56f",
+    "name": "Piyush Student",
+    "email": "teststudent@college.edu",
+    "passwordHash": "$2b$10$0xv0yIFRBIErTxQl.bIeT.hJ3Hf1CziqhX2tKbWymKFuvTKOs/j02",
+    "role": "student",
+    "college": "Institute of Technology",
+    "branch": "Computer Science",
+    "academicYear": "1st Year",
+    "avatar": "https://api.dicebear.com/7.x/identicon/svg?seed=teststudent%40college.edu",
+    "bio": "Welcome to DevCollective! Building software as a student.",
+    "rep": 100,
+    "level": 1,
+    "streakDays": 1,
+    "skills": [
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "selectedDomains": [
+      "Full Stack Development"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-09T15:20:14.449Z"
+  }
+]

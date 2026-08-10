@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-on-background: var(--on-background);
+
+  --color-surface: var(--surface);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+
+  --color-primary: var(--primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary: var(--on-secondary);
+
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary: var(--on-tertiary);
+
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+
+  --font-display-2xl: "Space Grotesk", sans-serif;
+  --font-headline-lg: "Space Grotesk", sans-serif;
+  --font-headline-md: "Space Grotesk", sans-serif;
+  --font-body-lg: "Inter", sans-serif;
+  --font-body-md: "Inter", sans-serif;
+  --font-label-mono: "JetBrains Mono", monospace;
+}
+
+:root, html.dark {
+  color-scheme: dark;
+
+  --background: #090a0f;
+  --on-background: #f1f5f9;
+
+  --surface: #11131f;
+  --on-surface: #f8fafc;
+  --on-surface-variant: #94a3b8;
+
+  --surface-container-lowest: #0d0e17;
+  --surface-container-low: #131524;
+  --surface-container: #181b2e;
+  --surface-container-high: #20243d;
+  --surface-container-highest: #2a2f4e;
+
+  --outline: #64748b;
+  --outline-variant: #282e4a;
+
+  --primary: #6366f1;
+  --primary-container: #4f46e5;
+  --on-primary: #ffffff;
+
+  --secondary: #06b6d4;
+  --secondary-container: #0891b2;
+  --on-secondary: #ffffff;
+
+  --tertiary: #10b981;
+  --tertiary-container: #059669;
+  --on-tertiary: #ffffff;
+
+  --error: #f43f5e;
+  --error-container: #e11d48;
+  --on-error: #ffffff;
+}
+
+html.light {
+  color-scheme: light;
+
+  --background: #f8fafc;
+  --on-background: #0f172a;
+
+  --surface: #ffffff;
+  --on-surface: #0f172a;
+  --on-surface-variant: #475569;
+
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f8fafc;
+  --surface-container: #f1f5f9;
+  --surface-container-high: #e2e8f0;
+  --surface-container-highest: #cbd5e1;
+
+  --outline: #64748b;
+  --outline-variant: #cbd5e1;
+
+  --primary: #4f46e5;
+  --primary-container: #4338ca;
+  --on-primary: #ffffff;
+
+  --secondary: #0891b2;
+  --secondary-container: #0e7490;
+  --on-secondary: #ffffff;
+
+  --tertiary: #059669;
+  --tertiary-container: #047857;
+  --on-tertiary: #ffffff;
+
+  --error: #e11d48;
+  --error-container: #be123c;
+  --on-error: #ffffff;
+}
+
+@layer base {
+  body {
+    background-color: var(--background);
+    color: var(--on-background);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+  }
+}
+
+/* Global Smooth Transitions for Theme Switch */
+html.theme-transitioning,
+html.theme-transitioning body,
+html.theme-transitioning aside,
+html.theme-transitioning nav,
+html.theme-transitioning header,
+html.theme-transitioning main,
+html.theme-transitioning div,
+html.theme-transitioning button,
+html.theme-transitioning input,
+html.theme-transitioning select,
+html.theme-transitioning textarea,
+html.theme-transitioning span,
+html.theme-transitioning p,
+html.theme-transitioning h1,
+html.theme-transitioning h2,
+html.theme-transitioning h3,
+html.theme-transitioning h4,
+html.theme-transitioning h5,
+html.theme-transitioning h6,
+html.theme-transitioning a {
+  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 300ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning body,
+  html.theme-transitioning * {
+    transition: none !important;
+  }
+}
+
+.brutalist-shadow {
+  box-shadow: 4px 4px 0px 0px var(--primary-container);
+}
+
+.brutalist-border {
+  border: 2px solid var(--outline-variant);
+}
+
+/* Ensure text readability in light mode where text-white might be used on light surface cards */
+html.light .text-white:not(.keep-white):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-tertiary"]):not([class*="bg-error"]):not([class*="bg-black"]) {
+  color: var(--on-surface) !important;
+}
+
+/* In light mode, ensure input backgrounds and text are readable */
+html.light input, html.light select, html.light textarea {
+  color: var(--on-surface);
+}
+
+html.light input::placeholder, html.light textarea::placeholder {
+  color: var(--outline);
+}
