@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
-import { ArrowLeft, ArrowRight, School, Brain, Building2, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, ArrowRight, School, Brain, Building2, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { setActiveTab, registerUser, triggerOAuthLogin } = useAuth();
@@ -15,6 +15,7 @@ export const RegisterPage: React.FC = () => {
   const [academicYear, setAcademicYear] = useState('1st Year');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +44,11 @@ export const RegisterPage: React.FC = () => {
         branch,
         academicYear,
       });
+      // registerUser resolved without throwing — email confirmation is pending
+      setError(null);
+      setRegistrationSuccess(true);
     } catch (err: any) {
+      setRegistrationSuccess(false);
       setError(err.message || 'Registration failed.');
     } finally {
       setLoading(false);
@@ -100,6 +105,14 @@ export const RegisterPage: React.FC = () => {
               <div className="p-4 bg-error/10 border-2 border-error/50 rounded-xl flex items-center gap-3 text-error text-xs font-label-mono">
                 <AlertCircle className="w-5 h-5 shrink-0" />
                 <span>{error}</span>
+              </div>
+            )}
+
+            {/* Email confirmation success */}
+            {registrationSuccess && (
+              <div className="p-4 bg-tertiary/10 border-2 border-tertiary/50 rounded-xl flex items-center gap-3 text-tertiary text-xs font-label-mono">
+                <CheckCircle className="w-5 h-5 shrink-0" />
+                <span>Registration successful! Please check your email to confirm your account before logging in.</span>
               </div>
             )}
 

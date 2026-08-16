@@ -15,12 +15,67 @@ import {
 } from 'lucide-react';
 
 export const DashboardPage: React.FC = () => {
-  const { user, tasks, toggleTaskCompletion, leaderboard, posts, toggleLikePost, setActiveTab } = useAuth();
+  const {
+    user,
+    tasks,
+    toggleTaskCompletion,
+    leaderboard,
+    posts,
+    toggleLikePost,
+    setActiveTab,
+    completeOnboarding,
+    repAnimation,
+  } = useAuth();
 
   const completedTasksCount = tasks.filter((t) => t.completed).length;
 
+  const currentRep = user?.rep ?? 0;
+  const currentLevel = user?.level ?? 0;
+  const currentStreak = user?.streakDays ?? 0;
+
   return (
-    <div className="space-y-10 pb-16">
+    <div className="space-y-10 pb-16 relative">
+      {/* First-Time Login Welcome Modal */}
+      {user && user.hasCompletedOnboarding === false && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-surface-container border-2 border-primary/40 rounded-3xl p-8 sm:p-10 max-w-lg w-full shadow-[0_0_50px_rgba(79,70,229,0.3)] space-y-6 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-secondary to-tertiary" />
+            
+            <div className="w-16 h-16 bg-primary/10 border-2 border-primary/30 rounded-2xl flex items-center justify-center mx-auto text-primary">
+              <Trophy className="w-9 h-9" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-headline-lg text-2xl sm:text-3xl font-bold text-white">
+                Welcome to DevCollective, {user.name.split(' ')[0]}!
+              </h3>
+              <p className="font-body-md text-sm text-on-surface-variant leading-relaxed">
+                Your journey starts here. Start at Level 0 and earn Reputation Points by learning, building, and contributing to the community.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40">
+              <div className="space-y-1">
+                <span className="font-label-mono text-[11px] uppercase text-outline">Starting REP</span>
+                <p className="font-headline-md text-2xl font-black text-primary">0 REP</p>
+              </div>
+              <div className="space-y-1">
+                <span className="font-label-mono text-[11px] uppercase text-outline">Starting Level</span>
+                <p className="font-headline-md text-2xl font-black text-secondary">Level 0</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => completeOnboarding()}
+              className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-4 rounded-xl shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 font-label-mono text-sm uppercase tracking-wider"
+            >
+              <span>Start Learning</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Welcome Hero */}
       <section className="py-2">
         <div className="flex flex-col gap-2">
@@ -35,9 +90,9 @@ export const DashboardPage: React.FC = () => {
             <p className="text-sm font-medium text-on-surface-variant">
               Welcome back! You're only{' '}
               <span className="text-primary font-bold">
-                {user ? 3000 - user.rep : 550} REP
+                {Math.max(0, 500 - currentRep)} REP
               </span>{' '}
-              away from reaching Level {user ? user.level + 1 : 19}.
+              away from reaching Level {currentLevel + 1}.
             </p>
           </div>
         </div>
@@ -47,16 +102,27 @@ export const DashboardPage: React.FC = () => {
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* REP Status */}
         <div className="lg:col-span-2 bg-surface border-2 border-outline-variant p-6 rounded-2xl relative overflow-hidden group hover:border-primary transition-all">
+          {/* Floating +50 REP Animation */}
+          {repAnimation && (
+            <div
+              key={repAnimation.id}
+              className="absolute right-8 top-3 z-30 pointer-events-none flex items-center gap-1.5 px-3.5 py-1.5 bg-tertiary text-white font-label-mono font-black text-sm rounded-full shadow-[0_0_20px_rgba(16,185,129,0.8)] animate-float-rep"
+            >
+              <Zap className="w-4 h-4 fill-white" />
+              <span>+{repAnimation.amount} REP</span>
+            </div>
+          )}
+
           <div className="flex justify-between items-start mb-4">
             <div>
               <span className="text-[11px] font-label-mono text-outline uppercase tracking-wider block mb-1">
                 Reputation Status
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">
-                  {user ? user.rep.toLocaleString() : '2,450'}
+                <span className="text-4xl font-black text-white transition-all duration-500">
+                  {currentRep.toLocaleString()}
                 </span>
-                <span className="text-primary font-label-mono text-sm font-bold">/ 3,000 REP</span>
+                <span className="text-primary font-label-mono text-sm font-bold">/ 500 REP</span>
               </div>
             </div>
             <Award className="w-10 h-10 text-primary opacity-80 group-hover:rotate-12 transition-transform" />
@@ -65,13 +131,13 @@ export const DashboardPage: React.FC = () => {
           <div>
             <div className="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden mb-2">
               <div
-                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000"
-                style={{ width: `${Math.min(100, ((user?.rep || 2450) / 3000) * 100)}%` }}
+                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-700"
+                style={{ width: `${Math.min(100, (currentRep / 500) * 100)}%` }}
               />
             </div>
             <div className="flex justify-between items-center text-xs font-label-mono uppercase">
-              <span className="text-outline">Level {user?.level || 18}</span>
-              <span className="text-primary font-bold">Next: Level {(user?.level || 18) + 1}</span>
+              <span className="text-outline">Level {currentLevel}</span>
+              <span className="text-primary font-bold">Next: Level {currentLevel + 1}</span>
             </div>
           </div>
         </div>
@@ -86,7 +152,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-4">
             <div className="text-3xl font-black text-white">
-              {user?.streakDays || 42} <span className="text-sm font-normal text-outline">Days</span>
+              {currentStreak} <span className="text-sm font-normal text-outline">Days</span>
             </div>
             <p className="text-xs font-label-mono text-tertiary uppercase font-bold mt-1">
               Next Reward: +100 REP
@@ -104,10 +170,10 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-4">
             <div className="text-3xl font-black text-white">
-              12 <span class="text-sm font-normal text-outline">Badges</span>
+              {currentLevel > 0 ? currentLevel * 2 : 0} <span className="text-sm font-normal text-outline">Badges</span>
             </div>
             <p className="text-xs font-label-mono text-secondary uppercase font-bold mt-1">
-              Top 1% Developer
+              {user ? user.branch : 'Student Developer'}
             </p>
           </div>
         </div>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -24,6 +24,29 @@ import { AdminPage } from './pages/AdminPage';
 
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
+
+  // Navigate to dashboard when auth transitions from unauthenticated → authenticated.
+  // Covers: email-confirmation redirect, page-refresh with existing session.
+  // Does NOT interfere with: loginWithEmail (already sets activeTab='dashboard'),
+  //   registerUser (sets 'profile-setup'), or manual tab navigation.
+  const wasAuthenticatedRef = useRef(false);
+
+  useEffect(() => {
+    if (loadingAuth) return; // Wait for session check to finish
+
+    const isAuthenticated = user !== null;
+
+    if (!wasAuthenticatedRef.current && isAuthenticated) {
+      // Transition detected: was NOT authenticated, now IS authenticated.
+      // Only auto-navigate if currently on a public/unauthenticated page.
+      const publicPages = ['landing', 'login', 'register'];
+      if (publicPages.includes(activeTab)) {
+        setActiveTab('dashboard');
+      }
+    }
+
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [user, loadingAuth, activeTab, setActiveTab]);
 
   if (loadingAuth) {
     return (

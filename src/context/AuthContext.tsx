@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+import { UserProfile, UserRole, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
 import { initialUserProfile, initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
 
 export type PageTab =
@@ -36,9 +38,11 @@ interface AuthContextType {
   registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => void;
-  toggleTaskCompletion: (taskId: string) => void;
+  toggleTaskCompletion: (taskId: string) => Promise<void>;
   addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => void;
   toggleLikePost: (postId: string) => void;
+  completeOnboarding: () => Promise<void>;
+  repAnimation: { amount: number; id: number } | null;
   oauthInfo: {
     googleConfigured: boolean;
     githubConfigured: boolean;
@@ -50,9 +54,136 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Helper function to map Supabase Auth User object to default UserProfile structure
+const mapSupabaseUserToProfile = (supabaseUser: User): UserProfile => {
+  const metadata = supabaseUser.user_metadata || {};
+  return {
+    id: supabaseUser.id,
+    name: metadata.name || supabaseUser.email?.split('@')[0] || 'Developer',
+    email: supabaseUser.email || '',
+    role: (metadata.role as UserRole) || 'student',
+    college: metadata.college || 'Institute of Technology',
+    branch: metadata.branch || 'Computer Science',
+    academicYear: metadata.academicYear || metadata.academic_year || 'Third Year',
+    avatar: metadata.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    bio: 'Student developer building on DevCollective.',
+    rep: 0,
+    level: 0,
+    streakDays: 0,
+    hasCompletedOnboarding: false,
+    githubUrl: 'https://github.com/kanojiyapk',
+    linkedinUrl: 'https://linkedin.com/in/student-developer',
+    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
+    selectedDomains: ['Software Dev', 'AI/ML'],
+    authProvider: 'email',
+    createdAt: supabaseUser.created_at || new Date().toISOString(),
+  };
+};
+
+// Fetch user profile from public.profiles database table
+const fetchProfileFromSupabase = async (userId: string): Promise<UserProfile | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error || !data) {
+      return null;
+    }
+
+    return {
+      id: data.user_id,
+      name: data.name || 'Developer',
+      email: data.email || '',
+      role: (data.role as UserRole) || 'student',
+      college: data.college || 'Institute of Technology',
+      branch: data.branch || 'Computer Science',
+      academicYear: data.academic_year || 'Third Year',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      bio: 'Student developer building on DevCollective.',
+      rep: data.rep ?? 0,
+      level: data.level ?? 0,
+      streakDays: data.streak_days ?? 0,
+      hasCompletedOnboarding: data.has_completed_onboarding ?? false,
+      githubUrl: 'https://github.com/kanojiyapk',
+      linkedinUrl: 'https://linkedin.com/in/student-developer',
+      skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
+      selectedDomains: ['Software Dev', 'AI/ML'],
+      authProvider: 'email',
+      createdAt: data.created_at || new Date().toISOString(),
+    };
+  } catch (err) {
+    console.error('Error fetching profile from Supabase:', err);
+    return null;
+  }
+};
+
+// Fetch or initialize user profile from DB or fallback
+const getOrFetchProfile = async (supabaseUser: User): Promise<UserProfile> => {
+  const existingProfile = await fetchProfileFromSupabase(supabaseUser.id);
+  if (existingProfile) {
+    return existingProfile;
+  }
+
+  // Fallback profile creation if trigger hasn't completed or table direct upsert is enabled
+  const metadata = supabaseUser.user_metadata || {};
+  const newProfileData = {
+    user_id: supabaseUser.id,
+    name: metadata.name || supabaseUser.email?.split('@')[0] || 'Developer',
+    email: supabaseUser.email || '',
+    role: metadata.role || 'student',
+    college: metadata.college || 'Institute of Technology',
+    branch: metadata.branch || 'Computer Science',
+    academic_year: metadata.academicYear || metadata.academic_year || 'Third Year',
+    rep: 0,
+    level: 0,
+    streak_days: 0,
+    has_completed_onboarding: false,
+  };
+
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .upsert(newProfileData, { onConflict: 'user_id' })
+      .select()
+      .maybeSingle();
+
+    if (data) {
+      return {
+        id: data.user_id,
+        name: data.name,
+        email: data.email,
+        role: data.role as UserRole,
+        college: data.college,
+        branch: data.branch,
+        academicYear: data.academic_year,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        bio: 'Student developer building on DevCollective.',
+        rep: data.rep ?? 0,
+        level: data.level ?? 0,
+        streakDays: data.streak_days ?? 0,
+        hasCompletedOnboarding: data.has_completed_onboarding ?? false,
+        githubUrl: 'https://github.com/kanojiyapk',
+        linkedinUrl: 'https://linkedin.com/in/student-developer',
+        skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
+        selectedDomains: ['Software Dev', 'AI/ML'],
+        authProvider: 'email',
+        createdAt: data.created_at || new Date().toISOString(),
+      };
+    }
+  } catch (err) {
+    console.warn('Profile upsert fallback warning:', err);
+  }
+
+  return mapSupabaseUserToProfile(supabaseUser);
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
+  const [repAnimation, setRepAnimation] = useState<{ amount: number; id: number } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('devcollective_sidebar_collapsed') === 'true';
   });
@@ -81,41 +212,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     githubCallbackUrl: string;
   } | null>(null);
 
-  // Check persistent session token on app initialization
+  // 1. Initial Session Check & Subscription using Supabase Auth
   useEffect(() => {
-    const checkSession = async () => {
-      const token = localStorage.getItem('devcollective_token');
-      if (!token) {
-        setLoadingAuth(false);
-        return;
-      }
-
+    const getInitialSession = async () => {
       try {
-        const res = await fetch('/api/auth/me', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user) {
-            setUser(data.user);
-          } else {
-            localStorage.removeItem('devcollective_token');
-          }
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error fetching Supabase session:', error);
+        }
+        if (session?.user) {
+          const profile = await getOrFetchProfile(session.user);
+          setUser(profile);
         } else {
-          localStorage.removeItem('devcollective_token');
+          setUser(null);
         }
       } catch (err) {
-        console.error('Error verifying session token:', err);
-        localStorage.removeItem('devcollective_token');
+        console.error('Unexpected error checking session:', err);
       } finally {
         setLoadingAuth(false);
       }
     };
 
-    checkSession();
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const profile = await getOrFetchProfile(session.user);
+        setUser(profile);
+      } else {
+        setUser(null);
+      }
+      setLoadingAuth(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Fetch Auth Status Info from Express Server
@@ -156,6 +288,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
       selectedDomains: ['Software Dev', 'AI/ML'],
       authProvider: provider,
+      hasCompletedOnboarding: true,
       createdAt: new Date().toISOString(),
     };
 
@@ -164,65 +297,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveTab('dashboard');
   };
 
+  // 2. Login using Supabase Auth
   const loginWithEmail = async (email: string, password?: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    if (!password) {
+      throw new Error('Password is required for login.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Login failed.');
+    if (error) {
+      throw error;
     }
 
-    if (data.token) {
-      localStorage.setItem('devcollective_token', data.token);
+    if (data.user) {
+      const profile = await getOrFetchProfile(data.user);
+      setUser(profile);
+      setActiveTab('dashboard');
     }
-    setUser(data.user);
-    setActiveTab('dashboard');
   };
 
+  // 3. Registration using Supabase Auth
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: details.name,
-        email: details.email,
-        password: details.password,
-        role: details.role || 'student',
-        college: details.college,
-        branch: details.branch,
-        academicYear: details.academicYear,
-      }),
+    if (!details.email || !details.password) {
+      throw new Error('Email and password are required for registration.');
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: details.email,
+      password: details.password,
+      options: {
+        data: {
+          name: details.name,
+          role: details.role || 'student',
+          college: details.college,
+          branch: details.branch,
+          academicYear: details.academicYear,
+        },
+        // Redirect after email confirmation to the app origin
+        emailRedirectTo: window.location.origin,
+      },
     });
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Registration failed.');
+    if (error) {
+      throw error;
     }
 
-    if (data.token) {
-      localStorage.setItem('devcollective_token', data.token);
+    if (data.user && data.session) {
+      const profile = await getOrFetchProfile(data.user);
+      setUser(profile);
+      setActiveTab('profile-setup');
+    } else if (data.user && !data.session) {
+      // Email confirmation required — resolve normally so the caller
+      // can treat this as a success (not an error).
+      return;
+    } else {
+      throw new Error('Registration failed.');
     }
-    setUser(data.user);
-    setActiveTab('profile-setup');
   };
 
+  // 5. Logout using Supabase Auth
   const logout = async () => {
-    const token = localStorage.getItem('devcollective_token');
-    if (token) {
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-      } catch (err) {
-        console.warn('Logout request failed', err);
-      }
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.warn('Supabase signout warning:', error);
     }
-    localStorage.removeItem('devcollective_token');
     setUser(null);
     setActiveTab('landing');
   };
@@ -233,21 +374,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(newProfile);
   };
 
-  const toggleTaskCompletion = (taskId: string) => {
+  const completeOnboarding = async () => {
+    if (!user) return;
+    try {
+      await supabase
+        .from('profiles')
+        .update({ has_completed_onboarding: true, updated_at: new Date().toISOString() })
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.warn('Complete onboarding DB update warning:', err);
+    }
+    setUser((prev) => (prev ? { ...prev, hasCompletedOnboarding: true } : null));
+  };
+
+  const awardTaskRep = async (taskId: string, repAmount: number = 50): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data: newRep, error } = await supabase.rpc('award_rep', {
+        p_task_id: taskId,
+      });
+
+      if (!error && typeof newRep === 'number') {
+        const repIncreased = newRep > user.rep;
+        setUser((u) => (u ? { ...u, rep: newRep } : null));
+        return repIncreased;
+      }
+    } catch (err) {
+      console.warn('RPC award_rep execution warning:', err);
+    }
+
+    // Fallback if RPC call not initialized yet in DB
+    setUser((u) => (u ? { ...u, rep: u.rep + repAmount } : null));
+    return true;
+  };
+
+  const toggleTaskCompletion = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const isNowCompleted = !task.completed;
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const isNowCompleted = !t.completed;
-          if (isNowCompleted && user) {
-            setUser((u) => (u ? { ...u, rep: u.rep + t.repReward } : null));
-          } else if (!isNowCompleted && user) {
-            setUser((u) => (u ? { ...u, rep: Math.max(0, u.rep - t.repReward) } : null));
-          }
-          return { ...t, completed: isNowCompleted };
-        }
-        return t;
-      })
+      prev.map((t) => (t.id === taskId ? { ...t, completed: isNowCompleted } : t))
     );
+
+    if (isNowCompleted && user) {
+      const awarded = await awardTaskRep(taskId, task.repReward || 50);
+      if (awarded) {
+        setRepAnimation({ amount: task.repReward || 50, id: Date.now() });
+      }
+    } else if (!isNowCompleted && user) {
+      setUser((u) => (u ? { ...u, rep: Math.max(0, u.rep - task.repReward) } : null));
+    }
   };
 
   const addPost = (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => {
@@ -262,7 +441,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       likedByMe: true,
     };
     setPosts([newPost, ...posts]);
-    // Reward REP for posting!
     setUser((u) => (u ? { ...u, rep: u.rep + 25 } : null));
   };
 
@@ -307,6 +485,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTaskCompletion,
         addPost,
         toggleLikePost,
+        completeOnboarding,
+        repAnimation,
         oauthInfo,
       }}
     >
