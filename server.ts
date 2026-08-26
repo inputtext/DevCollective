@@ -209,7 +209,7 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatches) {
+    if (!passwordMatches) { // agar nahi toh niche wala response chalenga 
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
