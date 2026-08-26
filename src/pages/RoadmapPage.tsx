@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { initialRoadmapLevels } from '../data/initialData';
 import {
@@ -48,40 +48,65 @@ interface GeneratedRoadmap {
   levels: GeneratedLevel[];
 }
 
+interface RoadmapChatMessage {
+  role: 'user' | 'model';
+  text: string;
+}
+
+const ROADMAP_WELCOME: RoadmapChatMessage = {
+  role: 'model',
+  text: "Hi! Let's build your personalized learning roadmap together. First, which technology or field are you most interested in right now? For example: AI/Machine Learning, Web Development, Cybersecurity, Cloud & DevOps, or Mobile Development.",
+};
+
 export const RoadmapPage: React.FC = () => {
   const { user } = useAuth();
 
-  // Generator inputs
-  const [branch, setBranch] = useState<string>(user?.branch || 'Computer Science');
-  const [targetRole, setTargetRole] = useState<string>('AI Engineer');
-  const [skillLevel, setSkillLevel] = useState<string>('Beginner');
-  const [customGoals, setCustomGoals] = useState<string>('');
+  // Conversational roadmap builder state
+  const [roadmapMessages, setRoadmapMessages] = useState<RoadmapChatMessage[]>([ROADMAP_WELCOME]);
+  const [roadmapInput, setRoadmapInput] = useState('');
+  const [isRoadmapSending, setIsRoadmapSending] = useState(false);
+  const [roadmapError, setRoadmapError] = useState<string | null>(null);
+  const roadmapScrollRef = useRef<HTMLDivElement>(null);
 
-  // UI States
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [generatedRoadmap, setGeneratedRoadmap] = useState<GeneratedRoadmap | null>(null);
   const [activeTab, setActiveTab] = useState<'ai' | 'standard'>('ai');
-  const [loadingStep, setLoadingStep] = useState<string>('');
 
-  // Auto-fill branch if user updates
+  // Every saved roadmap/chat is scoped to the logged-in account, so switching users
+  // in the same browser never shows one student's roadmap to another.
+  const roadmapStorageKey = user ? `devcollective_ai_roadmap_${user.id}` : null;
+  const chatStorageKey = user ? `devcollective_roadmap_chat_${user.id}` : null;
+
+  // Load (or reset) cached roadmap + chat history whenever the logged-in account changes
   useEffect(() => {
-    if (user?.branch) {
-      setBranch(user.branch);
+    if (!roadmapStorageKey || !chatStorageKey) {
+      setGeneratedRoadmap(null);
+      setRoadmapMessages([ROADMAP_WELCOME]);
+      return;
     }
-  }, [user]);
 
-  // Load cached roadmap from localStorage if available
-  useEffect(() => {
     try {
-      const saved = localStorage.getItem('devcollective_ai_roadmap');
-      if (saved) {
-        setGeneratedRoadmap(JSON.parse(saved));
+      const saved = localStorage.getItem(roadmapStorageKey);
+      setGeneratedRoadmap(saved ? JSON.parse(saved) : null);
+
+      const savedChat = localStorage.getItem(chatStorageKey);
+      if (savedChat) {
+        const parsed = JSON.parse(savedChat);
+        setRoadmapMessages(Array.isArray(parsed) && parsed.length > 0 ? parsed : [ROADMAP_WELCOME]);
+      } else {
+        setRoadmapMessages([ROADMAP_WELCOME]);
       }
     } catch (e) {
       console.error('Failed to parse cached roadmap', e);
+      setGeneratedRoadmap(null);
+      setRoadmapMessages([ROADMAP_WELCOME]);
     }
-  }, []);
+  }, [roadmapStorageKey, chatStorageKey]);
+
+  useEffect(() => {
+    if (roadmapScrollRef.current) {
+      roadmapScrollRef.current.scrollTop = roadmapScrollRef.current.scrollHeight;
+    }
+  }, [roadmapMessages, isRoadmapSending]);
 
   const rolePresets = [
     'AI Engineer',
@@ -93,57 +118,62 @@ export const RoadmapPage: React.FC = () => {
     'Backend Systems Engineer',
   ];
 
-  const handleGenerate = async (e?: React.FormEvent) => {
+  const handleSendRoadmapMessage = async (e?: React.FormEvent, presetText?: string) => {
     if (e) e.preventDefault();
-    if (!targetRole.trim() || !branch.trim()) return;
+    const trimmed = (presetText ?? roadmapInput).trim();
+    if (!trimmed || isRoadmapSending) return;
 
-    setLoading(true);
-    setError(null);
-
-    const steps = [
-      'Analyzing academic branch curriculum & prerequisites...',
-      'Mapping technical domain requirements for ' + targetRole + '...',
-      'Structuring progressive level milestones & timelines...',
-      'Designing practical capstone projects and curating resources...',
-    ];
-
-    let stepIndex = 0;
-    setLoadingStep(steps[0]);
-    const stepInterval = setInterval(() => {
-      stepIndex = (stepIndex + 1) % steps.length;
-      setLoadingStep(steps[stepIndex]);
-    }, 1200);
+    const nextMessages: RoadmapChatMessage[] = [...roadmapMessages, { role: 'user', text: trimmed }];
+    setRoadmapMessages(nextMessages);
+    setRoadmapInput('');
+    setRoadmapError(null);
+    setIsRoadmapSending(true);
 
     try {
-      const response = await fetch('/api/ai/generate-roadmap', {
+      const response = await fetch('/api/ai/roadmap-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          branch,
-          targetRole,
-          skillLevel,
-          customGoals,
+          message: trimmed,
+          history: nextMessages.slice(0, -1),
         }),
       });
 
       const data = await response.json();
-
       if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to generate roadmap.');
+        throw new Error(data.error || 'Failed to reach the roadmap mentor.');
       }
 
-      setGeneratedRoadmap(data.roadmap);
-      localStorage.setItem('devcollective_ai_roadmap', JSON.stringify(data.roadmap));
-      setActiveTab('ai');
+      let finalMessages: RoadmapChatMessage[];
+      if (data.type === 'roadmap') {
+        setGeneratedRoadmap(data.roadmap);
+        if (roadmapStorageKey) localStorage.setItem(roadmapStorageKey, JSON.stringify(data.roadmap));
+        finalMessages = [
+          ...nextMessages,
+          {
+            role: 'model',
+            text: `Your personalized roadmap is ready: "${data.roadmap.roadmapTitle}". Scroll down to see the full breakdown, or keep chatting here if you'd like to adjust anything.`,
+          },
+        ];
+      } else {
+        finalMessages = [...nextMessages, { role: 'model', text: data.message }];
+      }
+      setRoadmapMessages(finalMessages);
+      if (chatStorageKey) localStorage.setItem(chatStorageKey, JSON.stringify(finalMessages));
     } catch (err: any) {
-      console.error('Roadmap generation failed:', err);
-      setError(err.message || 'An error occurred while communicating with Gemini AI.');
+      console.error('Roadmap chat failed:', err);
+      setRoadmapError(err.message || 'Something went wrong talking to the roadmap mentor.');
     } finally {
-      clearInterval(stepInterval);
-      setLoading(false);
+      setIsRoadmapSending(false);
     }
+  };
+
+  const handleResetRoadmapChat = () => {
+    setRoadmapMessages([ROADMAP_WELCOME]);
+    setGeneratedRoadmap(null);
+    setRoadmapError(null);
+    if (roadmapStorageKey) localStorage.removeItem(roadmapStorageKey);
+    if (chatStorageKey) localStorage.removeItem(chatStorageKey);
   };
 
   return (
@@ -159,7 +189,7 @@ export const RoadmapPage: React.FC = () => {
             Learning Roadmaps
           </h2>
           <p className="font-body-lg text-on-surface-variant text-base max-w-2xl">
-            Generate custom, step-by-step tech learning roadmaps tailored directly to your college branch, target career role, and skill level.
+            Chat with your Roadmap Mentor to build a custom, step-by-step tech learning plan tailored to what you're interested in and where you're starting from.
           </p>
         </div>
 
@@ -190,156 +220,109 @@ export const RoadmapPage: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Roadmap Generator Form Box */}
+      {/* Roadmap Mentor Chat Box (replaces the old static form) */}
       <div className="bg-surface-container border-2 border-primary/40 rounded-3xl p-6 sm:p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute -top-24 -right-24 w-72 h-72 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-secondary/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 space-y-6">
-          <div className="flex items-center gap-3 pb-4 border-b border-outline-variant/50">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg">
-              <Brain className="w-6 h-6" />
+        <div className="relative z-10 space-y-5">
+          <div className="flex items-center justify-between gap-3 pb-4 border-b border-outline-variant/50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white shadow-lg">
+                <Brain className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-headline-md text-xl font-bold text-white">
+                  Roadmap Mentor
+                </h3>
+                <p className="text-xs text-on-surface-variant font-body-md">
+                  Answer a few quick questions and get a roadmap built just for you.
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-headline-md text-xl font-bold text-white flex items-center gap-2">
-                <span>Personalized Roadmap Generator</span>
-                <span className="text-[10px] font-label-mono bg-primary/20 text-primary px-2 py-0.5 rounded-full border border-primary/30 uppercase">
-                  Powered by Gemini
-                </span>
-              </h3>
-              <p className="text-xs text-on-surface-variant font-body-md">
-                Configure your student profile parameters to construct a bespoke learning plan.
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={handleResetRoadmapChat}
+              className="flex items-center gap-1.5 text-xs font-label-mono uppercase text-on-surface-variant hover:text-white transition-colors shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Start Over</span>
+            </button>
           </div>
 
-          <form onSubmit={handleGenerate} className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {/* Academic Branch */}
+          {/* Quick-start topic chips, only shown before the conversation gets going */}
+          {roadmapMessages.length <= 1 && (
             <div className="space-y-2">
-              <label className="font-label-mono text-xs uppercase text-on-surface-variant font-bold flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4 text-primary" />
-                <span>Academic Branch</span>
-              </label>
-              <input
-                type="text"
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                placeholder="e.g. Computer Science, Mechanical, ECE"
-                className="w-full bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-white placeholder:text-outline focus:outline-none focus:border-primary transition-all"
-                required
-              />
-            </div>
-
-            {/* Target Role */}
-            <div className="space-y-2">
-              <label className="font-label-mono text-xs uppercase text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-secondary" />
-                <span>Target Career Role</span>
-              </label>
-              <input
-                type="text"
-                value={targetRole}
-                onChange={(e) => setTargetRole(e.target.value)}
-                placeholder="e.g. AI Engineer, Full Stack, DevOps"
-                className="w-full bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-white placeholder:text-outline focus:outline-none focus:border-secondary transition-all"
-                required
-              />
-            </div>
-
-            {/* Current Skill Level */}
-            <div className="space-y-2">
-              <label className="font-label-mono text-xs uppercase text-on-surface-variant font-bold flex items-center gap-1.5">
-                <Award className="w-4 h-4 text-tertiary" />
-                <span>Skill Level</span>
-              </label>
-              <select
-                value={skillLevel}
-                onChange={(e) => setSkillLevel(e.target.value)}
-                className="w-full bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-tertiary transition-all"
-              >
-                <option value="Beginner">Beginner (Fresh start / Basics)</option>
-                <option value="Intermediate">Intermediate (Know syntax & core concepts)</option>
-                <option value="Advanced">Advanced (Building complex systems)</option>
-              </select>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="md:col-span-3 space-y-2">
               <span className="font-label-mono text-[11px] uppercase text-outline block">
-                Popular Target Roles:
+                Or just tap one to get started:
               </span>
               <div className="flex flex-wrap gap-2">
                 {rolePresets.map((role) => (
                   <button
                     key={role}
                     type="button"
-                    onClick={() => setTargetRole(role)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-label-mono transition-all border ${
-                      targetRole === role
-                        ? 'bg-primary text-white border-primary shadow-sm'
-                        : 'bg-surface-container-low text-on-surface-variant border-outline-variant/60 hover:text-white hover:border-primary/50'
-                    }`}
+                    disabled={isRoadmapSending}
+                    onClick={() => handleSendRoadmapMessage(undefined, `I'm interested in becoming a ${role}.`)}
+                    className="px-3 py-1.5 rounded-lg text-xs font-label-mono transition-all border bg-surface-container-low text-on-surface-variant border-outline-variant/60 hover:text-white hover:border-primary/50 disabled:opacity-50"
                   >
                     {role}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Custom Notes / Goals (Optional) */}
-            <div className="md:col-span-3 space-y-2">
-              <label className="font-label-mono text-xs uppercase text-on-surface-variant font-bold">
-                Additional Focus / Specific Goals (Optional)
-              </label>
-              <input
-                type="text"
-                value={customGoals}
-                onChange={(e) => setCustomGoals(e.target.value)}
-                placeholder="e.g. Target 6-month internship readiness, focus heavily on Python and Cloud"
-                className="w-full bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-outline focus:outline-none focus:border-primary transition-all"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <div className="md:col-span-3 pt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-primary-container via-primary to-secondary-container text-white font-bold text-base shadow-xl hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw className="w-5 h-5 animate-spin text-amber-300" />
-                    <span>Constructing Custom Roadmap...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-5 h-5 text-amber-300" />
-                    <span>Generate AI Personalized Roadmap</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-
-          {/* Loading Progress Indicator */}
-          {loading && (
-            <div className="p-6 bg-surface-container-low border border-primary/30 rounded-2xl text-center space-y-3 animate-pulse">
-              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-              <p className="font-label-mono text-sm text-primary font-bold">{loadingStep}</p>
-              <p className="text-xs text-on-surface-variant">
-                Gemini AI is analyzing real-world tech requirements for your branch & target role...
-              </p>
-            </div>
           )}
 
-          {/* Error Banner */}
-          {error && (
+          {/* Chat transcript */}
+          <div ref={roadmapScrollRef} className="max-h-96 overflow-y-auto space-y-3 pr-1">
+            {roadmapMessages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                    m.role === 'user'
+                      ? 'bg-primary-container text-white rounded-br-sm'
+                      : 'bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-bl-sm'
+                  }`}
+                >
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {isRoadmapSending && (
+              <div className="flex justify-start">
+                <div className="bg-surface-container-low border border-outline-variant/50 px-4 py-3 rounded-2xl rounded-bl-sm flex items-center gap-2">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-primary" />
+                  <span className="text-xs text-on-surface-variant">Thinking...</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {roadmapError && (
             <div className="p-4 bg-error/10 border-2 border-error/40 rounded-2xl flex items-center gap-3 text-error text-sm">
               <AlertCircle className="w-5 h-5 shrink-0" />
-              <span>{error}</span>
+              <span>{roadmapError}</span>
             </div>
           )}
+
+          {/* Input */}
+          <form onSubmit={handleSendRoadmapMessage} className="flex items-center gap-2 pt-2 border-t border-outline-variant/50">
+            <input
+              type="text"
+              value={roadmapInput}
+              onChange={(e) => setRoadmapInput(e.target.value)}
+              placeholder="Type your answer..."
+              disabled={isRoadmapSending}
+              className="flex-1 bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-white placeholder:text-outline focus:outline-none focus:border-primary transition-all disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={isRoadmapSending || !roadmapInput.trim()}
+              className="px-5 py-3 rounded-xl bg-gradient-to-r from-primary-container via-primary to-secondary-container text-white font-bold text-sm shadow-lg hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 shrink-0"
+            >
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              <span>Send</span>
+            </button>
+          </form>
         </div>
       </div>
 
@@ -356,7 +339,7 @@ export const RoadmapPage: React.FC = () => {
                       Custom AI Plan
                     </span>
                     <span className="text-xs font-label-mono text-on-surface-variant">
-                      Created for {branch} Student
+                      Created for {user?.branch || 'You'} Student
                     </span>
                   </div>
                   <h3 className="font-headline-md text-2xl sm:text-3xl font-bold text-white">
@@ -538,7 +521,7 @@ export const RoadmapPage: React.FC = () => {
               No AI Roadmap Generated Yet
             </h3>
             <p className="text-sm text-on-surface-variant max-w-md mx-auto">
-              Fill out your branch, target role, and skill level in the generator above to create your custom step-by-step roadmap powered by Gemini AI!
+              Chat with the Roadmap Mentor above, tell it what you're interested in, and it'll build your custom step-by-step roadmap.
             </p>
           </div>
         )

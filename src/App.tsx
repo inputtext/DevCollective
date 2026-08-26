@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
+import { ChatWidget } from './components/ChatWidget';
+import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -25,6 +27,18 @@ import { AdminPage } from './pages/AdminPage';
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
 
+  // A logged-in user should never see the public Landing/Login/Register pages,
+  // send them straight to their Dashboard instead of a confusing half-logged-in view.
+  // This hook must run on every render (before any early returns) to satisfy the Rules of Hooks.
+  const authOnlyTabs = ['landing', 'login', 'register'];
+  const shouldRedirectHome = !loadingAuth && Boolean(user) && authOnlyTabs.includes(activeTab);
+
+  useEffect(() => {
+    if (shouldRedirectHome) {
+      setActiveTab('dashboard');
+    }
+  }, [shouldRedirectHome, setActiveTab]);
+
   if (loadingAuth) {
     return (
       <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 space-y-4">
@@ -34,6 +48,10 @@ const MainContent: React.FC = () => {
         </p>
       </div>
     );
+  }
+
+  if (shouldRedirectHome) {
+    return null;
   }
 
   const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
@@ -115,6 +133,8 @@ const MainContent: React.FC = () => {
       </div>
 
       <OAuthGuideModal />
+      {user && <ChatWidget />}
+      {user && <ResumeUploadPromptModal />}
     </div>
   );
 };

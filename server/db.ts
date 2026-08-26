@@ -5,6 +5,8 @@ import { UserProfile, UserRole } from '../src/types';
 
 export interface UserRecord extends UserProfile {
   passwordHash: string;
+  resetCodeHash?: string;
+  resetCodeExpiresAt?: string;
 }
 
 export interface SessionRecord {
@@ -167,6 +169,102 @@ export async function createUser(data: {
   users.push(newUser);
   saveUsers(users);
   return newUser;
+}
+
+// Find an existing user by email (used to link an OAuth login to an existing account),
+// or create a brand-new one for a first-time Google/GitHub sign-in. OAuth users have no
+// password, so passwordHash is left empty and email/password login is blocked for them.
+export async function findOrCreateOAuthUser(data: {
+  provider: 'google' | 'github';
+  email: string;
+  name: string;
+  avatar?: string;
+}): Promise<{ user: UserRecord; isNewUser: boolean }> {
+  const users = getUsers();
+  const existing = users.find((u) => u.email.toLowerCase() === data.email.toLowerCase());
+
+  if (existing) {
+    return { user: existing, isNewUser: false };
+  }
+
+  const newUser: UserRecord = {
+    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    name: data.name,
+    email: data.email,
+    passwordHash: '', // OAuth account, no password set
+    role: 'student',
+    college: 'Institute of Technology',
+    branch: 'Computer Science',
+    academicYear: '1st Year',
+    avatar: data.avatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(data.email)}`,
+    bio: `Welcome to DevCollective! Building software as a student.`,
+    rep: 100,
+    level: 1,
+    streakDays: 1,
+    skills: ['JavaScript', 'HTML/CSS'],
+    selectedDomains: ['Full Stack Development'],
+    authProvider: data.provider,
+    createdAt: new Date().toISOString(),
+  };
+
+  users.push(newUser);
+  saveUsers(users);
+  return { user: newUser, isNewUser: true };
+}
+
+// Password reset: store a hashed 6-digit code with an expiry (never store the raw code)
+export function setPasswordResetCode(userId: string, codeHash: string, expiresAt: string): void {
+  const users = getUsers();
+  const index = users.findIndex((u) => u.id === userId);
+  if (index === -1) return;
+  users[index] = { ...users[index], resetCodeHash: codeHash, resetCodeExpiresAt: expiresAt };
+  saveUsers(users);
+}
+
+// Verify code and set a new password in one step; clears the reset code either way it resolves
+export async function resetPasswordWithCode(
+  email: string,
+  code: string,
+  newPasswordRaw: string
+): Promise<{ success: boolean; error?: string }> {
+  const users = getUsers();
+  const index = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (index === -1) {
+    return { success: false, error: 'Invalid or expired code.' };
+  }
+
+  const user = users[index];
+  if (!user.resetCodeHash || !user.resetCodeExpiresAt) {
+    return { success: false, error: 'No password reset was requested for this account.' };
+  }
+
+  if (new Date(user.resetCodeExpiresAt) < new Date()) {
+    users[index] = { ...user, resetCodeHash: undefined, resetCodeExpiresAt: undefined };
+    saveUsers(users);
+    return { success: false, error: 'This code has expired. Please request a new one.' };
+  }
+
+  const codeMatches = await bcrypt.compare(code, user.resetCodeHash);
+  if (!codeMatches) {
+    return { success: false, error: 'Incorrect code. Please check and try again.' };
+  }
+
+  const passwordHash = await bcrypt.hash(newPasswordRaw, 10);
+  users[index] = { ...user, passwordHash, resetCodeHash: undefined, resetCodeExpiresAt: undefined };
+  saveUsers(users);
+  return { success: true };
+}
+
+// Update an existing user's profile fields (never touches passwordHash/id/email here)
+export function updateUser(id: string, updates: Partial<UserProfile>): UserRecord | null {
+  const users = getUsers();
+  const index = users.findIndex((u) => u.id === id);
+  if (index === -1) return null;
+
+  const { id: _ignoreId, email: _ignoreEmail, ...safeUpdates } = updates as any;
+  users[index] = { ...users[index], ...safeUpdates };
+  saveUsers(users);
+  return users[index];
 }
 
 // Session store management

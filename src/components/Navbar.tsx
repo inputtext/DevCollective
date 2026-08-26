@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
 
         {isStandalone ? (
           <div
-            onClick={() => setActiveTab('landing')}
+            onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
             className="flex items-center gap-3 cursor-pointer"
           >
             <div className="w-9 h-9 bg-primary-container rounded-lg flex items-center justify-center text-white">
