@@ -39,7 +39,7 @@ export const Sidebar: React.FC = () => {
       <div className="px-4 mb-6 flex items-center justify-between">
         {!sidebarCollapsed ? (
           <div
-            onClick={() => setActiveTab('landing')}
+            onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
             className="flex items-center gap-3 cursor-pointer group min-w-0"
           >
             <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white shrink-0 shadow-lg group-hover:scale-105 transition-transform">
@@ -56,7 +56,7 @@ export const Sidebar: React.FC = () => {
           </div>
         ) : (
           <div
-            onClick={() => setActiveTab('landing')}
+            onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
             className="mx-auto cursor-pointer group"
             title="DevCollective — Build. Scale. Lead."
           >

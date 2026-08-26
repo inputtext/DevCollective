@@ -32,17 +32,24 @@ interface AuthContextType {
   showOAuthModal: boolean;
   oauthProviderToSimulate: 'google' | 'github' | null;
   setShowOAuthModal: (show: boolean) => void;
-  triggerOAuthLogin: (provider: 'google' | 'github') => Promise<void>;
-  simulateOAuthSuccess: (provider: 'google' | 'github', userDetails?: { name?: string; email?: string; avatar?: string }) => void;
+  triggerOAuthLogin: (provider: 'google' | 'github') => void;
+  showResumePrompt: boolean;
+  dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>;
   registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>;
   logout: () => Promise<void>;
-  updateProfile: (updated: Partial<UserProfile>) => void;
+
+  updateProfile: (updated: Partial<UserProfile>) => Promise<void>;
   toggleTaskCompletion: (taskId: string) => Promise<void>;
   addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => void;
   toggleLikePost: (postId: string) => void;
   completeOnboarding: () => Promise<void>;
   repAnimation: { amount: number; id: number } | null;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  authRedirectError: string | null;
+  clearAuthRedirectError: () => void;
+
   oauthInfo: {
     googleConfigured: boolean;
     githubConfigured: boolean;
@@ -204,6 +211,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [showOAuthModal, setShowOAuthModal] = useState(false);
   const [oauthProviderToSimulate, setOauthProviderToSimulate] = useState<'google' | 'github' | null>(null);
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const dismissResumePrompt = () => setShowResumePrompt(false);
+  const [authRedirectError, setAuthRedirectError] = useState<string | null>(null);
   const [oauthInfo, setOauthInfo] = useState<{
     googleConfigured: boolean;
     githubConfigured: boolean;
@@ -212,35 +222,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     githubCallbackUrl: string;
   } | null>(null);
 
-  // 1. Initial Session Check & Subscription using Supabase Auth
+  // Check persistent session token on app initialization.
+  // Supports Supabase Auth sessions, native server sessions (/api/auth/me),
+  // and landing back here after a real Google/GitHub OAuth redirect.
   useEffect(() => {
-    const getInitialSession = async () => {
+    const checkSession = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const redirectToken = params.get('token');
+      const isNewUser = params.get('newUser') === '1';
+      const redirectError = params.get('authError');
+
+      if (redirectError) {
+        setAuthRedirectError(redirectError);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
+      if (redirectToken) {
+        localStorage.setItem('devcollective_token', redirectToken);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+
       try {
+        // 1. Check Supabase session first
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) {
           console.error('Error fetching Supabase session:', error);
         }
+
         if (session?.user) {
           const profile = await getOrFetchProfile(session.user);
           setUser(profile);
+          setLoadingAuth(false);
+          return;
+        }
+
+        // 2. Check local/OAuth token against backend server
+        const token = redirectToken || localStorage.getItem('devcollective_token');
+        if (token) {
+          const res = await fetch('/api/auth/me', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.user) {
+              setUser(data.user);
+              if (redirectToken) {
+                setActiveTab('dashboard');
+                if (isNewUser) setShowResumePrompt(true);
+              }
+            } else {
+              localStorage.removeItem('devcollective_token');
+              setUser(null);
+            }
+          } else {
+            localStorage.removeItem('devcollective_token');
+            setUser(null);
+          }
         } else {
           setUser(null);
         }
       } catch (err) {
         console.error('Unexpected error checking session:', err);
+        setUser(null);
       } finally {
         setLoadingAuth(false);
       }
     };
 
-    getInitialSession();
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const profile = await getOrFetchProfile(session.user);
         setUser(profile);
-      } else {
-        setUser(null);
       }
       setLoadingAuth(false);
     });
@@ -250,6 +307,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  const clearAuthRedirectError = () => setAuthRedirectError(null);
+
   // Fetch Auth Status Info from Express Server
   useEffect(() => {
     fetch('/api/auth/info')
@@ -258,43 +317,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch((err) => console.warn('Could not fetch Auth info from server', err));
   }, []);
 
-  const triggerOAuthLogin = async (provider: 'google' | 'github') => {
+  // Kicks off a real Google/GitHub OAuth flow when configured; otherwise shows the
+  // setup guide so it's obvious what env vars are still needed.
+  const triggerOAuthLogin = (provider: 'google' | 'github') => {
+    const isConfigured = provider === 'google' ? oauthInfo?.googleConfigured : oauthInfo?.githubConfigured;
+    if (isConfigured) {
+      window.location.href = `/api/auth/${provider}`;
+      return;
+    }
     setOauthProviderToSimulate(provider);
     setShowOAuthModal(true);
-  };
-
-  const simulateOAuthSuccess = (
-    provider: 'google' | 'github',
-    userDetails?: { name?: string; email?: string; avatar?: string }
-  ) => {
-    const defaultName = provider === 'google' ? 'Piyush Kanojiya' : 'Piyush Kanojiya';
-    const defaultEmail = provider === 'google' ? 'kanojiyapk524@gmail.com' : 'kanojiyapk@github.com';
-
-    const newUser: UserProfile = {
-      id: `user_${Date.now()}`,
-      name: userDetails?.name || defaultName,
-      email: userDetails?.email || defaultEmail,
-      role: 'student',
-      college: 'Institute of Technology',
-      branch: 'Computer Science',
-      academicYear: 'Third Year',
-      avatar: userDetails?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      bio: `Student developer building on DevCollective.`,
-      rep: 2500,
-      level: 18,
-      streakDays: 42,
-      githubUrl: 'https://github.com/kanojiyapk',
-      linkedinUrl: 'https://linkedin.com/in/student-developer',
-      skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
-      selectedDomains: ['Software Dev', 'AI/ML'],
-      authProvider: provider,
-      hasCompletedOnboarding: true,
-      createdAt: new Date().toISOString(),
-    };
-
-    setUser(newUser);
-    setShowOAuthModal(false);
-    setActiveTab('dashboard');
   };
 
   // 2. Login using Supabase Auth
@@ -349,6 +381,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await getOrFetchProfile(data.user);
       setUser(profile);
       setActiveTab('profile-setup');
+      setShowResumePrompt(true);
     } else if (data.user && !data.session) {
       // Email confirmation required — resolve normally so the caller
       // can treat this as a success (not an error).
@@ -358,20 +391,113 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 5. Logout using Supabase Auth
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.warn('Supabase signout warning:', error);
+  // 4. Forgot Password & Reset via DevCollective Email SMTP
+  const requestPasswordReset = async (email: string) => {
+    const res = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not send the reset code.');
     }
+  };
+
+  const resetPassword = async (email: string, code: string, newPassword: string) => {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, newPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Could not reset the password.');
+    }
+  };
+
+  // 5. Logout
+  const logout = async () => {
+    const token = localStorage.getItem('devcollective_token');
+    if (token) {
+      try {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } catch (err) {
+        console.warn('Logout request failed', err);
+      }
+      localStorage.removeItem('devcollective_token');
+    }
+
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.warn('Supabase signout warning:', error);
+      }
+    } catch (err) {
+      console.warn('Supabase signout exception:', err);
+    }
+
     setUser(null);
     setActiveTab('landing');
   };
 
-  const updateProfile = (updated: Partial<UserProfile>) => {
+  const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
+
+    // Optimistic local update so the UI feels instant
     const newProfile = { ...user, ...updated };
     setUser(newProfile);
+
+    // 1. Sync to Supabase profiles table
+    try {
+      const supabaseUpdates: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (updated.name !== undefined) supabaseUpdates.name = updated.name;
+      if (updated.college !== undefined) supabaseUpdates.college = updated.college;
+      if (updated.branch !== undefined) supabaseUpdates.branch = updated.branch;
+      if (updated.academicYear !== undefined) supabaseUpdates.academic_year = updated.academicYear;
+      if (updated.avatar !== undefined) supabaseUpdates.avatar = updated.avatar;
+      if (updated.bio !== undefined) supabaseUpdates.bio = updated.bio;
+      if (updated.githubUrl !== undefined) supabaseUpdates.github_url = updated.githubUrl;
+      if (updated.linkedinUrl !== undefined) supabaseUpdates.linkedin_url = updated.linkedinUrl;
+      if (updated.skills !== undefined) supabaseUpdates.skills = updated.skills;
+      if (updated.selectedDomains !== undefined) supabaseUpdates.selected_domains = updated.selectedDomains;
+
+      await supabase
+        .from('profiles')
+        .update(supabaseUpdates)
+        .eq('user_id', user.id);
+    } catch (err) {
+      console.warn('Supabase profile update warning:', err);
+    }
+
+    // 2. Sync to local backend server if token exists
+    const token = localStorage.getItem('devcollective_token');
+    if (token) {
+      try {
+        const res = await fetch('/api/users/profile', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updated),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.user) {
+          setUser((prev) => (prev ? { ...prev, ...data.user } : data.user));
+        } else {
+          console.error('Failed to persist profile update to server:', data.error);
+        }
+      } catch (err) {
+        console.error('Error saving profile to server:', err);
+      }
+    }
   };
 
   const completeOnboarding = async () => {
@@ -477,7 +603,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         oauthProviderToSimulate,
         setShowOAuthModal,
         triggerOAuthLogin,
-        simulateOAuthSuccess,
+        showResumePrompt,
+        dismissResumePrompt,
         loginWithEmail,
         registerUser,
         logout,
@@ -485,8 +612,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTaskCompletion,
         addPost,
         toggleLikePost,
+
         completeOnboarding,
         repAnimation,
+        requestPasswordReset,
+        resetPassword,
+        authRedirectError,
+        clearAuthRedirectError,
+
         oauthInfo,
       }}
     >

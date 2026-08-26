@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Camera, Check, X, ArrowLeft } from 'lucide-react';
+import { Camera, Check, X, ArrowLeft, UploadCloud, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
+
+interface ExtractedResumeData {
+  branch: string;
+  academicYear: string;
+  bio: string;
+  skills: string[];
+  githubUrl: string;
+  linkedinUrl: string;
+  confidence?: string;
+}
 
 export const ProfileSetupPage: React.FC = () => {
   const { user, updateProfile, setActiveTab } = useAuth();
@@ -13,6 +23,67 @@ export const ProfileSetupPage: React.FC = () => {
   const [newSkillInput, setNewSkillInput] = useState('');
   const [bio, setBio] = useState(user?.bio || 'Passionate student developer building AI and web applications.');
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Resume auto-fill state
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [isParsingResume, setIsParsingResume] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  const [appliedFromResume, setAppliedFromResume] = useState(false);
+  const [resumeNote, setResumeNote] = useState<string | null>(null);
+
+  const handleResumeSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      setResumeError('Please upload a PDF resume.');
+      return;
+    }
+
+    setResumeFileName(file.name);
+    setResumeError(null);
+    setAppliedFromResume(false);
+    setIsParsingResume(true);
+
+    try {
+      const token = localStorage.getItem('devcollective_token');
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const res = await fetch('/api/resume/parse', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to parse resume.');
+      }
+
+      const extracted: ExtractedResumeData = data.extracted;
+
+      // Auto-fill the form. User can still review and edit every field before saving.
+      if (extracted.branch) setBranch(extracted.branch);
+      if (extracted.academicYear) setAcademicYear(extracted.academicYear);
+      if (extracted.bio) setBio(extracted.bio.slice(0, 250));
+      if (extracted.githubUrl) setGithubUrl(extracted.githubUrl);
+      if (extracted.linkedinUrl) setLinkedinUrl(extracted.linkedinUrl);
+      if (extracted.skills && extracted.skills.length > 0) {
+        setSkills((prev) => Array.from(new Set([...extracted.skills])));
+      }
+
+      setResumeNote(extracted.confidence || null);
+      setAppliedFromResume(true);
+    } catch (err: any) {
+      setResumeError(err.message || 'Something went wrong reading that resume.');
+    } finally {
+      setIsParsingResume(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   const handleAddSkill = (e: React.KeyboardEvent | React.MouseEvent) => {
     if ('key' in e && e.key !== 'Enter') return;
@@ -27,9 +98,10 @@ export const ProfileSetupPage: React.FC = () => {
     setSkills(skills.filter((s) => s !== skillToRemove));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateProfile({
+    setIsSaving(true);
+    await updateProfile({
       branch,
       academicYear,
       githubUrl,
@@ -38,9 +110,10 @@ export const ProfileSetupPage: React.FC = () => {
       bio,
     });
 
+    setIsSaving(false);
     setIsSaved(true);
     setTimeout(() => {
-      setActiveTab('choose-path');
+      setActiveTab('profile');
     }, 1000);
   };
 
@@ -92,6 +165,67 @@ export const ProfileSetupPage: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
+
+              {/* Resume Auto-Fill */}
+              <div className="space-y-2">
+                <label className="font-label-mono text-xs uppercase text-on-surface-variant flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-primary" />
+                  Auto-fill from Resume
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  onChange={handleResumeSelect}
+                  className="hidden"
+                  id="resume-upload-input"
+                />
+                <label
+                  htmlFor="resume-upload-input"
+                  className={`flex items-center justify-between gap-3 w-full p-4 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${
+                    appliedFromResume
+                      ? 'border-tertiary/50 bg-tertiary-container/10'
+                      : 'border-outline-variant hover:border-primary bg-surface-container-lowest'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isParsingResume ? (
+                      <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0" />
+                    ) : appliedFromResume ? (
+                      <Check className="w-5 h-5 text-tertiary shrink-0" />
+                    ) : (
+                      <UploadCloud className="w-5 h-5 text-on-surface-variant shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">
+                        {isParsingResume
+                          ? 'Reading your resume...'
+                          : resumeFileName
+                          ? resumeFileName
+                          : 'Upload your resume (PDF)'}
+                      </p>
+                      <p className="text-[11px] text-on-surface-variant">
+                        {appliedFromResume
+                          ? 'Fields below were filled in. Review and edit before saving.'
+                          : 'AI will read it and fill in your skills, bio, and links.'}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="font-label-mono text-[10px] uppercase text-primary shrink-0">
+                    {resumeFileName ? 'Replace' : 'Choose file'}
+                  </span>
+                </label>
+
+                {resumeError && (
+                  <p className="flex items-center gap-1.5 text-xs text-error">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    {resumeError}
+                  </p>
+                )}
+                {resumeNote && !resumeError && (
+                  <p className="text-[11px] text-on-surface-variant italic">{resumeNote}</p>
+                )}
               </div>
 
               {/* Academic Grid */}
@@ -220,14 +354,15 @@ export const ProfileSetupPage: React.FC = () => {
               <div className="flex flex-col sm:flex-row gap-4 pt-2">
                 <button
                   type="submit"
-                  className={`flex-1 font-bold text-base py-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+                  disabled={isSaving}
+                  className={`flex-1 font-bold text-base py-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 ${
                     isSaved
                       ? 'bg-tertiary-container text-white'
                       : 'bg-primary-container text-white hover:brightness-110 active:scale-95'
                   }`}
                 >
-                  {isSaved ? <Check className="w-5 h-5" /> : null}
-                  <span>{isSaved ? 'SAVED' : 'COMPLETE PROFILE'}</span>
+                  {isSaved ? <Check className="w-5 h-5" /> : isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+                  <span>{isSaved ? 'SAVED' : isSaving ? 'SAVING...' : 'COMPLETE PROFILE'}</span>
                 </button>
                 <button
                   type="button"

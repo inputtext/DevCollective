@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect } from 'react';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
+import { ChatWidget } from './components/ChatWidget';
+import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -25,28 +28,18 @@ import { AdminPage } from './pages/AdminPage';
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
 
-  // Navigate to dashboard when auth transitions from unauthenticated → authenticated.
-  // Covers: email-confirmation redirect, page-refresh with existing session.
-  // Does NOT interfere with: loginWithEmail (already sets activeTab='dashboard'),
-  //   registerUser (sets 'profile-setup'), or manual tab navigation.
-  const wasAuthenticatedRef = useRef(false);
+  // A logged-in user should never see the public Landing/Login/Register pages,
+  // send them straight to their Dashboard instead of a confusing half-logged-in view.
+  // This hook must run on every render (before any early returns) to satisfy the Rules of Hooks.
+  const authOnlyTabs = ['landing', 'login', 'register'];
+  const shouldRedirectHome = !loadingAuth && Boolean(user) && authOnlyTabs.includes(activeTab);
 
   useEffect(() => {
-    if (loadingAuth) return; // Wait for session check to finish
-
-    const isAuthenticated = user !== null;
-
-    if (!wasAuthenticatedRef.current && isAuthenticated) {
-      // Transition detected: was NOT authenticated, now IS authenticated.
-      // Only auto-navigate if currently on a public/unauthenticated page.
-      const publicPages = ['landing', 'login', 'register'];
-      if (publicPages.includes(activeTab)) {
-        setActiveTab('dashboard');
-      }
+    if (shouldRedirectHome) {
+      setActiveTab('dashboard');
     }
+  }, [shouldRedirectHome, setActiveTab]);
 
-    wasAuthenticatedRef.current = isAuthenticated;
-  }, [user, loadingAuth, activeTab, setActiveTab]);
 
   if (loadingAuth) {
     return (
@@ -57,6 +50,10 @@ const MainContent: React.FC = () => {
         </p>
       </div>
     );
+  }
+
+  if (shouldRedirectHome) {
+    return null;
   }
 
   const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
@@ -138,6 +135,8 @@ const MainContent: React.FC = () => {
       </div>
 
       <OAuthGuideModal />
+      {user && <ChatWidget />}
+      {user && <ResumeUploadPromptModal />}
     </div>
   );
 };

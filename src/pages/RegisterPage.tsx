@@ -57,38 +57,6 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
-      {/* Top Nav Button */}
-      <button
-        onClick={() => setActiveTab('landing')}
-        className="fixed top-6 left-6 z-50 flex items-center gap-2 font-label-mono text-xs uppercase text-on-surface-variant hover:text-primary transition-colors bg-surface-container/80 px-4 py-2 rounded-full border border-outline-variant backdrop-blur-md"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        <span>Back to Home</span>
-      </button>
-
-      {/* Left Panel (40%) */}
-      <section className="hidden md:flex md:w-[40%] bg-surface-container-lowest border-r-2 border-outline-variant relative flex-col justify-center px-12 lg:px-16 overflow-hidden">
-        <div className="relative z-10 space-y-8">
-          <div className="w-full aspect-[4/3] rounded-2xl border-2 border-outline-variant overflow-hidden bg-surface-container">
-            <img
-              src="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1000&auto=format&fit=crop&q=80"
-              alt="Community network"
-              className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-700"
-              onError={(e) => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1000&auto=format&fit=crop&q=80";
-              }}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <h1 className="font-headline-lg text-3xl lg:text-4xl font-bold text-white">Join the Community</h1>
-            <p className="font-body-lg text-base text-on-surface-variant max-w-sm">
-              Create your account and start building your developer journey alongside peers and mentors.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Right Panel (60%) */}
       <section className="flex-1 bg-background flex items-center justify-center py-20 px-4 sm:px-8 md:px-12">
         <div className="w-full max-w-2xl space-y-8">
