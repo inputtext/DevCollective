@@ -109,5 +109,79 @@
     ],
     "authProvider": "email",
     "createdAt": "2026-08-09T15:20:14.449Z"
+  },
+  {
+    "id": "user_1786821196809_ykez4",
+    "name": "Piyush Ingle",
+    "email": "inglepiyush26@gmail.com",
+    "passwordHash": "$2b$10$rSeKDoECWD30kdBjH18Kn.dzMgLbtGw90khwyUzWfr8i07z4FjSUG",
+    "role": "student",
+    "college": "GHRCEMN",
+    "branch": "Computer Science",
+    "academicYear": "4th Year",
+    "avatar": "https://api.dicebear.com/7.x/identicon/svg?seed=inglepiyush26%40gmail.com",
+    "bio": "Welcome to DevCollective! Building software as a student.",
+    "rep": 100,
+    "level": 1,
+    "streakDays": 1,
+    "skills": [
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "selectedDomains": [
+      "Full Stack Development"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-15T19:13:16.809Z"
+  },
+  {
+    "id": "user_1787726631078_1xwm7",
+    "name": "Piyush Ingle",
+    "email": "piyushingle2611@gmail.com",
+    "passwordHash": "",
+    "role": "student",
+    "college": "Institute of Technology",
+    "branch": "Computer Science & Engineering",
+    "academicYear": "Final Year",
+    "avatar": "https://lh3.googleusercontent.com/a/ACg8ocLhtnkKxKrZuf-7-827v5UubpfPg3JivBUwwdEY6ePV2PHJnQ=s96-c",
+    "bio": "I am a final-year Computer Science student specializing in Generative AI, Agentic AI, and AI-powered web applications. I have practical experience building intelligent workflows using Python, Flask, LangChain, LangGraph, and RAG.",
+    "rep": 100,
+    "level": 1,
+    "streakDays": 1,
+    "skills": [
+      "Python",
+      "C",
+      "C++",
+      "HTML",
+      "CSS",
+      "Flask",
+      "REST API",
+      "OpenAI API",
+      "Prompt Engineering",
+      "Generative AI",
+      "Agentic AI",
+      "LangChain",
+      "LangGraph",
+      "RAG",
+      "ChromaDB",
+      "Deep Learning",
+      "YOLO11n",
+      "OpenCV",
+      "EasyOCR",
+      "SQLAlchemy",
+      "MySQL",
+      "SQLite",
+      "Git",
+      "GitHub",
+      "VS Code",
+      "Render"
+    ],
+    "selectedDomains": [
+      "Full Stack Development"
+    ],
+    "authProvider": "google",
+    "createdAt": "2026-08-26T06:43:51.078Z",
+    "githubUrl": "https://github.com/piyush-ingle-dev",
+    "linkedinUrl": "https://www.linkedin.com/in/piyush-ingle-76691b385/"
   }
 ]

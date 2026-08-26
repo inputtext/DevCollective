@@ -52,12 +52,6 @@ export const LandingPage: React.FC = () => {
               >
                 Register
               </button>
-              <button
-                onClick={() => setActiveTab('roadmap')}
-                className="px-6 py-4 border-2 border-transparent text-primary font-label-mono text-xs uppercase tracking-widest underline decoration-2 underline-offset-8 hover:text-white transition-colors"
-              >
-                Explore Roadmaps
-              </button>
             </div>
           </div>
 

@@ -11,10 +11,11 @@ import {
   CheckCircle2,
   ExternalLink,
   Lock,
+  Pencil,
 } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, setActiveTab } = useAuth();
 
   return (
     <div className="space-y-10 pb-16">
@@ -49,6 +50,13 @@ export const StudentProfilePage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={() => setActiveTab('profile-setup')}
+              className="flex items-center gap-2 px-4 py-3 bg-primary-container hover:brightness-110 rounded-xl text-white text-xs font-label-mono uppercase font-bold transition-all active:scale-95"
+            >
+              <Pencil className="w-4 h-4" />
+              <span>Edit Profile</span>
+            </button>
             {user?.githubUrl && (
               <a
                 href={user.githubUrl}
