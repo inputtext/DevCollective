@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
-import { initialUserProfile, initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
+import { initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
 
 export type PageTab =
   | 'landing'
@@ -37,13 +37,16 @@ interface AuthContextType {
   registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>;
-  toggleTaskCompletion: (taskId: string) => void;
+  toggleTaskCompletion: (taskId: string) => Promise<void>;
   addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => void;
   toggleLikePost: (postId: string) => void;
+  completeOnboarding: () => Promise<void>;
+  repAnimation: { amount: number; id: number } | null;
   requestPasswordReset: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   authRedirectError: string | null;
   clearAuthRedirectError: () => void;
+
   oauthInfo: {
     googleConfigured: boolean;
     githubConfigured: boolean;
@@ -58,6 +61,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
+  const [repAnimation, setRepAnimation] = useState<{ amount: number; id: number } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('devcollective_sidebar_collapsed') === 'true';
   });
@@ -133,13 +137,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } else {
             localStorage.removeItem('devcollective_token');
+            setUser(null);
           }
         } else {
           localStorage.removeItem('devcollective_token');
+          setUser(null);
         }
       } catch (err) {
-        console.error('Error verifying session token:', err);
-        localStorage.removeItem('devcollective_token');
+        console.error('Unexpected error checking session:', err);
+        setUser(null);
       } finally {
         setLoadingAuth(false);
       }
@@ -170,7 +176,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowOAuthModal(true);
   };
 
+  // 1. Native Email/Password Login
   const loginWithEmail = async (email: string, password?: string) => {
+    if (!email || !password) {
+      throw new Error('Please enter both email and password.');
+    }
+
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -189,7 +200,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveTab('dashboard');
   };
 
+  // 2. Native User Registration
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => {
+    if (!details.email || !details.password || !details.name) {
+      throw new Error('Name, email, and password are required for registration.');
+    }
+
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,10 +229,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('devcollective_token', data.token);
     }
     setUser(data.user);
-    setActiveTab('dashboard');
+    setActiveTab('profile-setup');
     setShowResumePrompt(true);
   };
 
+  // 3. Forgot Password & Reset via DevCollective Email SMTP
   const requestPasswordReset = async (email: string) => {
     const res = await fetch('/api/auth/forgot-password', {
       method: 'POST',
@@ -241,6 +258,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // 4. Logout
   const logout = async () => {
     const token = localStorage.getItem('devcollective_token');
     if (token) {
@@ -252,12 +270,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (err) {
         console.warn('Logout request failed', err);
       }
+      localStorage.removeItem('devcollective_token');
     }
-    localStorage.removeItem('devcollective_token');
+
     setUser(null);
     setActiveTab('landing');
   };
 
+  // 5. Update Profile
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
 
@@ -282,28 +302,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.ok && data.user) {
         setUser(data.user);
       } else {
-        console.error('Failed to persist profile update:', data.error);
+        console.error('Failed to persist profile update to server:', data.error);
       }
     } catch (err) {
       console.error('Error saving profile to server:', err);
     }
   };
 
-  const toggleTaskCompletion = (taskId: string) => {
+  const completeOnboarding = async () => {
+    if (!user) return;
+    await updateProfile({ hasCompletedOnboarding: true });
+  };
+
+  const toggleTaskCompletion = async (taskId: string) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const isNowCompleted = !task.completed;
+
     setTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === taskId) {
-          const isNowCompleted = !t.completed;
-          if (isNowCompleted && user) {
-            setUser((u) => (u ? { ...u, rep: u.rep + t.repReward } : null));
-          } else if (!isNowCompleted && user) {
-            setUser((u) => (u ? { ...u, rep: Math.max(0, u.rep - t.repReward) } : null));
-          }
-          return { ...t, completed: isNowCompleted };
-        }
-        return t;
-      })
+      prev.map((t) => (t.id === taskId ? { ...t, completed: isNowCompleted } : t))
     );
+
+    if (user) {
+      const repChange = task.repReward || 50;
+      const newRep = isNowCompleted ? user.rep + repChange : Math.max(0, user.rep - repChange);
+      if (isNowCompleted) {
+        setRepAnimation({ amount: repChange, id: Date.now() });
+      }
+      await updateProfile({ rep: newRep });
+    }
   };
 
   const addPost = (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => {
@@ -318,8 +346,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       likedByMe: true,
     };
     setPosts([newPost, ...posts]);
-    // Reward REP for posting!
-    setUser((u) => (u ? { ...u, rep: u.rep + 25 } : null));
+    const updatedRep = user.rep + 25;
+    updateProfile({ rep: updatedRep });
   };
 
   const toggleLikePost = (postId: string) => {
@@ -364,6 +392,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTaskCompletion,
         addPost,
         toggleLikePost,
+        completeOnboarding,
+        repAnimation,
         requestPasswordReset,
         resetPassword,
         authRedirectError,

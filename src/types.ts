@@ -18,6 +18,7 @@ export interface UserProfile {
   skills: string[];
   selectedDomains: string[];
   authProvider: 'email' | 'google' | 'github';
+  hasCompletedOnboarding?: boolean;
   createdAt: string;
 }
 

@@ -77,7 +77,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
-    
       {/* Right Panel (60%) */}
       <section className="flex-1 flex items-center justify-center px-4 sm:px-8 py-20 md:py-12">
         <div className="w-full max-w-lg">

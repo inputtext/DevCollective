@@ -52,7 +52,6 @@ export const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
-      
       {/* Right Panel (60%) */}
       <section className="flex-1 bg-background flex items-center justify-center py-20 px-4 sm:px-8 md:px-12">
         <div className="w-full max-w-2xl space-y-8">

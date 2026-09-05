@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect } from 'react';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -27,17 +28,25 @@ import { AdminPage } from './pages/AdminPage';
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
 
-  // A logged-in user should never see the public Landing/Login/Register pages,
-  // send them straight to their Dashboard instead of a confusing half-logged-in view.
-  // This hook must run on every render (before any early returns) to satisfy the Rules of Hooks.
-  const authOnlyTabs = ['landing', 'login', 'register'];
-  const shouldRedirectHome = !loadingAuth && Boolean(user) && authOnlyTabs.includes(activeTab);
+  // Navigate to dashboard when auth transitions from unauthenticated → authenticated on initial load.
+  // Never auto-redirect from 'login' or 'register', allowing users to freely access login,
+  // registration, and the Forgot Password -> Verification Code -> Reset Password flow even if
+  // an existing session was previously stored.
+  const wasAuthenticatedRef = React.useRef(false);
 
   useEffect(() => {
-    if (shouldRedirectHome) {
-      setActiveTab('dashboard');
+    if (loadingAuth) return;
+
+    const isAuthenticated = Boolean(user);
+
+    if (!wasAuthenticatedRef.current && isAuthenticated) {
+      if (activeTab === 'landing') {
+        setActiveTab('dashboard');
+      }
     }
-  }, [shouldRedirectHome, setActiveTab]);
+
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [user, loadingAuth, activeTab, setActiveTab]);
 
   if (loadingAuth) {
     return (
@@ -48,10 +57,6 @@ const MainContent: React.FC = () => {
         </p>
       </div>
     );
-  }
-
-  if (shouldRedirectHome) {
-    return null;
   }
 
   const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
