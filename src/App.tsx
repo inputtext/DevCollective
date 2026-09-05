@@ -48,7 +48,15 @@ const MainContent: React.FC = () => {
     wasAuthenticatedRef.current = isAuthenticated;
   }, [user, loadingAuth, activeTab, setActiveTab]);
 
-  if (loadingAuth) {
+  const publicTabs = ['landing', 'login', 'register'];
+  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
+  const isProtected = protectedTabs.includes(activeTab);
+  const needsAuthHydration = !publicTabs.includes(activeTab);
+
+  // Do not block the public landing/login/register pages while Clerk initializes.
+  // Auth still hydrates in the background; only pages that need the authenticated
+  // DevCollective profile wait for that hydration to finish.
+  if (loadingAuth && needsAuthHydration) {
     return (
       <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 space-y-4">
         <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -58,9 +66,6 @@ const MainContent: React.FC = () => {
       </div>
     );
   }
-
-  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
-  const isProtected = protectedTabs.includes(activeTab);
 
   if (isProtected && !user) {
     return (
