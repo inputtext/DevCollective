@@ -17,7 +17,7 @@ export interface UserProfile {
   linkedinUrl?: string;
   skills: string[];
   selectedDomains: string[];
-  authProvider: 'email' | 'google' | 'github';
+  authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
   createdAt: string;
 }
