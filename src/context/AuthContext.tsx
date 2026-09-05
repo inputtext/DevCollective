@@ -8,7 +8,7 @@ export type PageTab = 'landing' | 'login' | 'register' | 'profile-setup' | 'choo
 interface AuthContextType {
   user: UserProfile | null; loadingAuth: boolean; sidebarCollapsed: boolean; toggleSidebar: () => void; activeTab: PageTab; setActiveTab: (tab: PageTab) => void;
   tasks: TaskItem[]; posts: CommunityPost[]; leaderboard: LeaderboardEntry[]; mentors: Mentor[];
-  showOAuthModal: boolean; oauthProviderToSimulate: 'google' | 'github' | null; setShowOAuthModal: (show: boolean) => void; triggerOAuthLogin: (provider: 'google' | 'github') => void;
+  showOAuthModal: boolean; oauthProviderToSimulate: 'google' | 'github' | null; setShowOAuthModal: (show: boolean) => void; triggerOAuthLogin: (provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => void;
   showResumePrompt: boolean; dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>; registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>; logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>; toggleTaskCompletion: (taskId: string) => Promise<void>;
@@ -20,6 +20,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
+
+const buildPendingRegistration = (details: Partial<UserProfile>) => ({
+  name: details.name || '',
+  role: details.role || 'student',
+  college: details.college || 'Institute of Technology',
+  branch: details.branch || 'Computer Science',
+  academicYear: details.academicYear || '1st Year',
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
@@ -86,18 +94,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [clerkLoaded, isSignedIn, syncProfile]);
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
-  const triggerOAuthLogin = (_provider: 'google' | 'github') => { setOauthProviderToSimulate(null); setShowOAuthModal(false); clerk.openSignIn({}); };
-  const loginWithEmail = async (email: string, _password?: string) => { if (!email) throw new Error('Please enter your email address.'); clerk.openSignIn({}); };
+
+  const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
+    setOauthProviderToSimulate(null);
+    setShowOAuthModal(false);
+
+    if (registrationDetails) {
+      const pending = buildPendingRegistration(registrationDetails);
+      sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending));
+      clerk.openSignUp({
+        initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined,
+        unsafeMetadata: pending,
+        signUpFallbackRedirectUrl: '/',
+        signInFallbackRedirectUrl: '/',
+      });
+      return;
+    }
+
+    clerk.openSignIn({
+      signInFallbackRedirectUrl: '/',
+      signUpFallbackRedirectUrl: '/',
+    });
+  };
+
+  const loginWithEmail = async (email: string, _password?: string) => {
+    if (!email) throw new Error('Please enter your email address.');
+    clerk.openSignIn({
+      initialValues: { emailAddress: email },
+      signInFallbackRedirectUrl: '/',
+      signUpFallbackRedirectUrl: '/',
+    });
+  };
 
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => {
     if (!details.email || !details.name) throw new Error('Name and email are required for registration.');
-    sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify({ name: details.name, role: details.role || 'student', college: details.college || 'Institute of Technology', branch: details.branch || 'Computer Science', academicYear: details.academicYear || '1st Year' }));
-    clerk.openSignUp({});
+    const pending = buildPendingRegistration(details);
+    sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending));
+    clerk.openSignUp({
+      initialValues: { emailAddress: details.email },
+      unsafeMetadata: pending,
+      signUpFallbackRedirectUrl: '/',
+      signInFallbackRedirectUrl: '/',
+    });
   };
 
-  const requestPasswordReset = async (_email: string) => { clerk.openSignIn({}); };
-  const resetPassword = async () => { clerk.openSignIn({}); };
-  const logout = async () => { await clerk.signOut(); setUser(null); setActiveTab('landing'); };
+  const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signInFallbackRedirectUrl: '/', signUpFallbackRedirectUrl: '/' }); };
+  const resetPassword = async () => { clerk.openSignIn({ signInFallbackRedirectUrl: '/', signUpFallbackRedirectUrl: '/' }); };
+  const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setActiveTab('landing'); };
 
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
