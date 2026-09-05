@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
@@ -12,18 +12,28 @@ import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { ChatWidget } from './components/ChatWidget';
 import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 
-import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { ProfileSetupPage } from './pages/ProfileSetupPage';
-import { ChoosePathPage } from './pages/ChoosePathPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { CommunityPage } from './pages/CommunityPage';
-import { RoadmapPage } from './pages/RoadmapPage';
-import { LeaderboardPage } from './pages/LeaderboardPage';
-import { MentorDirectoryPage } from './pages/MentorDirectoryPage';
-import { StudentProfilePage } from './pages/StudentProfilePage';
-import { AdminPage } from './pages/AdminPage';
+// Keep page code out of the initial bundle. Each page is fetched only when it is opened.
+const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
+const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/RegisterPage').then((module) => ({ default: module.RegisterPage })));
+const ProfileSetupPage = lazy(() => import('./pages/ProfileSetupPage').then((module) => ({ default: module.ProfileSetupPage })));
+const ChoosePathPage = lazy(() => import('./pages/ChoosePathPage').then((module) => ({ default: module.ChoosePathPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const CommunityPage = lazy(() => import('./pages/CommunityPage').then((module) => ({ default: module.CommunityPage })));
+const RoadmapPage = lazy(() => import('./pages/RoadmapPage').then((module) => ({ default: module.RoadmapPage })));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((module) => ({ default: module.LeaderboardPage })));
+const MentorDirectoryPage = lazy(() => import('./pages/MentorDirectoryPage').then((module) => ({ default: module.MentorDirectoryPage })));
+const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage').then((module) => ({ default: module.StudentProfilePage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
+    <div className="flex items-center gap-3 text-on-surface-variant">
+      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <span className="font-label-mono text-xs uppercase tracking-wider">Loading module...</span>
+    </div>
+  </div>
+);
 
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
@@ -53,9 +63,7 @@ const MainContent: React.FC = () => {
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
 
-  // Do not block the public landing/login/register pages while Clerk initializes.
-  // Auth still hydrates in the background; only pages that need the authenticated
-  // DevCollective profile wait for that hydration to finish.
+  // Public pages render without waiting for Clerk. Protected pages still wait for auth hydration.
   if (loadingAuth && needsAuthHydration) {
     return (
       <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 space-y-4">
@@ -115,9 +123,7 @@ const MainContent: React.FC = () => {
     );
   }
 
-  const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(
-    activeTab
-  );
+  const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(activeTab);
 
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
@@ -127,18 +133,20 @@ const MainContent: React.FC = () => {
         <Navbar />
 
         <main className={`flex-1 min-w-0 ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}>
-          {activeTab === 'landing' && <LandingPage />}
-          {activeTab === 'login' && <LoginPage />}
-          {activeTab === 'register' && <RegisterPage />}
-          {activeTab === 'profile-setup' && <ProfileSetupPage />}
-          {activeTab === 'choose-path' && <ChoosePathPage />}
-          {activeTab === 'dashboard' && <DashboardPage />}
-          {activeTab === 'community' && <CommunityPage />}
-          {activeTab === 'roadmap' && <RoadmapPage />}
-          {activeTab === 'leaderboard' && <LeaderboardPage />}
-          {activeTab === 'mentors' && <MentorDirectoryPage />}
-          {activeTab === 'profile' && <StudentProfilePage />}
-          {activeTab === 'admin' && <AdminPage />}
+          <Suspense fallback={<PageLoadingFallback />}>
+            {activeTab === 'landing' && <LandingPage />}
+            {activeTab === 'login' && <LoginPage />}
+            {activeTab === 'register' && <RegisterPage />}
+            {activeTab === 'profile-setup' && <ProfileSetupPage />}
+            {activeTab === 'choose-path' && <ChoosePathPage />}
+            {activeTab === 'dashboard' && <DashboardPage />}
+            {activeTab === 'community' && <CommunityPage />}
+            {activeTab === 'roadmap' && <RoadmapPage />}
+            {activeTab === 'leaderboard' && <LeaderboardPage />}
+            {activeTab === 'mentors' && <MentorDirectoryPage />}
+            {activeTab === 'profile' && <StudentProfilePage />}
+            {activeTab === 'admin' && <AdminPage />}
+          </Suspense>
         </main>
       </div>
 
