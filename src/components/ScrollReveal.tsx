@@ -1,4 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface ScrollRevealProps {
   children: React.ReactNode;
@@ -8,38 +12,37 @@ interface ScrollRevealProps {
 
 export const ScrollReveal: React.FC<ScrollRevealProps> = ({ children, className = '', delay = 0 }) => {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setVisible(true);
+      gsap.set(element, { clearProps: 'all' });
       return;
     }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
+    const context = gsap.context(() => {
+      gsap.fromTo(
+        element,
+        { autoAlpha: 0, y: 28 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.72,
+          delay: delay / 1000,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: element,
+            start: 'top 88%',
+            once: true,
+          },
         }
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-    );
+      );
+    }, element);
 
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+    return () => context.revert();
+  }, [delay]);
 
-  return (
-    <div
-      ref={ref}
-      className={`dc-reveal ${visible ? 'dc-reveal-visible' : ''} ${className}`}
-      style={{ '--dc-reveal-delay': `${delay}ms` } as React.CSSProperties}
-    >
-      {children}
-    </div>
-  );
+  return <div ref={ref} className={className}>{children}</div>;
 };
