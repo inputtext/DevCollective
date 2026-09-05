@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
@@ -6,6 +7,8 @@ import Lenis from 'lenis';
 gsap.registerPlugin(ScrollTrigger);
 
 export const MotionSystem: React.FC = () => {
+  const { activeTab } = useAuth();
+
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reducedMotion) return;
@@ -23,37 +26,30 @@ export const MotionSystem: React.FC = () => {
     gsap.ticker.lagSmoothing(0);
 
     const revealTargets = document.querySelectorAll<HTMLElement>('[data-gsap-reveal]');
-    const cleanups: Array<() => void> = [];
-
-    revealTargets.forEach((element) => {
-      const animation = gsap.fromTo(
-        element,
-        { autoAlpha: 0, y: 32 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.8,
-          ease: 'power3.out',
-          scrollTrigger: {
-            trigger: element,
-            start: 'top 86%',
-            once: true,
-          },
-        }
-      );
-
-      cleanups.push(() => animation.kill());
-    });
+    const animations = Array.from(revealTargets, (element) => gsap.fromTo(
+      element,
+      { autoAlpha: 0, y: 32 },
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.8,
+        ease: 'power3.out',
+        scrollTrigger: {
+          trigger: element,
+          start: 'top 86%',
+          once: true,
+        },
+      }
+    ));
 
     ScrollTrigger.refresh();
 
     return () => {
-      cleanups.forEach((cleanup) => cleanup());
-      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
+      animations.forEach((animation) => animation.kill());
       gsap.ticker.remove(ticker);
       lenis.destroy();
     };
-  }, []);
+  }, [activeTab]);
 
   return null;
 };
