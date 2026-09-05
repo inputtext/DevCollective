@@ -59,18 +59,18 @@ function emptyProfile(userId: string, clerkUser: any, pending: any = {}) {
     name: pending.name || name,
     email,
     role: pending.role || 'student',
-    college: pending.college || 'Institute of Technology',
-    branch: pending.branch || 'Computer Science',
-    academic_year: pending.academicYear || '1st Year',
-    avatar: clerkUser.imageUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(email || userId)}`,
-    bio: `Welcome to DevCollective! Building software as a ${pending.role || 'student'}.`,
-    rep: 100,
+    college: pending.college || '',
+    branch: pending.branch || '',
+    academic_year: pending.academicYear || '',
+    avatar: clerkUser.imageUrl || '',
+    bio: '',
+    rep: 0,
     level: 1,
-    streak_days: 1,
+    streak_days: 0,
     github_url: '',
     linkedin_url: '',
-    skills: ['JavaScript', 'HTML/CSS'],
-    selected_domains: ['Full Stack Development'],
+    skills: [],
+    selected_domains: [],
     auth_provider: 'clerk',
     created_at: new Date().toISOString(),
   };
@@ -112,6 +112,25 @@ async function getOrCreateProfile(userId: string, pending: any = {}) {
   return data;
 }
 
+function toMentorProfile(row: any) {
+  return {
+    id: row.clerk_user_id,
+    name: row.name,
+    title: row.role === 'faculty' ? 'Faculty Mentor' : 'Mentor',
+    college: row.college || '',
+    avatar: row.avatar || '',
+    roleType: row.role === 'faculty' ? 'FACULTY' : 'SENIOR',
+    skills: Array.isArray(row.skills) ? row.skills : [],
+    level: Number(row.level) || 1,
+    rep: Number(row.rep) || 0,
+    bio: row.bio || '',
+    availability: 'Not specified',
+    isBusy: false,
+    rating: 0,
+    studentsHelped: 0,
+  };
+}
+
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 app.get('/api/auth/info', (req, res) => res.json({
@@ -141,6 +160,18 @@ app.post('/api/auth/sync', requireAuth, async (req, res) => {
   } catch (err: any) {
     console.error('Error syncing Clerk profile to Supabase:', err);
     return res.status(500).json({ error: err.message || 'Could not sync your profile.' });
+  }
+});
+
+app.get('/api/mentors', requireAuth, async (_req, res) => {
+  try {
+    if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+    const { data, error } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,email,role,college,avatar,bio,rep,level,skills').eq('role', 'mentor').order('name', { ascending: true });
+    if (error) throw error;
+    return res.json({ mentors: (data || []).map(toMentorProfile) });
+  } catch (err: any) {
+    console.error('Error loading mentors from Supabase:', err);
+    return res.status(500).json({ error: err.message || 'Could not load mentors.' });
   }
 });
 
