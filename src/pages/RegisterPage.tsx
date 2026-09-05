@@ -17,6 +17,15 @@ export const RegisterPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const registrationDetails = () => ({
+    name: fullName,
+    email,
+    role,
+    college: collegeName,
+    branch,
+    academicYear,
+  });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -35,13 +44,8 @@ export const RegisterPage: React.FC = () => {
 
     try {
       await registerUser({
-        name: fullName,
-        email,
+        ...registrationDetails(),
         password,
-        role,
-        college: collegeName,
-        branch,
-        academicYear,
       });
     } catch (err: any) {
       setError(err.message || 'Registration failed.');
@@ -226,14 +230,14 @@ export const RegisterPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <button
                 type="button"
-                onClick={() => triggerOAuthLogin('google')}
+                onClick={() => triggerOAuthLogin('google', registrationDetails())}
                 className="flex items-center justify-center gap-2.5 h-12 border-2 border-outline-variant rounded-xl hover:bg-surface-container font-label-mono text-xs uppercase font-bold text-white transition-all active:scale-95"
               >
                 <span>Google</span>
               </button>
               <button
                 type="button"
-                onClick={() => triggerOAuthLogin('github')}
+                onClick={() => triggerOAuthLogin('github', registrationDetails())}
                 className="flex items-center justify-center gap-2.5 h-12 border-2 border-outline-variant rounded-xl hover:bg-surface-container font-label-mono text-xs uppercase font-bold text-white transition-all active:scale-95"
               >
                 <span>GitHub</span>
