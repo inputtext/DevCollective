@@ -183,5 +183,57 @@
     "createdAt": "2026-08-26T06:43:51.078Z",
     "githubUrl": "https://github.com/piyush-ingle-dev",
     "linkedinUrl": "https://www.linkedin.com/in/piyush-ingle-76691b385/"
+  },
+  {
+    "id": "user_1787741209941_pa77w",
+    "name": "pk",
+    "email": "sabipo6505@ehwit.com",
+    "passwordHash": "$2b$10$skUkyLaxk6pac6anX8HUNuVcHU8fPh8GEifDqknIbMvD3nfC5h6ly",
+    "role": "mentor",
+    "college": "Institute of Technology",
+    "branch": "Computer Science",
+    "academicYear": "1st Year",
+    "avatar": "https://api.dicebear.com/7.x/identicon/svg?seed=sabipo6505%40ehwit.com",
+    "bio": "Welcome to DevCollective! Building software as a mentor.",
+    "rep": 100,
+    "level": 1,
+    "streakDays": 1,
+    "skills": [
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "selectedDomains": [
+      "Full Stack Development"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-26T10:46:49.943Z",
+    "resetCodeHash": "$2b$10$Ql5Y8o5r40uz8agGeQ8SFORxuL8qLliN66H/sxYLg2bZGqt9rItAa",
+    "resetCodeExpiresAt": "2026-08-26T11:01:29.042Z"
+  },
+  {
+    "id": "user_1787742972236_vz4rd",
+    "name": "HOE",
+    "email": "senexe8530@ebflyai.com",
+    "passwordHash": "$2b$10$psQRDxVxml6NFqEX3F6WFutHjYwMG7lYxduLoDY.altygwezkZlpK",
+    "role": "mentor",
+    "college": "Institute of Technology",
+    "branch": "Computer Science",
+    "academicYear": "1st Year",
+    "avatar": "https://api.dicebear.com/7.x/identicon/svg?seed=senexe8530%40ebflyai.com",
+    "bio": "Welcome to DevCollective! Building software as a mentor.",
+    "rep": 100,
+    "level": 1,
+    "streakDays": 1,
+    "skills": [
+      "JavaScript",
+      "HTML/CSS"
+    ],
+    "selectedDomains": [
+      "Full Stack Development"
+    ],
+    "authProvider": "email",
+    "createdAt": "2026-08-26T11:16:12.236Z",
+    "resetCodeHash": "$2b$10$YMk5hzv/GjGCKrsXitre1.rWkCJu7IGf3QpZa9w/WnxGnN78vcBfS",
+    "resetCodeExpiresAt": "2026-08-26T11:32:53.460Z"
   }
 ]

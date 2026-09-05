@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
-import { UserProfile, UserRole, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
-import { initialUserProfile, initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
+import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
+import { initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
 
 export type PageTab =
   | 'landing'
@@ -38,7 +36,6 @@ interface AuthContextType {
   loginWithEmail: (email: string, password?: string) => Promise<void>;
   registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>;
   logout: () => Promise<void>;
-
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>;
   toggleTaskCompletion: (taskId: string) => Promise<void>;
   addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => void;
@@ -60,132 +57,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Helper function to map Supabase Auth User object to default UserProfile structure
-const mapSupabaseUserToProfile = (supabaseUser: User): UserProfile => {
-  const metadata = supabaseUser.user_metadata || {};
-  return {
-    id: supabaseUser.id,
-    name: metadata.name || supabaseUser.email?.split('@')[0] || 'Developer',
-    email: supabaseUser.email || '',
-    role: (metadata.role as UserRole) || 'student',
-    college: metadata.college || 'Institute of Technology',
-    branch: metadata.branch || 'Computer Science',
-    academicYear: metadata.academicYear || metadata.academic_year || 'Third Year',
-    avatar: metadata.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    bio: 'Student developer building on DevCollective.',
-    rep: 0,
-    level: 0,
-    streakDays: 0,
-    hasCompletedOnboarding: false,
-    githubUrl: 'https://github.com/kanojiyapk',
-    linkedinUrl: 'https://linkedin.com/in/student-developer',
-    skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
-    selectedDomains: ['Software Dev', 'AI/ML'],
-    authProvider: 'email',
-    createdAt: supabaseUser.created_at || new Date().toISOString(),
-  };
-};
-
-// Fetch user profile from public.profiles database table
-const fetchProfileFromSupabase = async (userId: string): Promise<UserProfile | null> => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error || !data) {
-      return null;
-    }
-
-    return {
-      id: data.user_id,
-      name: data.name || 'Developer',
-      email: data.email || '',
-      role: (data.role as UserRole) || 'student',
-      college: data.college || 'Institute of Technology',
-      branch: data.branch || 'Computer Science',
-      academicYear: data.academic_year || 'Third Year',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      bio: 'Student developer building on DevCollective.',
-      rep: data.rep ?? 0,
-      level: data.level ?? 0,
-      streakDays: data.streak_days ?? 0,
-      hasCompletedOnboarding: data.has_completed_onboarding ?? false,
-      githubUrl: 'https://github.com/kanojiyapk',
-      linkedinUrl: 'https://linkedin.com/in/student-developer',
-      skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
-      selectedDomains: ['Software Dev', 'AI/ML'],
-      authProvider: 'email',
-      createdAt: data.created_at || new Date().toISOString(),
-    };
-  } catch (err) {
-    console.error('Error fetching profile from Supabase:', err);
-    return null;
-  }
-};
-
-// Fetch or initialize user profile from DB or fallback
-const getOrFetchProfile = async (supabaseUser: User): Promise<UserProfile> => {
-  const existingProfile = await fetchProfileFromSupabase(supabaseUser.id);
-  if (existingProfile) {
-    return existingProfile;
-  }
-
-  // Fallback profile creation if trigger hasn't completed or table direct upsert is enabled
-  const metadata = supabaseUser.user_metadata || {};
-  const newProfileData = {
-    user_id: supabaseUser.id,
-    name: metadata.name || supabaseUser.email?.split('@')[0] || 'Developer',
-    email: supabaseUser.email || '',
-    role: metadata.role || 'student',
-    college: metadata.college || 'Institute of Technology',
-    branch: metadata.branch || 'Computer Science',
-    academic_year: metadata.academicYear || metadata.academic_year || 'Third Year',
-    rep: 0,
-    level: 0,
-    streak_days: 0,
-    has_completed_onboarding: false,
-  };
-
-  try {
-    const { data } = await supabase
-      .from('profiles')
-      .upsert(newProfileData, { onConflict: 'user_id' })
-      .select()
-      .maybeSingle();
-
-    if (data) {
-      return {
-        id: data.user_id,
-        name: data.name,
-        email: data.email,
-        role: data.role as UserRole,
-        college: data.college,
-        branch: data.branch,
-        academicYear: data.academic_year,
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        bio: 'Student developer building on DevCollective.',
-        rep: data.rep ?? 0,
-        level: data.level ?? 0,
-        streakDays: data.streak_days ?? 0,
-        hasCompletedOnboarding: data.has_completed_onboarding ?? false,
-        githubUrl: 'https://github.com/kanojiyapk',
-        linkedinUrl: 'https://linkedin.com/in/student-developer',
-        skills: ['React', 'TypeScript', 'Node.js', 'Python', 'AI/ML'],
-        selectedDomains: ['Software Dev', 'AI/ML'],
-        authProvider: 'email',
-        createdAt: data.created_at || new Date().toISOString(),
-      };
-    }
-  } catch (err) {
-    console.warn('Profile upsert fallback warning:', err);
-  }
-
-  return mapSupabaseUserToProfile(supabaseUser);
-};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -223,8 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   } | null>(null);
 
   // Check persistent session token on app initialization.
-  // Supports Supabase Auth sessions, native server sessions (/api/auth/me),
-  // and landing back here after a real Google/GitHub OAuth redirect.
+  // Also handles landing back here after a real Google/GitHub OAuth redirect, which
+  // arrives as ?token=...&newUser=1 (success) or ?authError=... (failure) in the URL.
   useEffect(() => {
     const checkSession = async () => {
       const params = new URLSearchParams(window.location.search);
@@ -237,51 +108,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.history.replaceState({}, '', window.location.pathname);
       }
 
+      const token = redirectToken || localStorage.getItem('devcollective_token');
+
       if (redirectToken) {
         localStorage.setItem('devcollective_token', redirectToken);
         window.history.replaceState({}, '', window.location.pathname);
       }
 
+      if (!token) {
+        setLoadingAuth(false);
+        return;
+      }
+
       try {
-        // 1. Check Supabase session first
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Error fetching Supabase session:', error);
-        }
+        const res = await fetch('/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        if (session?.user) {
-          const profile = await getOrFetchProfile(session.user);
-          setUser(profile);
-          setLoadingAuth(false);
-          return;
-        }
-
-        // 2. Check local/OAuth token against backend server
-        const token = redirectToken || localStorage.getItem('devcollective_token');
-        if (token) {
-          const res = await fetch('/api/auth/me', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (data.user) {
-              setUser(data.user);
-              if (redirectToken) {
-                setActiveTab('dashboard');
-                if (isNewUser) setShowResumePrompt(true);
-              }
-            } else {
-              localStorage.removeItem('devcollective_token');
-              setUser(null);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
+            if (redirectToken) {
+              setActiveTab('dashboard');
+              if (isNewUser) setShowResumePrompt(true);
             }
           } else {
             localStorage.removeItem('devcollective_token');
             setUser(null);
           }
         } else {
+          localStorage.removeItem('devcollective_token');
           setUser(null);
         }
       } catch (err) {
@@ -293,18 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        const profile = await getOrFetchProfile(session.user);
-        setUser(profile);
-      }
-      setLoadingAuth(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
@@ -329,69 +176,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowOAuthModal(true);
   };
 
-  // 2. Login using Supabase Auth
+  // 1. Native Email/Password Login
   const loginWithEmail = async (email: string, password?: string) => {
-    if (!password) {
-      throw new Error('Password is required for login.');
+    if (!email || !password) {
+      throw new Error('Please enter both email and password.');
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      throw error;
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Login failed.');
     }
 
-    if (data.user) {
-      const profile = await getOrFetchProfile(data.user);
-      setUser(profile);
-      setActiveTab('dashboard');
+    if (data.token) {
+      localStorage.setItem('devcollective_token', data.token);
     }
+    setUser(data.user);
+    setActiveTab('dashboard');
   };
 
-  // 3. Registration using Supabase Auth
+  // 2. Native User Registration
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => {
-    if (!details.email || !details.password) {
-      throw new Error('Email and password are required for registration.');
+    if (!details.email || !details.password || !details.name) {
+      throw new Error('Name, email, and password are required for registration.');
     }
 
-    const { data, error } = await supabase.auth.signUp({
-      email: details.email,
-      password: details.password,
-      options: {
-        data: {
-          name: details.name,
-          role: details.role || 'student',
-          college: details.college,
-          branch: details.branch,
-          academicYear: details.academicYear,
-        },
-        // Redirect after email confirmation to the app origin
-        emailRedirectTo: window.location.origin,
-      },
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: details.name,
+        email: details.email,
+        password: details.password,
+        role: details.role || 'student',
+        college: details.college,
+        branch: details.branch,
+        academicYear: details.academicYear,
+      }),
     });
 
-    if (error) {
-      throw error;
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Registration failed.');
     }
 
-    if (data.user && data.session) {
-      const profile = await getOrFetchProfile(data.user);
-      setUser(profile);
-      setActiveTab('profile-setup');
-      setShowResumePrompt(true);
-    } else if (data.user && !data.session) {
-      // Email confirmation required — resolve normally so the caller
-      // can treat this as a success (not an error).
-      return;
-    } else {
-      throw new Error('Registration failed.');
+    if (data.token) {
+      localStorage.setItem('devcollective_token', data.token);
     }
+    setUser(data.user);
+    setActiveTab('profile-setup');
+    setShowResumePrompt(true);
   };
 
-  // 4. Forgot Password & Reset via DevCollective Email SMTP
+  // 3. Forgot Password & Reset via DevCollective Email SMTP
   const requestPasswordReset = async (email: string) => {
     const res = await fetch('/api/auth/forgot-password', {
       method: 'POST',
@@ -416,7 +258,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 5. Logout
+  // 4. Logout
   const logout = async () => {
     const token = localStorage.getItem('devcollective_token');
     if (token) {
@@ -431,19 +273,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('devcollective_token');
     }
 
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.warn('Supabase signout warning:', error);
-      }
-    } catch (err) {
-      console.warn('Supabase signout exception:', err);
-    }
-
     setUser(null);
     setActiveTab('landing');
   };
 
+  // 5. Update Profile
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
 
@@ -451,88 +285,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newProfile = { ...user, ...updated };
     setUser(newProfile);
 
-    // 1. Sync to Supabase profiles table
-    try {
-      const supabaseUpdates: Record<string, any> = {
-        updated_at: new Date().toISOString(),
-      };
-      if (updated.name !== undefined) supabaseUpdates.name = updated.name;
-      if (updated.college !== undefined) supabaseUpdates.college = updated.college;
-      if (updated.branch !== undefined) supabaseUpdates.branch = updated.branch;
-      if (updated.academicYear !== undefined) supabaseUpdates.academic_year = updated.academicYear;
-      if (updated.avatar !== undefined) supabaseUpdates.avatar = updated.avatar;
-      if (updated.bio !== undefined) supabaseUpdates.bio = updated.bio;
-      if (updated.githubUrl !== undefined) supabaseUpdates.github_url = updated.githubUrl;
-      if (updated.linkedinUrl !== undefined) supabaseUpdates.linkedin_url = updated.linkedinUrl;
-      if (updated.skills !== undefined) supabaseUpdates.skills = updated.skills;
-      if (updated.selectedDomains !== undefined) supabaseUpdates.selected_domains = updated.selectedDomains;
-
-      await supabase
-        .from('profiles')
-        .update(supabaseUpdates)
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.warn('Supabase profile update warning:', err);
-    }
-
-    // 2. Sync to local backend server if token exists
     const token = localStorage.getItem('devcollective_token');
-    if (token) {
-      try {
-        const res = await fetch('/api/users/profile', {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updated),
-        });
+    if (!token) return;
 
-        const data = await res.json();
-        if (res.ok && data.user) {
-          setUser((prev) => (prev ? { ...prev, ...data.user } : data.user));
-        } else {
-          console.error('Failed to persist profile update to server:', data.error);
-        }
-      } catch (err) {
-        console.error('Error saving profile to server:', err);
+    try {
+      const res = await fetch('/api/users/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updated),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.user) {
+        setUser(data.user);
+      } else {
+        console.error('Failed to persist profile update to server:', data.error);
       }
+    } catch (err) {
+      console.error('Error saving profile to server:', err);
     }
   };
 
   const completeOnboarding = async () => {
     if (!user) return;
-    try {
-      await supabase
-        .from('profiles')
-        .update({ has_completed_onboarding: true, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id);
-    } catch (err) {
-      console.warn('Complete onboarding DB update warning:', err);
-    }
-    setUser((prev) => (prev ? { ...prev, hasCompletedOnboarding: true } : null));
-  };
-
-  const awardTaskRep = async (taskId: string, repAmount: number = 50): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      const { data: newRep, error } = await supabase.rpc('award_rep', {
-        p_task_id: taskId,
-      });
-
-      if (!error && typeof newRep === 'number') {
-        const repIncreased = newRep > user.rep;
-        setUser((u) => (u ? { ...u, rep: newRep } : null));
-        return repIncreased;
-      }
-    } catch (err) {
-      console.warn('RPC award_rep execution warning:', err);
-    }
-
-    // Fallback if RPC call not initialized yet in DB
-    setUser((u) => (u ? { ...u, rep: u.rep + repAmount } : null));
-    return true;
+    await updateProfile({ hasCompletedOnboarding: true });
   };
 
   const toggleTaskCompletion = async (taskId: string) => {
@@ -545,13 +324,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       prev.map((t) => (t.id === taskId ? { ...t, completed: isNowCompleted } : t))
     );
 
-    if (isNowCompleted && user) {
-      const awarded = await awardTaskRep(taskId, task.repReward || 50);
-      if (awarded) {
-        setRepAnimation({ amount: task.repReward || 50, id: Date.now() });
+    if (user) {
+      const repChange = task.repReward || 50;
+      const newRep = isNowCompleted ? user.rep + repChange : Math.max(0, user.rep - repChange);
+      if (isNowCompleted) {
+        setRepAnimation({ amount: repChange, id: Date.now() });
       }
-    } else if (!isNowCompleted && user) {
-      setUser((u) => (u ? { ...u, rep: Math.max(0, u.rep - task.repReward) } : null));
+      await updateProfile({ rep: newRep });
     }
   };
 
@@ -567,7 +346,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       likedByMe: true,
     };
     setPosts([newPost, ...posts]);
-    setUser((u) => (u ? { ...u, rep: u.rep + 25 } : null));
+    const updatedRep = user.rep + 25;
+    updateProfile({ rep: updatedRep });
   };
 
   const toggleLikePost = (postId: string) => {
@@ -612,14 +392,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toggleTaskCompletion,
         addPost,
         toggleLikePost,
-
         completeOnboarding,
         repAnimation,
         requestPasswordReset,
         resetPassword,
         authRedirectError,
         clearAuthRedirectError,
-
         oauthInfo,
       }}
     >
