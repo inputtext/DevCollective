@@ -4,7 +4,6 @@
  */
 
 import React, { lazy, Suspense, useEffect } from 'react';
-
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
@@ -12,7 +11,6 @@ import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { ChatWidget } from './components/ChatWidget';
 import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 
-// Keep page code out of the initial bundle. Each page is fetched only when it is opened.
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const RegisterPage = lazy(() => import('./pages/RegisterPage').then((module) => ({ default: module.RegisterPage })));
@@ -28,33 +26,21 @@ const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ def
 
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
-    <div className="flex items-center gap-3 text-on-surface-variant">
-      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <span className="font-label-mono text-xs uppercase tracking-wider">Loading module...</span>
+    <div className="flex items-center gap-3 border-2 border-outline-variant bg-surface px-5 py-4 shadow-[4px_4px_0_var(--outline-variant)]">
+      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <span className="font-label-mono text-[10px] uppercase tracking-wider">Loading module...</span>
     </div>
   </div>
 );
 
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
-
-  // Navigate to dashboard when auth transitions from unauthenticated → authenticated on initial load.
-  // Never auto-redirect from 'login' or 'register', allowing users to freely access login,
-  // registration, and the Forgot Password -> Verification Code -> Reset Password flow even if
-  // an existing session was previously stored.
   const wasAuthenticatedRef = React.useRef(false);
 
   useEffect(() => {
     if (loadingAuth) return;
-
     const isAuthenticated = Boolean(user);
-
-    if (!wasAuthenticatedRef.current && isAuthenticated) {
-      if (activeTab === 'landing') {
-        setActiveTab('dashboard');
-      }
-    }
-
+    if (!wasAuthenticatedRef.current && isAuthenticated && activeTab === 'landing') setActiveTab('dashboard');
     wasAuthenticatedRef.current = isAuthenticated;
   }, [user, loadingAuth, activeTab, setActiveTab]);
 
@@ -63,33 +49,23 @@ const MainContent: React.FC = () => {
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
 
-  // Public pages render without waiting for Clerk. Protected pages still wait for auth hydration.
   if (loadingAuth && needsAuthHydration) {
     return (
       <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 space-y-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-label-mono text-sm text-on-surface-variant">
-          Verifying DevCollective session...
-        </p>
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="font-label-mono text-sm text-on-surface-variant">Verifying DevCollective session...</p>
       </div>
     );
   }
 
   if (isProtected && !user) {
     return (
-      <div className="min-h-screen bg-background text-on-background">
+      <div className="dc-main min-h-screen bg-background text-on-background">
         <Navbar />
         <div className="max-w-md mx-auto mt-12 p-6 bg-surface-container border-2 border-outline-variant rounded-2xl text-center space-y-4">
           <h2 className="font-headline-md text-2xl font-bold text-white">Authentication Required</h2>
-          <p className="text-sm text-on-surface-variant">
-            Please log in with your email and password to access this page.
-          </p>
-          <button
-            onClick={() => setActiveTab('login')}
-            className="w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition-all"
-          >
-            Go to Login
-          </button>
+          <p className="text-sm text-on-surface-variant">Please log in with your email and password to access this page.</p>
+          <button onClick={() => setActiveTab('login')} className="w-full py-3 bg-primary text-on-primary font-bold border-2 border-outline-variant shadow-[4px_4px_0_var(--outline-variant)]">Go to Login</button>
         </div>
       </div>
     );
@@ -97,41 +73,26 @@ const MainContent: React.FC = () => {
 
   if (activeTab === 'admin' && user?.role !== 'admin') {
     return (
-      <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
+      <div className="dc-main min-h-screen bg-background text-on-background flex flex-col md:flex-row">
         <Sidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          <Navbar />
-          <main className="flex-1 p-6 md:p-10 min-w-0">
-            <div className="max-w-xl mx-auto p-8 bg-surface-container border-2 border-error/40 rounded-2xl text-center space-y-4">
-              <div className="w-16 h-16 bg-error/10 border-2 border-error/40 rounded-full flex items-center justify-center mx-auto text-error font-bold text-xl">
-                403
-              </div>
-              <h2 className="font-headline-md text-2xl font-bold text-white">Access Denied</h2>
-              <p className="text-sm text-on-surface-variant">
-                The Admin portal is restricted to users with the <span className="font-bold text-error uppercase">Admin</span> role. Your current role is <span className="font-bold text-primary uppercase">{user?.role}</span>.
-              </p>
-              <button
-                onClick={() => setActiveTab('dashboard')}
-                className="px-6 py-3 bg-surface-container-high border border-outline-variant hover:border-primary text-white font-bold rounded-xl transition-all"
-              >
-                Return to Dashboard
-              </button>
-            </div>
-          </main>
-        </div>
+        <div className="flex-1 flex flex-col min-w-0"><Navbar /><main className="flex-1 p-6 md:p-10 min-w-0">
+          <div className="max-w-xl mx-auto p-8 bg-surface-container border-2 border-error/40 rounded-2xl text-center space-y-4">
+            <div className="w-16 h-16 bg-error/10 border-2 border-error/40 rounded-full flex items-center justify-center mx-auto text-error font-bold text-xl">403</div>
+            <h2 className="font-headline-md text-2xl font-bold text-white">Access Denied</h2>
+            <p className="text-sm text-on-surface-variant">The Admin portal is restricted to users with the <span className="font-bold text-error uppercase">Admin</span> role. Your current role is <span className="font-bold text-primary uppercase">{user?.role}</span>.</p>
+            <button onClick={() => setActiveTab('dashboard')} className="px-6 py-3 bg-surface-container-high border border-outline-variant hover:border-primary text-white font-bold rounded-xl transition-all">Return to Dashboard</button>
+          </div>
+        </main></div>
       </div>
     );
   }
 
   const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(activeTab);
-
   return (
-    <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
+    <div className="dc-main min-h-screen bg-background text-on-background flex flex-col md:flex-row">
       {!isFullLayout && <Sidebar />}
-
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-
         <main className={`flex-1 min-w-0 ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}>
           <Suspense fallback={<PageLoadingFallback />}>
             {activeTab === 'landing' && <LandingPage />}
@@ -149,7 +110,6 @@ const MainContent: React.FC = () => {
           </Suspense>
         </main>
       </div>
-
       <OAuthGuideModal />
       {user && <ChatWidget />}
       {user && <ResumeUploadPromptModal />}
@@ -158,9 +118,5 @@ const MainContent: React.FC = () => {
 };
 
 export default function App() {
-  return (
-    <AuthProvider>
-      <MainContent />
-    </AuthProvider>
-  );
+  return <AuthProvider><MainContent /></AuthProvider>;
 }
