@@ -105,14 +105,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       clerk.openSignUp({
         initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined,
         unsafeMetadata: pending,
-        signUpFallbackRedirectUrl: '/',
         signInFallbackRedirectUrl: '/',
       });
       return;
     }
 
     clerk.openSignIn({
-      signInFallbackRedirectUrl: '/',
       signUpFallbackRedirectUrl: '/',
     });
   };
@@ -121,7 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!email) throw new Error('Please enter your email address.');
     clerk.openSignIn({
       initialValues: { emailAddress: email },
-      signInFallbackRedirectUrl: '/',
       signUpFallbackRedirectUrl: '/',
     });
   };
@@ -133,13 +130,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     clerk.openSignUp({
       initialValues: { emailAddress: details.email },
       unsafeMetadata: pending,
-      signUpFallbackRedirectUrl: '/',
       signInFallbackRedirectUrl: '/',
     });
   };
 
-  const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signInFallbackRedirectUrl: '/', signUpFallbackRedirectUrl: '/' }); };
-  const resetPassword = async () => { clerk.openSignIn({ signInFallbackRedirectUrl: '/', signUpFallbackRedirectUrl: '/' }); };
+  const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
+  const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setActiveTab('landing'); };
 
   const updateProfile = async (updated: Partial<UserProfile>) => {
