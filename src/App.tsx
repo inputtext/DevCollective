@@ -41,7 +41,7 @@ const MainContent: React.FC = () => {
   useEffect(() => {
     if (loadingAuth) return;
     const isAuthenticated = Boolean(user);
-    if (!wasAuthenticatedRef.current && isAuthenticated && activeTab === 'landing') setActiveTab('dashboard');
+    if (!wasAuthenticatedRef.current && isAuthenticated && activeTab === 'landing') setActiveTab('profile');
     wasAuthenticatedRef.current = isAuthenticated;
   }, [user, loadingAuth, activeTab, setActiveTab]);
 
