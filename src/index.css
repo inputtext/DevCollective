@@ -25,6 +25,11 @@
   --color-error: var(--error);
   --color-error-container: var(--error-container);
   --color-on-error: var(--on-error);
+  --color-dc-blue: var(--dc-blue);
+  --color-dc-lavender: var(--dc-lavender);
+  --color-dc-mint: var(--dc-mint);
+  --color-dc-yellow: var(--dc-yellow);
+  --color-dc-pink: var(--dc-pink);
   --font-display-2xl: "Inter", sans-serif;
   --font-headline-lg: "Inter", sans-serif;
   --font-headline-md: "Inter", sans-serif;
@@ -130,6 +135,11 @@ html.dark {
   opacity: 0.07;
   background-image: linear-gradient(rgba(23,23,23,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(23,23,23,0.18) 1px, transparent 1px);
   background-size: 32px 32px;
+}
+
+html.dark .dc-app-shell::before,
+html.dark .dc-public::before {
+  background-image: linear-gradient(rgba(255,249,240,0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,249,240,0.12) 1px, transparent 1px);
 }
 
 .dc-display {
