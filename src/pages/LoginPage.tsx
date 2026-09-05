@@ -51,7 +51,6 @@ export const LoginPage: React.FC = () => {
 
               <SignIn
                 routing="virtual"
-                signUpUrl="/"
                 fallbackRedirectUrl="/"
                 appearance={{
                   variables: {
@@ -72,6 +71,7 @@ export const LoginPage: React.FC = () => {
                     formFieldLabel: 'font-mono uppercase tracking-[0.14em] text-[10px]',
                     formFieldInput: 'border-2 border-[#171717] rounded-none bg-[#FFF9F0] min-h-12 shadow-none',
                     formButtonPrimary: 'border-2 border-[#171717] rounded-none bg-[#B9D7FF] text-[#171717] shadow-[5px_5px_0_#171717] uppercase font-black',
+                    footerAction: 'hidden',
                     footerActionLink: 'text-[#171717] underline font-bold',
                     socialButtonsBlockButton: 'border-2 border-[#171717] rounded-none bg-[#FFF9F0] shadow-none uppercase font-mono text-[10px]',
                     dividerLine: 'bg-[#171717]',
