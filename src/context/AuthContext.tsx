@@ -82,7 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const result = await syncProfile();
         if (!cancelled && result?.user) {
           setUser(result.user);
-          setActiveTab((current) => result.hadPendingRegistration ? 'profile-setup' : (current === 'landing' || current === 'login' || current === 'register' ? 'dashboard' : current));
+          setActiveTab((current) => result.hadPendingRegistration ? 'profile-setup' : (current === 'landing' || current === 'login' || current === 'register' ? 'profile' : current));
         }
       } catch (err: any) {
         console.error('Could not load DevCollective profile:', err);
