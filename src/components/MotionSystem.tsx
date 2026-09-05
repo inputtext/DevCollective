@@ -6,7 +6,7 @@ import Lenis from 'lenis';
 
 gsap.registerPlugin(ScrollTrigger);
 
-export const MotionSystem: React.FC = () => {
+export const MotionSystem = () => {
   const { activeTab } = useAuth();
 
   useEffect(() => {
