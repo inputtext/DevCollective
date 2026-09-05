@@ -1,458 +1,50 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { ThreeProcessor } from '../components/ThreeProcessor';
-import {
-  Users,
-  Brain,
-  Network,
-  GitBranch,
-  Trophy,
-  Terminal,
-  Star,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle,
-} from 'lucide-react';
+import { Marquee } from '../components/Marquee';
+import { ScrollReveal } from '../components/ScrollReveal';
+import { ArrowDownRight, ArrowRight, GitBranch, Layers3, Terminal, Trophy, UserCheck, Users } from 'lucide-react';
+
+const modules = [
+  { number: '01', title: 'COMMUNITY', description: 'Find builders, share progress, exchange feedback, and build with people who are on the same climb.', icon: Users, tone: 'dc-pastel-lavender', action: 'community' as const },
+  { number: '02', title: 'ROADMAPS', description: 'Turn a vague career goal into a practical sequence of skills, projects, milestones, and proof of work.', icon: GitBranch, tone: 'dc-pastel-mint', action: 'roadmap' as const },
+  { number: '03', title: 'MENTORS', description: 'Learn from experienced developers and get perspective that goes beyond tutorials and course checklists.', icon: UserCheck, tone: 'dc-pastel-yellow', action: 'mentors' as const },
+  { number: '04', title: 'REPUTATION', description: 'Make your work visible. Contributions, consistency, mentoring, and projects all become part of your developer identity.', icon: Trophy, tone: 'dc-pastel-lavender', action: 'leaderboard' as const },
+];
+
+const marqueeItems = ['BUILD IN PUBLIC', 'LEARN BY SHIPPING', 'FIND YOUR PEOPLE', 'MENTORSHIP', 'ROADMAPS', 'REPUTATION', 'PROJECTS', 'C·FLOW READY'];
 
 export const LandingPage: React.FC = () => {
   const { setActiveTab } = useAuth();
-
   return (
-    <div className="bg-background text-on-background min-h-screen selection:bg-primary selection:text-on-primary">
-      {/* HERO SECTION */}
-      <section className="relative pt-12 pb-24 overflow-hidden">
-        {/* Ambient Glows */}
-        <div className="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-primary/20 blur-[120px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-0 left-[-200px] w-[400px] h-[400px] bg-secondary/15 blur-[120px] rounded-full pointer-events-none" />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
-          <div className="space-y-8">
-            <div className="inline-block px-3.5 py-1 border-2 border-primary text-primary font-label-mono text-xs uppercase tracking-widest rounded-md">
-              EST. 2024 // VERSION 1.0 MVP
-            </div>
-
-            <h1 className="font-display-2xl text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-white tracking-tight">
-              Where College Developers <span className="text-primary">Build Their Future</span> Together.
-            </h1>
-
-            <p className="font-body-lg text-lg text-on-surface-variant max-w-lg leading-relaxed">
-              Connecting student engineers with elite mentors, global hackathons, and a gamified reputation ecosystem. Forge your career architecture before you graduate.
-            </p>
-
-            <div className="flex flex-wrap gap-4 pt-2">
-              <button
-                onClick={() => setActiveTab('login')}
-                className="px-8 py-4 bg-gradient-to-r from-primary-container to-secondary-container text-white font-bold rounded-xl shadow-[0_6px_0_0_#1d00a5] hover:shadow-[0_2px_0_0_#1d00a5] hover:translate-y-1 transition-all active:scale-95"
-              >
-                Login Now
-              </button>
-              <button
-                onClick={() => setActiveTab('register')}
-                className="px-8 py-4 bg-surface-container border-2 border-outline-variant text-on-surface font-bold rounded-xl hover:bg-surface-container-highest transition-all active:scale-95"
-              >
-                Register
-              </button>
-            </div>
-          </div>
-
-          {/* 3D Interactive Canvas & Overlays */}
-          <div className="relative h-[480px] sm:h-[550px] w-full">
-            <div className="absolute inset-0 bg-surface-container-lowest/60 rounded-3xl border-2 border-outline-variant overflow-hidden shadow-2xl">
-              <ThreeProcessor />
-
-              {/* Floating Glass Badges */}
-              <div className="absolute top-6 left-6 p-4 bg-surface-container/90 border-2 border-outline-variant rounded-xl backdrop-blur-md animate-bounce pointer-events-none" style={{ animationDuration: '4s' }}>
-                <div className="font-label-mono text-[10px] text-primary uppercase">Reputation Points</div>
-                <div className="font-headline-md text-xl font-bold text-white">2,450 REP</div>
-              </div>
-
-              <div className="absolute top-1/2 -right-2 transform -translate-y-1/2 p-4 bg-surface-container/90 border-2 border-primary rounded-xl backdrop-blur-md pointer-events-none">
-                <div className="font-label-mono text-[10px] text-tertiary uppercase">Active Streak</div>
-                <div className="font-headline-md text-xl font-bold text-white">42 DAYS</div>
-              </div>
-
-              <div className="absolute bottom-8 left-8 flex flex-wrap gap-3 pointer-events-none">
-                <div className="px-4 py-2 bg-surface-container/90 border-2 border-outline-variant rounded-full backdrop-blur-md flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-secondary" />
-                  <span className="font-label-mono text-xs uppercase text-white">Level 18</span>
-                </div>
-                <div className="px-4 py-2 bg-surface-container/90 border-2 border-outline-variant rounded-full backdrop-blur-md flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-tertiary" />
-                  <span className="font-label-mono text-xs uppercase text-white">Mentor Verified</span>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="dc-public min-h-screen overflow-hidden">
+      <section className="relative min-h-[calc(100vh-80px)] border-b-2 border-outline-variant">
+        <div className="absolute inset-0 pointer-events-none"><div className="absolute -top-32 -right-32 w-[520px] h-[520px] rounded-full bg-primary-container/35 blur-3xl" /><div className="absolute bottom-0 -left-40 w-[420px] h-[420px] rounded-full bg-secondary-container/25 blur-3xl" /></div>
+        <div className="relative max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 pt-10 sm:pt-16 lg:pt-20 pb-10">
+          <div className="flex items-center justify-between gap-4 border-b-2 border-outline-variant pb-5"><span className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.18em]">DC / 01 — Developer Collective</span><span className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] hidden sm:block">Build. Scale. Lead.</span></div>
+          <ScrollReveal><div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.35fr_0.65fr] gap-10 lg:gap-16 items-end">
+            <div><p className="dc-mono text-xs sm:text-sm uppercase tracking-[0.22em] text-primary mb-6">A developer ecosystem for college builders.</p><h1 className="dc-display text-[clamp(4.4rem,11vw,10.5rem)] max-w-6xl text-on-background">Build your<br /><span className="text-primary">developer</span><br />identity.</h1></div>
+            <div className="lg:pb-3"><p className="text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-md mb-8">DevCollective brings community, mentorship, learning paths, projects, and reputation into one place — built for students who want to ship, not just study.</p><div className="flex flex-wrap gap-3"><button onClick={() => setActiveTab('register')} className="dc-hard-shadow-sm inline-flex items-center gap-3 px-6 py-4 bg-primary text-on-primary border-2 border-outline-variant font-bold uppercase tracking-wide">Start building <ArrowRight className="w-4 h-4" /></button><button onClick={() => setActiveTab('login')} className="inline-flex items-center gap-3 px-6 py-4 bg-surface border-2 border-outline-variant font-bold uppercase tracking-wide hover:bg-surface-container-high">Sign in</button></div></div>
+          </div></ScrollReveal>
+          <div className="mt-16 sm:mt-20 grid grid-cols-2 md:grid-cols-4 border-2 border-outline-variant bg-surface/70 backdrop-blur-sm">{[['01','COMMUNITY'],['02','MENTORSHIP'],['03','PROOF OF WORK'],['04','C·FLOW READY']].map(([number,label], index) => <ScrollReveal key={number} delay={index*70}><div className="p-5 sm:p-6 min-h-[105px] border-b-2 md:border-b-0 border-outline-variant"><div className="dc-mono text-[10px] text-primary mb-4">{number}</div><div className="font-bold text-sm tracking-tight">{label}</div></div></ScrollReveal>)}</div>
         </div>
       </section>
 
-      {/* FEATURES SECTION */}
-      <section className="py-20 bg-surface-container-lowest border-y-2 border-outline-variant">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="mb-14">
-            <h2 className="font-headline-lg text-3xl sm:text-4xl font-bold text-white mb-2">Ecosystem Modules</h2>
-            <p className="font-label-mono text-xs uppercase tracking-[0.2em] text-primary">
-              High-performance tools for student developer growth
-            </p>
-          </div>
+      <Marquee items={marqueeItems} />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div
-              onClick={() => setActiveTab('community')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#4F46E5] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-primary-container/20 flex items-center justify-center mb-6 group-hover:bg-primary-container transition-colors">
-                <Users className="w-7 h-7 text-primary group-hover:text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Coding Community</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Connect with thousands of student developers across every tech stack imaginable.
-              </p>
-            </div>
+      <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-24 sm:py-32"><ScrollReveal><div className="grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16"><div className="dc-mono text-xs uppercase tracking-[0.2em] text-primary">[ 00 / Why ]</div><div><h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl max-w-5xl">The internet taught us to consume. <span className="text-primary">We are here to build.</span></h2><p className="mt-10 max-w-2xl text-lg leading-relaxed text-on-surface-variant">College is where developer habits are formed. DevCollective gives those habits a home: people to learn with, mentors to question, projects to ship, and a visible record of the work you put in.</p></div></div></ScrollReveal></section>
 
-            <div
-              onClick={() => setActiveTab('mentors')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#06B6D4] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-secondary-container/20 flex items-center justify-center mb-6 group-hover:bg-secondary-container transition-colors">
-                <Brain className="w-7 h-7 text-secondary group-hover:text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Senior Mentorship</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Get direct guidance from seniors and industry professionals who've walked your path.
-              </p>
-            </div>
+      <Marquee items={['SHIP SOMETHING','GET FEEDBACK','ITERATE','HELP SOMEONE','LEVEL UP','REPEAT']} reverse className="bg-secondary" />
 
-            <div
-              onClick={() => setActiveTab('community')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#22C55E] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-tertiary-container/20 flex items-center justify-center mb-6 group-hover:bg-tertiary-container transition-colors">
-                <Network className="w-7 h-7 text-tertiary group-hover:text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Project Collaboration</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Find your co-founders or join existing open-source projects to build real-world experience.
-              </p>
-            </div>
+      <section className="border-y-2 border-outline-variant bg-surface-container-lowest"><div className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-24 sm:py-32"><ScrollReveal><div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-12"><div><p className="dc-mono text-xs uppercase tracking-[0.2em] text-primary mb-4">[ 01 / The system ]</p><h2 className="dc-display text-5xl sm:text-6xl lg:text-7xl">One ecosystem.<br /><span className="text-secondary">Many ways to grow.</span></h2></div><p className="dc-mono text-[10px] uppercase tracking-[0.15em] text-on-surface-variant max-w-xs">Every module connects back to the same goal: make your next step obvious.</p></div></ScrollReveal>
+        <div className="grid md:grid-cols-2 border-t-2 border-l-2 border-outline-variant">{modules.map((module,index)=>{const Icon=module.icon;return <ScrollReveal key={module.number} delay={index*80} className="h-full"><button onClick={()=>setActiveTab(module.action)} className="group relative w-full h-full min-h-[330px] text-left border-r-2 border-b-2 border-outline-variant p-7 sm:p-9 bg-background hover:bg-surface transition-colors"><div className="flex items-start justify-between gap-5"><span className="dc-mono text-xs text-on-surface-variant">{module.number}</span><span className={`w-12 h-12 flex items-center justify-center border-2 border-outline-variant ${module.tone} dc-hard-shadow-sm`}><Icon className="w-5 h-5" /></span></div><div className="mt-16 sm:mt-20 flex items-end justify-between gap-8"><div><h3 className="dc-display text-4xl sm:text-5xl mb-4 group-hover:text-primary transition-colors">{module.title}</h3><p className="text-sm sm:text-base leading-relaxed text-on-surface-variant max-w-md">{module.description}</p></div><ArrowDownRight className="w-7 h-7 shrink-0 group-hover:translate-x-1 group-hover:translate-y-1 transition-transform" /></div></button></ScrollReveal>})}</div>
+      </div></section>
 
-            <div
-              onClick={() => setActiveTab('roadmap')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#4F46E5] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-surface-container-highest flex items-center justify-center mb-6">
-                <GitBranch className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Roadmaps</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Structured, community-vetted paths from beginner to production-ready architect.
-              </p>
-            </div>
+      <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-24 sm:py-32"><ScrollReveal><div className="border-2 border-outline-variant bg-primary-container p-7 sm:p-10 lg:p-14 dc-hard-shadow"><div className="grid lg:grid-cols-[0.6fr_1.4fr] gap-12 items-start"><div><p className="dc-mono text-xs uppercase tracking-[0.2em] text-on-primary mb-5">[ 02 / The loop ]</p><h2 className="dc-display text-5xl sm:text-6xl lg:text-7xl text-on-primary">Learn.<br />Build.<br />Share.</h2></div><div className="grid sm:grid-cols-3 border-2 border-outline-variant">{[{n:'01',title:'LEARN',text:'Use structured roadmaps and mentors to understand what matters next.'},{n:'02',title:'BUILD',text:'Turn knowledge into projects, contributions, and real proof of work.'},{n:'03',title:'SHARE',text:'Get feedback, help peers, earn reputation, and keep the loop moving.'}].map((step,index)=><div key={step.n} className={`p-6 sm:p-7 bg-background border-outline-variant ${index<2?'border-b-2 sm:border-b-0 sm:border-r-2':''}`}><span className="dc-mono text-[10px] text-primary">{step.n}</span><h3 className="dc-display text-3xl mt-12 mb-3">{step.title}</h3><p className="text-sm text-on-surface-variant leading-relaxed">{step.text}</p></div>)}</div></div></div></ScrollReveal></section>
 
-            <div
-              onClick={() => setActiveTab('leaderboard')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#06B6D4] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-surface-container-highest flex items-center justify-center mb-6">
-                <Trophy className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Leaderboards</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Climb the ranks by contributing, mentoring, and solving complex architecture challenges.
-              </p>
-            </div>
+      <section className="border-y-2 border-outline-variant bg-secondary-container"><div className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-24"><ScrollReveal><div className="grid lg:grid-cols-[1fr_auto] gap-10 items-center"><div><div className="flex items-center gap-3 dc-mono text-xs uppercase tracking-[0.2em] mb-5"><Terminal className="w-4 h-4" />Next module / C·FLOW</div><h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl text-on-secondary max-w-5xl">Visualize the code you build.</h2><p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-on-secondary/75">DevCollective is being shaped to become the home for C·FLOW too — taking the same build-first mindset from community and roadmaps into interactive code visualization.</p></div><div className="border-2 border-outline-variant bg-background p-6 sm:p-8 dc-hard-shadow-sm min-w-[220px]"><Layers3 className="w-8 h-8 mb-8 text-secondary" /><div className="dc-mono text-[10px] uppercase tracking-[0.16em] text-on-surface-variant">Integration status</div><div className="dc-display text-4xl mt-2">IN BUILD</div></div></div></ScrollReveal></div></section>
 
-            <div
-              onClick={() => setActiveTab('community')}
-              className="p-8 bg-surface-container border-2 border-outline-variant rounded-[24px] hover:translate-y-[-4px] hover:shadow-[6px_6px_0px_0px_#22C55E] transition-all cursor-pointer group"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-surface-container-highest flex items-center justify-center mb-6">
-                <Terminal className="w-7 h-7 text-white" />
-              </div>
-              <h3 className="font-headline-md text-2xl font-bold text-white mb-3">Events & Hackathons</h3>
-              <p className="text-on-surface-variant font-body-md text-sm leading-relaxed">
-                Exclusive community sprints and global hackathons with high-tier tech rewards.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ROADMAP CAREER PATH SECTION */}
-      <section className="py-20 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="text-center mb-16">
-            <h2 className="font-headline-lg text-3xl sm:text-4xl font-bold text-white mb-2">Architect Career Path</h2>
-            <p className="font-label-mono text-xs uppercase tracking-[0.2em] text-secondary">
-              The journey from zero to mentor
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 text-center">
-            {[
-              { num: '01', title: 'Beginner', sub: 'Onboarding' },
-              { num: '02', title: 'Fundamentals', sub: 'Core Skills' },
-              { num: '03', title: 'Build Projects', sub: 'Current Phase', highlight: true },
-              { num: '04', title: 'Join Teams', sub: 'Scale Up' },
-              { num: '05', title: 'Become Mentor', sub: 'Expertise' },
-            ].map((step) => (
-              <div
-                key={step.num}
-                onClick={() => setActiveTab('roadmap')}
-                className={`p-6 rounded-2xl border-2 transition-all cursor-pointer ${
-                  step.highlight
-                    ? 'bg-primary-container border-primary shadow-[0_0_20px_rgba(79,70,229,0.5)]'
-                    : 'bg-surface-container border-outline-variant hover:border-primary'
-                }`}
-              >
-                <div className={`w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-4 font-label-mono text-lg font-bold ${
-                  step.highlight ? 'bg-white text-primary' : 'bg-surface-container-high text-white'
-                }`}>
-                  {step.num}
-                </div>
-                <h4 className="font-headline-md text-lg font-bold text-white mb-1">{step.title}</h4>
-                <p className={`font-label-mono text-[11px] uppercase ${step.highlight ? 'text-white' : 'text-on-surface-variant'}`}>
-                  {step.sub}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* LEADERBOARD PREVIEW */}
-      <section className="py-20 bg-surface-container-low border-y-2 border-outline-variant">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-center">
-            <div className="lg:col-span-2 space-y-6">
-              <h2 className="font-headline-lg text-3xl sm:text-4xl font-bold text-white">Reputation Rankings</h2>
-              <p className="font-body-lg text-on-surface-variant text-base leading-relaxed">
-                Proof of work is the only currency that matters here. Climb the global leaderboard by shipping code, writing documentation, and helping peers.
-              </p>
-              <button
-                onClick={() => setActiveTab('leaderboard')}
-                className="px-8 py-4 bg-transparent border-2 border-primary text-primary font-bold rounded-xl hover:bg-primary/10 transition-all flex items-center gap-3 active:scale-95"
-              >
-                <span>View Full Leaderboard</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="lg:col-span-3">
-              <div className="bg-surface-container border-2 border-outline-variant rounded-3xl overflow-hidden shadow-2xl">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-container-highest/40 border-b-2 border-outline-variant">
-                    <tr className="font-label-mono text-xs uppercase text-on-surface-variant">
-                      <th className="p-4 sm:p-6">Rank</th>
-                      <th className="p-4 sm:p-6">Developer</th>
-                      <th className="p-4 sm:p-6 text-right">Reputation</th>
-                      <th className="p-4 sm:p-6 text-right">Level</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y border-outline-variant/30 text-sm">
-                    <tr className="hover:bg-surface-container-highest/20 transition-colors">
-                      <td className="p-4 sm:p-6">
-                        <div className="w-9 h-9 bg-primary/20 text-primary border-2 border-primary rounded-lg flex items-center justify-center font-bold">
-                          1
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 flex items-center gap-3">
-                        <img
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfOJJp2Cs8Wi6Op4GcxcyVET725RT_Q8wUuV3FVSj1R3jNBjgw3eN7_fl18tPG6WejSXa8chKuFiZ0DtC3aWhjb90dvBCFJdAXt26J6nnp-EJe72xX90RJmgbztF8ckA-XEu9544PeyfHsNcHShzdrXNPfQoe0fCCfvv5UJjiWq0AXtAIgqwKh-hMd4deTOFMTKMEHiBNxDcvzQh5f9S94cP4WQiT9dlc19R7Kq5lcjCyNHcXL5TDKlxLIKO4cBptIABWj4vpcVbI"
-                          alt="Kartik"
-                          className="w-10 h-10 rounded-full border border-primary object-cover"
-                        />
-                        <div>
-                          <p className="font-bold text-white">Kartik Aryan</p>
-                          <p className="text-[11px] text-on-surface-variant font-label-mono uppercase">IIT Bombay</p>
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 text-right font-bold text-primary">6,140 REP</td>
-                      <td className="p-4 sm:p-6 text-right font-label-mono text-xs">LVL 28</td>
-                    </tr>
-
-                    <tr className="hover:bg-surface-container-highest/20 transition-colors">
-                      <td className="p-4 sm:p-6">
-                        <div className="w-9 h-9 bg-outline-variant/20 text-white border-2 border-outline-variant rounded-lg flex items-center justify-center font-bold">
-                          2
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 flex items-center gap-3">
-                        <img
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuC58uhRruytSCmk0juhyZZUUHYoZKhfMtR9C3-fnhQgvOEkUYUWAaXpP0PW2EgxaSdq6EJAHxty9shW_INl41W8ggn_-pewTUJZg8cyTDckCd-V5_rOItMIKQ9ulECjD2YNyYibvrM6MOPSQdciv6E76vw11FyglNBVER99hUWgpTq-4UQgVuRmzI-UKhrIWOp3epJKg-zCPEDccWz0JOTvzLXZHTVNrtxTPA4LutZIXBISJMV5icvp9DssDh5xA-eseDeBvf37_9Q"
-                          alt="Sanya"
-                          className="w-10 h-10 rounded-full border border-outline object-cover"
-                        />
-                        <div>
-                          <p className="font-bold text-white">Sanya Verma</p>
-                          <p className="text-[11px] text-on-surface-variant font-label-mono uppercase">MIT</p>
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 text-right font-bold text-white">4,820 REP</td>
-                      <td className="p-4 sm:p-6 text-right font-label-mono text-xs">LVL 24</td>
-                    </tr>
-
-                    <tr className="hover:bg-surface-container-highest/20 transition-colors">
-                      <td className="p-4 sm:p-6">
-                        <div className="w-9 h-9 bg-outline-variant/20 text-white border-2 border-outline-variant rounded-lg flex items-center justify-center font-bold">
-                          3
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 flex items-center gap-3">
-                        <img
-                          src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHm69iFZgN81K30IaUsptMAMNCtuNZRNylDjyeIu3Ux6dYRvqte98DaJGiCt82n2oPEJcolLc1cg5_77DLFQkft0S95E753SOc8ucXGD2is0XjYr7vJABnyxMS47sWMAhxdGBe26SWwWV-A-YrqiYVtBQGwy3TflnTlKOqcPKIobzT3IogYx7vTKRm88paqp5j0LdYvZ-_DY1yZyHZbm8dXqW4Xp9y17C9FlXtgcPFiRClGKmWEqWAdn318LCGsfQ3th3G3n3PV8A"
-                          alt="Rohan"
-                          className="w-10 h-10 rounded-full border border-outline object-cover"
-                        />
-                        <div>
-                          <p className="font-bold text-white">Rohan Das</p>
-                          <p className="text-[11px] text-on-surface-variant font-label-mono uppercase">Georgia Tech</p>
-                        </div>
-                      </td>
-                      <td className="p-4 sm:p-6 text-right font-bold text-white">4,210 REP</td>
-                      <td className="p-4 sm:p-6 text-right font-label-mono text-xs">LVL 21</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS */}
-      <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
-          <div className="text-center mb-16">
-            <h2 className="font-headline-lg text-3xl sm:text-4xl font-bold text-white mb-2">Voices from the Field</h2>
-            <p className="font-label-mono text-xs uppercase tracking-[0.2em] text-tertiary">
-              Verified student success stories
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 bg-surface-container border-2 border-outline-variant rounded-3xl relative">
-              <div className="flex gap-1 mb-6 text-tertiary">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-tertiary text-tertiary" />
-                ))}
-              </div>
-              <p className="font-body-md text-on-surface italic mb-8 leading-relaxed">
-                "The community here is insane. I found my first production co-founder within three weeks of joining. The REP system actually means something to recruiters."
-              </p>
-              <div className="flex items-center gap-4">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoACwcivsiMbHH0a_RxINe7Ny_2s2FDDkCw2JWclPgXtJ8fz7Uttp54ejROeQZK800BxfBZ3--Os12blJYDlMW-3NWK3w6pw-IavFJGZ9nVxMmPTgkAfg5mHcurV6LU5BTMYzBBixPeKiSdCMJgGAmP0AkI18uS1NazoB0ZCwNPCYVCwS4NVFKnTGiPHSsp_QLsf6XES7XfY76G_VmAfFQQjmtlNSSkBTCh6uMJBfZSbVZ4q5v_SaYjCBR1p3HFKK6By1AalBNtiM"
-                  alt="Alex"
-                  className="w-12 h-12 rounded-full border-2 border-primary object-cover"
-                />
-                <div>
-                  <p className="font-bold text-white">Alex Rivera</p>
-                  <p className="text-xs text-on-surface-variant font-label-mono uppercase">Stanford CS '25</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-surface-container border-2 border-outline-variant rounded-3xl relative">
-              <div className="flex gap-1 mb-6 text-tertiary">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-tertiary text-tertiary" />
-                ))}
-              </div>
-              <p className="font-body-md text-on-surface italic mb-8 leading-relaxed">
-                "Getting mentored by seniors who already have jobs at Stripe and Apple was a game-changer. My GitHub looks 10x better than it did last year."
-              </p>
-              <div className="flex items-center gap-4">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuC58uhRruytSCmk0juhyZZUUHYoZKhfMtR9C3-fnhQgvOEkUYUWAaXpP0PW2EgxaSdq6EJAHxty9shW_INl41W8ggn_-pewTUJZg8cyTDckCd-V5_rOItMIKQ9ulECjD2YNyYibvrM6MOPSQdciv6E76vw11FyglNBVER99hUWgpTq-4UQgVuRmzI-UKhrIWOp3epJKg-zCPEDccWz0JOTvzLXZHTVNrtxTPA4LutZIXBISJMV5icvp9DssDh5xA-eseDeBvf37_9Q"
-                  alt="Sarah"
-                  className="w-12 h-12 rounded-full border-2 border-secondary object-cover"
-                />
-                <div>
-                  <p className="font-bold text-white">Sanya Verma</p>
-                  <p className="text-xs text-on-surface-variant font-label-mono uppercase">MIT Math/CS '24</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-8 bg-surface-container border-2 border-outline-variant rounded-3xl relative">
-              <div className="flex gap-1 mb-6 text-tertiary">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-tertiary text-tertiary" />
-                ))}
-              </div>
-              <p className="font-body-md text-on-surface italic mb-8 leading-relaxed">
-                "The hackathons are where the real growth happens. High stakes, real projects, and a level of competition that makes you stay up all night coding."
-              </p>
-              <div className="flex items-center gap-4">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHm69iFZgN81K30IaUsptMAMNCtuNZRNylDjyeIu3Ux6dYRvqte98DaJGiCt82n2oPEJcolLc1cg5_77DLFQkft0S95E753SOc8ucXGD2is0XjYr7vJABnyxMS47sWMAhxdGBe26SWwWV-A-YrqiYVtBQGwy3TflnTlKOqcPKIobzT3IogYx7vTKRm88paqp5j0LdYvZ-_DY1yZyHZbm8dXqW4Xp9y17C9FlXtgcPFiRClGKmWEqWAdn318LCGsfQ3th3G3n3PV8A"
-                  alt="Rohan"
-                  className="w-12 h-12 rounded-full border-2 border-tertiary object-cover"
-                />
-                <div>
-                  <p className="font-bold text-white">Rohan Das</p>
-                  <p className="text-xs text-on-surface-variant font-label-mono uppercase">Georgia Tech '26</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA SECTION */}
-      <section className="py-20 bg-primary-container relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 text-center relative z-10">
-          <h2 className="font-display-2xl text-4xl sm:text-5xl lg:text-6xl text-white mb-6 tracking-tight font-extrabold">
-            Ready to Deploy Your Project?
-          </h2>
-          <p className="font-body-lg text-on-primary-container mb-10 max-w-2xl mx-auto text-lg">
-            Join 5,000+ student developers. Build your reputation, build your network, and build the future of software.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-5">
-            <button
-              onClick={() => setActiveTab('register')}
-              className="px-10 py-5 bg-white text-primary-container font-bold rounded-2xl shadow-[0_6px_0_0_#dad7ff] hover:shadow-[0_2px_0_0_#dad7ff] hover:translate-y-1 transition-all text-lg active:scale-95"
-            >
-              Get Started Free
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className="px-10 py-5 border-2 border-white text-white font-bold rounded-2xl hover:bg-white/10 transition-all text-lg active:scale-95"
-            >
-              Launch Mission Control
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="bg-surface-container-lowest border-t-2 border-outline-variant w-full py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 flex flex-col sm:flex-row justify-between items-center gap-6">
-          <div className="flex flex-col items-center sm:items-start">
-            <div className="font-headline-md text-xl text-white font-bold tracking-tighter mb-1">
-              DEV_COLLECTIVE
-            </div>
-            <div className="font-label-mono text-xs uppercase text-on-surface-variant">
-              © 2024 DEV_COLLECTIVE. ENGINEERED FOR STUDENT ARCHITECTS.
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-6 font-label-mono text-xs uppercase text-on-surface-variant">
-            <button onClick={() => setActiveTab('community')} className="hover:text-primary transition-colors">
-              COMMUNITY
-            </button>
-            <button onClick={() => setActiveTab('roadmap')} className="hover:text-primary transition-colors">
-              ROADMAPS
-            </button>
-            <button onClick={() => setActiveTab('leaderboard')} className="hover:text-primary transition-colors">
-              LEADERBOARD
-            </button>
-            <button onClick={() => setActiveTab('admin')} className="hover:text-primary transition-colors">
-              ADMIN
-            </button>
-          </div>
-        </div>
-      </footer>
+      <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-24 sm:py-36"><ScrollReveal><div className="text-center"><p className="dc-mono text-xs uppercase tracking-[0.22em] text-primary mb-6">[ 03 / Your turn ]</p><h2 className="dc-display text-[clamp(4rem,10vw,9rem)]">Stop waiting.<br /><span className="text-primary">Start shipping.</span></h2><p className="max-w-xl mx-auto mt-8 text-lg text-on-surface-variant leading-relaxed">Your next project, mentor, roadmap, and collaborator are closer than you think.</p><div className="mt-9 flex justify-center gap-3 flex-wrap"><button onClick={()=>setActiveTab('register')} className="dc-hard-shadow inline-flex items-center gap-3 px-8 py-4 bg-primary text-on-primary border-2 border-outline-variant font-bold uppercase tracking-wide">Join DevCollective <ArrowRight className="w-4 h-4" /></button><button onClick={()=>setActiveTab('roadmap')} className="inline-flex items-center gap-3 px-8 py-4 bg-surface border-2 border-outline-variant font-bold uppercase tracking-wide">Explore roadmap</button></div></div></ScrollReveal></section>
+      <footer className="border-t-2 border-outline-variant px-5 sm:px-8 lg:px-12 py-8 max-w-[1500px] mx-auto flex flex-col sm:flex-row gap-4 justify-between dc-mono text-[10px] uppercase tracking-[0.15em] text-on-surface-variant"><span>DEV_COLLECTIVE / 2026</span><span>BUILD. SCALE. LEAD.</span></footer>
     </div>
   );
 };
