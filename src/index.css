@@ -5,7 +5,6 @@
   --color-on-background: var(--on-background);
   --color-surface: var(--surface);
   --color-on-surface: var(--on-surface);
-  --color-on-surface-variant: var(--on-surface-variant);
   --color-surface-container-lowest: var(--surface-container-lowest);
   --color-surface-container-low: var(--surface-container-low);
   --color-surface-container: var(--surface-container);
@@ -249,6 +248,199 @@ html.dark .dc-public::before {
 .theme-transitioning,
 .theme-transitioning body,
 .theme-transitioning #root { transition: background-color 300ms ease, color 300ms ease; }
+
+/* Profile setup — scoped visual system. Functionality remains in ProfileSetupPage. */
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 {
+  background: var(--background);
+  position: relative;
+  isolation: isolate;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.055;
+  background-image: linear-gradient(rgba(23,23,23,0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(23,23,23,0.2) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+html.dark .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20::before {
+  background-image: linear-gradient(rgba(255,249,240,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,249,240,0.1) 1px, transparent 1px);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > nav {
+  height: 74px;
+  padding-left: clamp(20px, 4vw, 56px);
+  padding-right: clamp(20px, 4vw, 56px);
+  background: color-mix(in srgb, var(--background) 92%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 2px solid var(--outline-variant);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > nav span:first-child {
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > nav button {
+  border-left: 2px solid var(--outline-variant);
+  padding-left: 16px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main {
+  max-width: 1500px;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(32px, 5vw, 72px) clamp(20px, 4vw, 56px);
+  align-items: flex-start;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div {
+  max-width: none;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(32px, 5vw, 72px);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child {
+  position: sticky;
+  top: 100px;
+  align-self: start;
+  padding-top: 10px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 h2 {
+  font-family: "Inter", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child h2 {
+  font-size: clamp(3.5rem, 7vw, 7rem);
+  line-height: 0.88;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child h2::first-line {
+  color: var(--on-background);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child::after {
+  content: "PROFILE / 02 / 03";
+  display: block;
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 2px solid var(--outline-variant);
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--on-surface-variant);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:last-child {
+  background: var(--surface);
+  border: 2px solid var(--outline-variant);
+  border-radius: 8px;
+  padding: clamp(24px, 4vw, 48px);
+  box-shadow: 7px 7px 0 #171717;
+}
+
+html.dark .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:last-child {
+  box-shadow: 7px 7px 0 #000;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:last-child form > div:first-child > div:first-child {
+  border: 2px solid var(--outline-variant);
+  padding: 16px;
+  background: var(--dc-yellow);
+  color: #171717;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:last-child form > div:first-child > div:first-child + div {
+  margin-top: 18px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input,
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 textarea,
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 select {
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  border: 2px solid var(--outline-variant);
+  border-radius: 4px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input::placeholder,
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 textarea::placeholder {
+  color: var(--on-surface-variant);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input:focus,
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 textarea:focus,
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 select:focus {
+  border-color: var(--primary);
+  box-shadow: 4px 4px 0 var(--primary);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 label[for="resume-upload-input"] {
+  background: var(--surface-container-lowest);
+  border-color: var(--outline-variant);
+  border-radius: 4px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 label[for="resume-upload-input"]:hover {
+  background: var(--dc-blue);
+  color: #171717;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .rounded-full {
+  border-radius: 999px;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"] {
+  background: var(--primary-container);
+  color: var(--on-primary);
+  border: 2px solid var(--outline-variant);
+  border-radius: 4px;
+  box-shadow: 5px 5px 0 #171717;
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"]:hover {
+  background: var(--dc-mint);
+}
+
+.min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"]:active {
+  box-shadow: 1px 1px 0 #171717;
+}
+
+@media (max-width: 900px) {
+  .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div {
+    grid-template-columns: 1fr;
+  }
+  .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child {
+    position: static;
+  }
+  .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:first-child::after {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main {
+    padding: 24px 16px 40px;
+  }
+  .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > div > div:last-child {
+    padding: 20px;
+    box-shadow: 4px 4px 0 #171717;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
