@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import type * as THREE from 'three';
 
 export const ThreeProcessor: React.FC = () => {
   const mountRef = useRef<HTMLDivElement>(null);
