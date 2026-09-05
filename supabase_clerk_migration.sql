@@ -41,6 +41,8 @@ for each row execute function public.devcollective_profiles_set_updated_at();
 alter table public.devcollective_profiles enable row level security;
 revoke all on table public.devcollective_profiles from anon;
 grant select, insert, update on table public.devcollective_profiles to authenticated;
+-- The server uses Supabase's server-only secret key, which executes as service_role.
+grant select, insert, update on table public.devcollective_profiles to service_role;
 
 drop policy if exists "Clerk users can read their own DevCollective profile" on public.devcollective_profiles;
 create policy "Clerk users can read their own DevCollective profile" on public.devcollective_profiles
