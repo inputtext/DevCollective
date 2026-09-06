@@ -45,12 +45,14 @@ export interface CommunityPost {
   likes: number;
   commentsCount: number;
   createdAt: string;
+  updatedAt?: string;
   likedByMe?: boolean;
 }
 
 export interface CommunityComment {
   id: string;
   postId: string;
+  parentCommentId?: string | null;
   authorId: string;
   authorName: string;
   authorAvatar: string;
