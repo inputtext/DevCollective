@@ -1,0 +1,4 @@
+/* Isolated dashboard fix: keep long identity emails inside the snapshot card. */
+.dc-page-dashboard .dc-dashboard-meta-item{min-width:0;overflow:hidden}
+.dc-page-dashboard .dc-dashboard-meta-value{display:block;min-width:0;width:100%;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dc-page-dashboard .dc-dashboard-meta-item:nth-child(even){min-width:0}
