@@ -1,16 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/react';
-import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
+import { UserProfile, TaskItem, CommunityPost, CommunityComment, LeaderboardEntry, Mentor } from '../types';
 
 export type PageTab = 'landing' | 'login' | 'register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'profile' | 'admin';
 interface AuthContextType {
   user: UserProfile | null; loadingAuth: boolean; sidebarCollapsed: boolean; toggleSidebar: () => void; activeTab: PageTab; setActiveTab: (tab: PageTab) => void;
-  tasks: TaskItem[]; posts: CommunityPost[]; leaderboard: LeaderboardEntry[]; mentors: Mentor[];
+  tasks: TaskItem[]; posts: CommunityPost[]; commentsByPost: Record<string, CommunityComment[]>; leaderboard: LeaderboardEntry[]; mentors: Mentor[];
   showOAuthModal: boolean; oauthProviderToSimulate: 'google' | 'github' | null; setShowOAuthModal: (show: boolean) => void; triggerOAuthLogin: (provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => void;
   showResumePrompt: boolean; dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>; registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>; logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>; toggleTaskCompletion: (taskId: string) => Promise<void>;
-  addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => Promise<void>; toggleLikePost: (postId: string) => Promise<void>; completeOnboarding: () => Promise<void>;
+  addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => Promise<void>; toggleLikePost: (postId: string) => Promise<void>; loadPostComments: (postId: string) => Promise<void>; addPostComment: (postId: string, content: string) => Promise<void>; completeOnboarding: () => Promise<void>;
   repAnimation: { amount: number; id: number } | null; requestPasswordReset: (email: string) => Promise<void>; resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   authRedirectError: string | null; clearAuthRedirectError: () => void;
   oauthInfo: { googleConfigured: boolean; githubConfigured: boolean; appUrl: string; googleCallbackUrl: string; githubCallbackUrl: string } | null;
@@ -61,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeTab, setActiveTab] = useState<PageTab>('landing');
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({});
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [showOAuthModal, setShowOAuthModal] = useState(false);
@@ -71,6 +72,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => { const next = !prev; localStorage.setItem('devcollective_sidebar_collapsed', String(next)); return next; });
   const apiFetch = useCallback(async (url: string, init: RequestInit = {}) => { const token = await getToken(); if (!token) throw new Error('Not authenticated.'); const headers = new Headers(init.headers); headers.set('Authorization', `Bearer ${token}`); if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json'); const res = await fetch(url, { ...init, headers }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || 'Request failed.'); return data; }, [getToken]);
+
+  const commentServiceFetch = useCallback(async (path: string, init: RequestInit = {}) => {
+    const baseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+    if (!baseUrl) throw new Error('Supabase URL is not configured.');
+    const token = await getToken();
+    if (!token) throw new Error('Not authenticated.');
+    const headers = new Headers(init.headers);
+    headers.set('Authorization', `Bearer ${token}`);
+    headers.set('Content-Type', 'application/json');
+    const res = await fetch(`${baseUrl}/functions/v1/community-comments${path}`, { ...init, headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Community comment request failed.');
+    return data;
+  }, [getToken]);
+
+  const loadCommentCounts = useCallback(async () => {
+    if (!isSignedIn) return;
+    try {
+      const data = await commentServiceFetch('?mode=counts');
+      const countMap = new Map<string, number>((Array.isArray(data.counts) ? data.counts : []).map((item: { postId: string; count: number }) => [item.postId, Number(item.count) || 0]));
+      setPosts((prev) => prev.map((post) => ({ ...post, commentsCount: countMap.get(post.id) || 0 })));
+    } catch (err) {
+      console.error('Could not load community comment counts:', err);
+    }
+  }, [commentServiceFetch, isSignedIn]);
+
+  const loadPostComments = useCallback(async (postId: string) => {
+    const data = await commentServiceFetch(`?postId=${encodeURIComponent(postId)}`);
+    setCommentsByPost((prev) => ({ ...prev, [postId]: Array.isArray(data.comments) ? data.comments as CommunityComment[] : [] }));
+  }, [commentServiceFetch]);
+
+  const addPostComment = useCallback(async (postId: string, content: string) => {
+    const trimmed = content.trim();
+    if (!trimmed) throw new Error('Comment cannot be empty.');
+    const data = await commentServiceFetch('', { method: 'POST', body: JSON.stringify({ postId, content: trimmed }) });
+    if (data.comment) {
+      setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment as CommunityComment] }));
+      setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, commentsCount: Number(data.count) || post.commentsCount + 1 } : post));
+    }
+  }, [commentServiceFetch]);
 
   const syncProfile = useCallback(async () => {
     if (!clerkUser || !isSignedIn) return null;
@@ -101,21 +142,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [apiFetch, isSignedIn]);
 
   const loadPosts = useCallback(async () => {
-    if (!isSignedIn) { setPosts([]); return; }
+    if (!isSignedIn) { setPosts([]); setCommentsByPost({}); return; }
     try {
       const data = await apiFetch('/api/community/posts');
       setPosts(Array.isArray(data.posts) ? data.posts : []);
+      void loadCommentCounts();
     } catch (err) {
       console.error('Could not load community posts from Supabase:', err);
       setPosts([]);
+      setCommentsByPost({});
     }
-  }, [apiFetch, isSignedIn]);
+  }, [apiFetch, isSignedIn, loadCommentCounts]);
 
   useEffect(() => {
     if (!clerkLoaded) return;
     if (!isSignedIn || !clerkUser) {
       setUser(null);
       setPosts([]);
+      setCommentsByPost({});
       setMentors([]);
       setLoadingAuth(false);
       return;
@@ -135,7 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoadingAuth(true);
     }
 
-    // Community content is intentionally independent from profile hydration so the workspace is not blocked by it.
     void loadPosts();
 
     if (cacheFresh) {
@@ -186,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => { if (!details.email || !details.name) throw new Error('Name and email are required for registration.'); const pending = buildPendingRegistration(details); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: { emailAddress: details.email }, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); };
   const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
-  const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setPosts([]); setMentors([]); setActiveTab('landing'); };
+  const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setPosts([]); setCommentsByPost({}); setMentors([]); setActiveTab('landing'); };
 
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
@@ -231,6 +274,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, toggleTaskCompletion, addPost, toggleLikePost, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, commentsByPost, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, toggleTaskCompletion, addPost, toggleLikePost, loadPostComments, addPostComment, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
 };
 export const useAuth = () => { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used within an AuthProvider'); return context; };
