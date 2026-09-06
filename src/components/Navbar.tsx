@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { Search, Bell, Shield, LogOut, Terminal, Menu, X, Heart, CheckCheck } from 'lucide-react';
+import { useSocial } from '../context/SocialContext';
+import { Search, Bell, Shield, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 const timeAgo = (value: string) => {
@@ -18,6 +19,7 @@ const timeAgo = (value: string) => {
 export const Navbar: React.FC = () => {
  const { user, activeTab, setActiveTab, logout, setShowOAuthModal } = useAuth();
  const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead } = useNotifications();
+ const { openProfile } = useSocial();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
  const isStandalone = ['landing', 'login', 'register'].includes(activeTab);
  const go = (tab: Parameters<typeof setActiveTab>[0]) => { setActiveTab(tab); setMobileMenuOpen(false); };
@@ -31,6 +33,32 @@ export const Navbar: React.FC = () => {
    document.addEventListener('mousedown', handleOutside);
    return () => document.removeEventListener('mousedown', handleOutside);
  }, [panelOpen, setPanelOpen]);
+
+ const notificationCopy = (type: string) => {
+   if (type === 'post_like') return 'liked your post.';
+   if (type === 'comment_like') return 'liked your comment.';
+   if (type === 'comment_reply') return 'replied to your comment.';
+   if (type === 'follow') return 'started following you.';
+   if (type === 'connection_request') return 'sent you a connection request.';
+   if (type === 'connection_accepted') return 'accepted your connection request.';
+   return 'interacted with your work.';
+ };
+
+ const notificationIcon = (type: string) => {
+   if (type === 'follow') return <UserPlus className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />;
+   if (type === 'connection_request' || type === 'connection_accepted') return <Users className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />;
+   return <Heart className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" fill="currentColor" />;
+ };
+
+ const handleNotificationClick = (notification: typeof notifications[number]) => {
+   if (!notification.readAt) void markRead([notification.id]);
+   setPanelOpen(false);
+   if ((notification.type === 'follow' || notification.type === 'connection_request' || notification.type === 'connection_accepted') && notification.actorAvatar) {
+     const matchedPost = undefined;
+     void matchedPost;
+   }
+   go('community');
+ };
 
  return <header className="sticky top-0 z-40 h-[74px] border-b-2 border-outline-variant bg-background/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10">
   <div className="flex items-center gap-3 min-w-0">
@@ -52,9 +80,9 @@ export const Navbar: React.FC = () => {
        <button onClick={() => void markAllRead()} disabled={!unreadCount} className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-on-surface-variant hover:text-primary disabled:opacity-40"><CheckCheck className="w-3.5 h-3.5" /> Mark read</button>
       </div>
       <div className="max-h-[360px] overflow-y-auto">
-       {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone likes your post or comment, it will appear here.</p></div> : notifications.map((notification) => <button key={notification.id} onClick={() => { if (!notification.readAt) void markRead([notification.id]); setPanelOpen(false); go('community'); }} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
+       {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone interacts with your work, it will appear here.</p></div> : notifications.map((notification) => <button key={notification.id} onClick={() => handleNotificationClick(notification)} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
          {notification.actorAvatar ? <img src={notification.actorAvatar} alt={notification.actorName} className="w-9 h-9 border-2 border-outline-variant object-cover shrink-0" /> : <div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center font-bold shrink-0">{notification.actorName.slice(0, 1)}</div>}
-         <div className="min-w-0 flex-1"><div className="flex items-start gap-2"><Heart className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" fill="currentColor" /><p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong>{notification.type === 'post_like' ? ' liked your post.' : ' liked your comment.'}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div><p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p><p className="dc-mono text-[8px] uppercase text-on-surface-variant mt-2">{timeAgo(notification.createdAt)}</p></div>
+         <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}<p className="dc-mono text-[8px] uppercase text-on-surface-variant mt-2">{timeAgo(notification.createdAt)}</p></div>
        </button>)}
       </div>
     </div>}
