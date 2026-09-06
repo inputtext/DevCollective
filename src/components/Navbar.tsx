@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
-import { useSocial } from '../context/SocialContext';
 import { Search, Bell, Shield, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -19,7 +18,6 @@ const timeAgo = (value: string) => {
 export const Navbar: React.FC = () => {
  const { user, activeTab, setActiveTab, logout, setShowOAuthModal } = useAuth();
  const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead } = useNotifications();
- const { openProfile } = useSocial();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
  const isStandalone = ['landing', 'login', 'register'].includes(activeTab);
  const go = (tab: Parameters<typeof setActiveTab>[0]) => { setActiveTab(tab); setMobileMenuOpen(false); };
@@ -53,10 +51,6 @@ export const Navbar: React.FC = () => {
  const handleNotificationClick = (notification: typeof notifications[number]) => {
    if (!notification.readAt) void markRead([notification.id]);
    setPanelOpen(false);
-   if ((notification.type === 'follow' || notification.type === 'connection_request' || notification.type === 'connection_accepted') && notification.actorAvatar) {
-     const matchedPost = undefined;
-     void matchedPost;
-   }
    go('community');
  };
 
