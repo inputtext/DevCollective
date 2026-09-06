@@ -1,0 +1,241 @@
+/* DevCollective login — editorial C·FLOW visual language */
+
+body:has(main[class*="max-w-[824px]"]) {
+  background: var(--background);
+  color: var(--on-background);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 {
+  min-height: calc(100vh - 74px);
+  padding-top: 0;
+  background: var(--background);
+  color: var(--on-background);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main {
+  width: min(1180px, calc(100% - 40px));
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(48px, 7vw, 88px) 0 clamp(56px, 8vw, 96px);
+  display: grid;
+  grid-template-columns: minmax(280px, .78fr) minmax(420px, 1.22fr);
+  gap: clamp(44px, 7vw, 100px);
+  align-items: start;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type {
+  position: sticky;
+  top: 112px;
+  padding: 0 0 28px;
+  border-bottom: 2px solid var(--outline-variant);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type::before {
+  content: "DC / 01 — AUTHENTICATION";
+  display: block;
+  margin-bottom: 24px;
+  color: var(--on-surface-variant);
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .18em;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type::after {
+  content: "SECURE ACCESS / CLERK → SUPABASE PROFILE";
+  display: block;
+  margin-top: 20px;
+  color: var(--on-surface-variant);
+  font-family: "Space Mono", monospace;
+  font-size: 8px;
+  letter-spacing: .13em;
+  line-height: 1.7;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type h1 {
+  margin: 0;
+  color: var(--on-background) !important;
+  font-size: clamp(4.4rem, 8.4vw, 7.8rem);
+  line-height: .82;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type h1::first-letter {
+  color: var(--primary);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type p {
+  margin-top: 28px;
+  max-width: 470px;
+  color: var(--on-surface-variant) !important;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.65;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:nth-of-type(2) {
+  margin: 0;
+  padding: clamp(24px, 4vw, 42px);
+  background: var(--surface);
+  color: var(--on-surface);
+  border: 2px solid var(--outline-variant);
+  border-radius: 8px;
+  box-shadow: 8px 8px 0 var(--outline-variant);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:nth-of-type(2) form > div {
+  color: var(--on-surface);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 label {
+  color: var(--on-surface-variant) !important;
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input {
+  width: 100%;
+  height: 70px;
+  background: var(--surface-container-lowest) !important;
+  color: var(--on-surface) !important;
+  border: 2px solid var(--outline-variant) !important;
+  border-radius: 4px;
+  padding: 0 20px;
+  font-size: 15px;
+  box-shadow: none;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input::placeholder {
+  color: var(--on-surface-variant) !important;
+  opacity: .7;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  background: var(--surface) !important;
+  box-shadow: 5px 5px 0 var(--primary);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"] {
+  min-height: 78px;
+  margin-top: 28px;
+  background: var(--primary) !important;
+  color: #171717 !important;
+  border: 2px solid var(--outline-variant) !important;
+  box-shadow: 6px 6px 0 var(--outline-variant) !important;
+  border-radius: 4px;
+  font-family: "Space Mono", monospace;
+  font-size: 11px;
+  letter-spacing: .09em;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"]:hover {
+  background: var(--dc-mint) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 button[type="submit"]:active,
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button[type="submit"]:active {
+  transform: translate(4px, 4px);
+  box-shadow: 2px 2px 0 var(--outline-variant) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .dc-mono {
+  color: var(--on-surface-variant);
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .text-primary {
+  color: var(--primary) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .text-on-surface-variant {
+  color: var(--on-surface-variant) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .text-on-surface {
+  color: var(--on-surface) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .bg-surface {
+  background: var(--surface) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 .border-outline-variant,
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .border-outline-variant {
+  border-color: var(--outline-variant) !important;
+}
+
+body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .bg-dc-pink {
+  color: #171717 !important;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 {
+  color: #FFF9F0;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:nth-of-type(2) {
+  background: #202020;
+  color: #FFF9F0;
+  box-shadow: 8px 8px 0 #000;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input {
+  background: #111 !important;
+  color: #FFF9F0 !important;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input::placeholder {
+  color: #C9C2B8 !important;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 label,
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 p,
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 .text-on-surface-variant,
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .text-on-surface-variant {
+  color: #C9C2B8 !important;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 .text-on-surface,
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 .text-on-surface {
+  color: #FFF9F0 !important;
+}
+
+html.dark body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 button:not([type="submit"]) {
+  color: #FFF9F0;
+}
+
+@media (max-width: 900px) {
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main {
+    width: min(720px, calc(100% - 32px));
+    grid-template-columns: 1fr;
+    gap: 42px;
+    padding-top: 44px;
+  }
+
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 > main > section:first-of-type,
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:first-of-type {
+    position: static;
+  }
+}
+
+@media (max-width: 560px) {
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main {
+    width: calc(100% - 24px);
+    padding-top: 30px;
+    gap: 30px;
+  }
+
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 > main > section:nth-of-type(2) {
+    padding: 22px 18px;
+    box-shadow: 5px 5px 0 var(--outline-variant);
+  }
+
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex.col.pt-20 input,
+  body:has(main[class*="max-w-[824px]"]) .min-h-screen.bg-background.text-on-background.flex.flex-col.pt-20 input {
+    height: 62px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
