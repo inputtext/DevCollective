@@ -73,13 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hydrate(); return () => { cancelled = true; };
   }, [clerkLoaded, isSignedIn, syncProfile, loadMentors]);
 
-  // Registration intentionally uses Clerk's sign-up modal. Custom email/password login must never inherit that attempt.
-  useEffect(() => {
-    if (activeTab !== 'login') return;
-    clerk.client.resetSignUp();
-    clerk.client.resetSignIn();
-  }, [activeTab, clerk]);
-
   const clearAuthRedirectError = () => setAuthRedirectError(null);
   const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
     setOauthProviderToSimulate(null); setShowOAuthModal(false);
@@ -89,8 +82,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithEmail = async (email: string, password?: string) => {
     if (!email.trim()) throw new Error('Please enter your email address.');
     if (!password) throw new Error('Please enter your password.');
-    clerk.client.resetSignUp();
-    clerk.client.resetSignIn();
     const { error } = await signIn.password({ emailAddress: email.trim(), password });
     if (error) throw new Error(error.message || 'The email or password is incorrect.');
     if (signIn.status === 'complete') {
