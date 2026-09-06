@@ -19,6 +19,7 @@ import './styles/profile-setup-theme.css';
 import './styles/workspace-pastel.css';
 import './styles/dark-theme.css';
 import './styles/workspace-controls.css';
+import './styles/dashboard-ux.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
