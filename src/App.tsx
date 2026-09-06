@@ -14,6 +14,7 @@ import { MotionSystem } from './components/MotionSystem';
 import './styles/profile-setup.css';
 import './styles/login.css';
 import './styles/login-modern.css';
+import './styles/profile-setup-theme.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
