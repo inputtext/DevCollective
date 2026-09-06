@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from '@clerk/react';
 import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/react';
 import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
 
@@ -73,6 +73,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hydrate(); return () => { cancelled = true; };
   }, [clerkLoaded, isSignedIn, syncProfile, loadMentors]);
 
+  // The registration flow intentionally uses Clerk's sign-up modal. The email/password
+  // login page is fully custom, so entering the login route must clear any sign-up attempt
+  // that may still be mounted from a previous registration interaction.
+  useEffect(() => {
+    if (activeTab !== 'login') return;
+    clerk.client.resetSignUp();
+    clerk.client.resetSignIn();
+  }, [activeTab, clerk]);
+
   const clearAuthRedirectError = () => setAuthRedirectError(null);
   const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
     setOauthProviderToSimulate(null); setShowOAuthModal(false);
@@ -82,6 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loginWithEmail = async (email: string, password?: string) => {
     if (!email.trim()) throw new Error('Please enter your email address.');
     if (!password) throw new Error('Please enter your password.');
+    clerk.client.resetSignUp();
+    clerk.client.resetSignIn();
     const { error } = await signIn.password({ emailAddress: email.trim(), password });
     if (error) throw new Error(error.message || 'The email or password is incorrect.');
     if (signIn.status === 'complete') {
