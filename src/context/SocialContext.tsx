@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth } from '@clerk/react';
-import { UserProfile } from '../types';
+import type { UserProfile } from '../types';
 
 export type SocialProfile = Pick<UserProfile, 'id' | 'name' | 'email' | 'role' | 'college' | 'branch' | 'academicYear' | 'avatar' | 'bio' | 'rep' | 'level' | 'streakDays' | 'githubUrl' | 'linkedinUrl' | 'skills' | 'selectedDomains'>;
 
