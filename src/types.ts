@@ -67,7 +67,7 @@ export interface CommunityComment {
 
 export interface NotificationItem {
   id: string;
-  type: 'post_like' | 'comment_like' | 'comment_reply';
+  type: 'post_like' | 'comment_like' | 'comment_reply' | 'follow' | 'connection_request' | 'connection_accepted';
   actorName: string;
   actorAvatar: string;
   postId?: string | null;
