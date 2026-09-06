@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { useAuth as useClerkAuth } from '@clerk/react';
 import type { UserProfile } from '../types';
 
-export type SocialProfile = Pick<UserProfile, 'id' | 'name' | 'email' | 'role' | 'college' | 'branch' | 'academicYear' | 'avatar' | 'bio' | 'rep' | 'level' | 'streakDays' | 'githubUrl' | 'linkedinUrl' | 'skills' | 'selectedDomains'>;
+export type SocialProfile = Pick<UserProfile, 'id' | 'name' | 'role' | 'college' | 'branch' | 'academicYear' | 'avatar' | 'bio' | 'rep' | 'level' | 'streakDays' | 'githubUrl' | 'linkedinUrl' | 'skills' | 'selectedDomains'>;
 
 export interface SocialSummary {
   profile: SocialProfile;
