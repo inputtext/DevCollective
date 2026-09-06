@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
-import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2 } from 'lucide-react';
+import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 const timeAgo = (value: string) => {
@@ -83,6 +83,12 @@ export const Navbar: React.FC = () => {
    }
  };
 
+ const openExternal = (event: React.MouseEvent, url?: string | null) => {
+   event.stopPropagation();
+   if (!url) return;
+   window.open(url, '_blank', 'noopener,noreferrer');
+ };
+
  return <header className="sticky top-0 z-40 h-[74px] border-b-2 border-outline-variant bg-background/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10">
   <div className="flex items-center gap-3 min-w-0">
    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 border-2 border-outline-variant bg-surface" aria-label="Toggle menu">{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
@@ -104,7 +110,13 @@ export const Navbar: React.FC = () => {
       <div className="max-h-[360px] overflow-y-auto">
        {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone interacts with your work, it will appear here.</p></div> : notifications.map((notification) => <div key={notification.id} onClick={() => handleNotificationClick(notification)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleNotificationClick(notification); } }} role="button" tabIndex={0} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors cursor-pointer ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
          {notification.actorAvatar ? <img src={notification.actorAvatar} alt={notification.actorName} className="w-9 h-9 border-2 border-outline-variant object-cover shrink-0" /> : <div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center font-bold shrink-0">{notification.actorName.slice(0, 1)}</div>}
-         <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}<div className="flex items-center justify-between gap-3 mt-2"><p className="dc-mono text-[8px] uppercase text-on-surface-variant">{timeAgo(notification.createdAt)}</p>{notification.type === 'connection_request' && <button type="button" onClick={(event) => { event.stopPropagation(); void handleAcceptConnection(notification); }} disabled={connectionActionBusy === notification.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold shadow-[2px_2px_0_#171717] disabled:opacity-50">{connectionActionBusy === notification.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} {connectionActionBusy === notification.id ? 'Accepting' : 'Accept'}</button>}</div></div>
+         <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}
+         {notification.type === 'connection_request' && (notification.actorGithubUrl || notification.actorLinkedinUrl) && <div className="flex flex-wrap items-center gap-2 mt-3">
+           {notification.actorGithubUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorGithubUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-blue"><Github className="w-3 h-3" /> GitHub</button>}
+           {notification.actorLinkedinUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorLinkedinUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-lavender"><Linkedin className="w-3 h-3" /> LinkedIn</button>}
+           <button type="button" onClick={(event) => { event.stopPropagation(); openProfile(notification.actorId); }} className="px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-mint">View profile</button>
+         </div>}
+         <div className="flex items-center justify-between gap-3 mt-2"><p className="dc-mono text-[8px] uppercase text-on-surface-variant">{timeAgo(notification.createdAt)}</p>{notification.type === 'connection_request' && <button type="button" onClick={(event) => { event.stopPropagation(); void handleAcceptConnection(notification); }} disabled={connectionActionBusy === notification.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold shadow-[2px_2px_0_#171717] disabled:opacity-50">{connectionActionBusy === notification.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} {connectionActionBusy === notification.id ? 'Accepting' : 'Accept'}</button>}</div></div>
        </div>)}
        {connectionActionError && <div className="px-4 py-3 text-[10px] text-error border-t border-outline-variant/40">{connectionActionError}</div>}
       </div>
