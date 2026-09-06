@@ -24,6 +24,7 @@ interface SocialContextValue {
   toggleFollow: (userId: string) => Promise<SocialSummary>;
   requestConnection: (userId: string) => Promise<SocialSummary>;
   respondToConnection: (requestId: string, action: 'accept' | 'reject') => Promise<SocialSummary | null>;
+  removeConnection: (userId: string) => Promise<SocialSummary>;
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
@@ -66,6 +67,11 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return data.summary ? data.summary as SocialSummary : null;
   }, [socialFetch]);
 
+  const removeConnection = useCallback(async (userId: string) => {
+    const data = await socialFetch('?action=remove-connection', { method: 'POST', body: JSON.stringify({ userId }) });
+    return data.summary as SocialSummary;
+  }, [socialFetch]);
+
   const value = useMemo(() => ({
     viewedProfileId,
     openProfile: (userId: string) => setViewedProfileId(userId),
@@ -74,7 +80,8 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     toggleFollow,
     requestConnection,
     respondToConnection,
-  }), [viewedProfileId, loadSocialSummary, toggleFollow, requestConnection, respondToConnection]);
+    removeConnection,
+  }), [viewedProfileId, loadSocialSummary, toggleFollow, requestConnection, respondToConnection, removeConnection]);
 
   return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
 };
