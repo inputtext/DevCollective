@@ -1,15 +1,75 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Check, Link2, Loader2, UserPlus, Users, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { SocialSummary, useSocial } from '../context/SocialContext';
+import { useSocial, type SocialSummary } from '../context/SocialContext';
 
 export const SocialProfileOverlay: React.FC = () => {
-  const { user } = useAuth();
-  const { viewedProfileId, closeProfile, loadSocialSummary, toggleFollow, requestConnection, respondToConnection } = useSocial();
+  const { user, posts } = useAuth();
+  const { viewedProfileId, openProfile, closeProfile, loadSocialSummary, toggleFollow, requestConnection, respondToConnection } = useSocial();
   const [summary, setSummary] = useState<SocialSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || viewedProfileId) return;
+
+    const wireCommunityAuthors = () => {
+      const articles = Array.from(document.querySelectorAll<HTMLElement>('.dc-page-community article'));
+      articles.forEach((article) => {
+        const authorHeading = article.querySelector<HTMLElement>('h4.font-bold');
+        if (!authorHeading) return;
+        const authorName = authorHeading.textContent?.trim() || '';
+        const post = posts.find((item) => item.authorName === authorName && (item.title ? article.textContent?.includes(item.title) : article.textContent?.includes(item.content.slice(0, 40))));
+        if (!post) return;
+
+        const targets = [authorHeading, article.querySelector<HTMLElement>('img.w-11.h-11')].filter(Boolean) as HTMLElement[];
+        targets.forEach((target) => {
+          target.dataset.dcProfileId = post.authorId;
+          target.classList.add('dc-social-profile-link');
+          target.setAttribute('title', `View ${post.authorName}'s profile`);
+          target.setAttribute('role', 'button');
+          target.setAttribute('tabindex', '0');
+        });
+      });
+    };
+
+    wireCommunityAuthors();
+    const observer = new MutationObserver(wireCommunityAuthors);
+    observer.observe(document.body, { subtree: true, childList: true });
+
+    const onClick = (event: MouseEvent) => {
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-dc-profile-id]');
+      if (!target) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const profileId = target.dataset.dcProfileId;
+      if (profileId) openProfile(profileId);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const target = (event.target as HTMLElement | null)?.closest<HTMLElement>('[data-dc-profile-id]');
+      if (!target) return;
+      event.preventDefault();
+      const profileId = target.dataset.dcProfileId;
+      if (profileId) openProfile(profileId);
+    };
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('keydown', onKeyDown, true);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.querySelectorAll<HTMLElement>('[data-dc-profile-id]').forEach((element) => {
+        delete element.dataset.dcProfileId;
+        element.classList.remove('dc-social-profile-link');
+        element.removeAttribute('title');
+        element.removeAttribute('role');
+        element.removeAttribute('tabindex');
+      });
+    };
+  }, [user, viewedProfileId, posts, openProfile]);
 
   useEffect(() => {
     if (!viewedProfileId || viewedProfileId === user?.id) {
@@ -108,8 +168,8 @@ export const SocialProfileOverlay: React.FC = () => {
                 <div className="border-2 border-outline-variant bg-surface p-6 shadow-[5px_5px_0_#171717]">
                   <div className="flex items-end justify-between border-b-2 border-outline-variant pb-4 mb-4"><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">NETWORK / GRAPH</p><h2 className="dc-display text-3xl mt-1">SOCIAL SIGNAL</h2></div><Link2 className="w-5 h-5" /></div>
                   <div className="space-y-4">
-                    <div><div className="flex items-center justify-between mb-2"><p className="font-label-mono text-[9px] uppercase">FOLLOWERS</p><span className="font-label-mono text-[9px]">{summary?.followerCount || 0}</span></div><div className="flex flex-wrap gap-2">{summary?.followers.length ? summary.followers.slice(0, 6).map((person) => <button key={person.id} type="button" onClick={() => { /* profile chaining is intentionally handled by the parent overlay */ }} className="w-9 h-9 border-2 border-outline-variant overflow-hidden bg-dc-yellow" title={person.name}>{person.avatar ? <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" /> : <span className="font-bold text-xs">{person.name.slice(0,1)}</span>}</button>) : <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">No followers yet.</span>}</div></div>
-                    <div><div className="flex items-center justify-between mb-2"><p className="font-label-mono text-[9px] uppercase">CONNECTIONS</p><span className="font-label-mono text-[9px]">{summary?.connectionCount || 0}</span></div><div className="flex flex-wrap gap-2">{summary?.connections.length ? summary.connections.slice(0, 6).map((person) => <div key={person.id} className="w-9 h-9 border-2 border-outline-variant overflow-hidden bg-dc-mint" title={person.name}>{person.avatar ? <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" /> : <span className="font-bold text-xs flex h-full items-center justify-center">{person.name.slice(0,1)}</span>}</div>) : <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">No connections yet.</span>}</div></div>
+                    <div><div className="flex items-center justify-between mb-2"><p className="font-label-mono text-[9px] uppercase">FOLLOWERS</p><span className="font-label-mono text-[9px]">{summary?.followerCount || 0}</span></div><div className="flex flex-wrap gap-2">{summary?.followers.length ? summary.followers.slice(0, 6).map((person) => <button key={person.id} type="button" onClick={() => openProfile(person.id)} className="w-9 h-9 border-2 border-outline-variant overflow-hidden bg-dc-yellow" title={person.name}>{person.avatar ? <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" /> : <span className="font-bold text-xs">{person.name.slice(0,1)}</span>}</button>) : <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">No followers yet.</span>}</div></div>
+                    <div><div className="flex items-center justify-between mb-2"><p className="font-label-mono text-[9px] uppercase">CONNECTIONS</p><span className="font-label-mono text-[9px]">{summary?.connectionCount || 0}</span></div><div className="flex flex-wrap gap-2">{summary?.connections.length ? summary.connections.slice(0, 6).map((person) => <button key={person.id} type="button" onClick={() => openProfile(person.id)} className="w-9 h-9 border-2 border-outline-variant overflow-hidden bg-dc-mint" title={person.name}>{person.avatar ? <img src={person.avatar} alt={person.name} className="w-full h-full object-cover" /> : <span className="font-bold text-xs flex h-full items-center justify-center">{person.name.slice(0,1)}</span>}</button>) : <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">No connections yet.</span>}</div></div>
                   </div>
                 </div>
               </section>
