@@ -18,7 +18,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
+const PROFILE_CACHE_PREFIX = 'devcollective_profile_cache:';
+const MENTORS_CACHE_KEY = 'devcollective_mentors_cache';
+const MENTORS_CACHE_TTL_MS = 5 * 60 * 1000;
 const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: details.name || '', role: details.role || 'student', college: details.college || '', branch: details.branch || '', academicYear: details.academicYear || '' });
+
+const readSessionJson = <T,>(key: string): T | null => {
+  try {
+    const raw = sessionStorage.getItem(key);
+    return raw ? JSON.parse(raw) as T : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionJson = (key: string, value: unknown) => {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Cache is an optimization only; auth must continue to work without it.
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
@@ -45,33 +65,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const syncProfile = useCallback(async () => {
     if (!clerkUser || !isSignedIn) return null;
-    let pending: Record<string, unknown> = {}; const rawPending = sessionStorage.getItem(PENDING_REGISTRATION_KEY);
+    let pending: Record<string, unknown> = {};
+    const rawPending = sessionStorage.getItem(PENDING_REGISTRATION_KEY);
     if (rawPending) { try { pending = JSON.parse(rawPending); } catch { pending = {}; } }
-    const data = await apiFetch('/api/auth/sync', { method: 'POST', body: JSON.stringify(pending) }); sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
+    const data = await apiFetch('/api/auth/sync', { method: 'POST', body: JSON.stringify(pending) });
+    sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
     return { user: data.user as UserProfile, hadPendingRegistration: Boolean(rawPending) };
   }, [apiFetch, clerkUser, isSignedIn]);
 
   const loadMentors = useCallback(async () => {
     if (!isSignedIn) { setMentors([]); return; }
-    try { const data = await apiFetch('/api/mentors'); setMentors(Array.isArray(data.mentors) ? data.mentors : []); }
-    catch (err) { console.error('Could not load mentors from Supabase:', err); setMentors([]); }
+    const cached = readSessionJson<{ savedAt: number; mentors: Mentor[] }>(MENTORS_CACHE_KEY);
+    if (cached?.mentors && Date.now() - cached.savedAt < MENTORS_CACHE_TTL_MS) {
+      setMentors(cached.mentors);
+      return;
+    }
+    try {
+      const data = await apiFetch('/api/mentors');
+      const nextMentors = Array.isArray(data.mentors) ? data.mentors : [];
+      setMentors(nextMentors);
+      writeSessionJson(MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors });
+    } catch (err) {
+      console.error('Could not load mentors from Supabase:', err);
+      setMentors([]);
+    }
   }, [apiFetch, isSignedIn]);
 
   useEffect(() => {
     if (!clerkLoaded) return;
-    if (!isSignedIn) { setUser(null); setMentors([]); setLoadingAuth(false); return; }
+    if (!isSignedIn || !clerkUser) {
+      setUser(null);
+      setMentors([]);
+      setLoadingAuth(false);
+      return;
+    }
+
     let cancelled = false;
-    const hydrate = async () => {
+    const cacheKey = `${PROFILE_CACHE_PREFIX}${clerkUser.id}`;
+    const cachedUser = readSessionJson<UserProfile>(cacheKey);
+
+    // A previously hydrated profile lets the shell render immediately after Clerk
+    // restores the session. The server refresh below keeps the cache authoritative.
+    if (cachedUser) {
+      setUser(cachedUser);
+      setLoadingAuth(false);
+    } else {
       setLoadingAuth(true);
+    }
+
+    const hydrate = async () => {
       try {
         const result = await syncProfile();
-        if (!cancelled && result?.user) { setUser(result.user); setActiveTab((current) => result.hadPendingRegistration ? 'profile-setup' : (current === 'landing' || current === 'login' || current === 'register' ? 'profile' : current)); }
-        await loadMentors();
-      } catch (err: any) { console.error('Could not load DevCollective profile:', err); if (!cancelled) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.'); }
-      finally { if (!cancelled) setLoadingAuth(false); }
+        if (cancelled) return;
+        if (result?.user) {
+          setUser(result.user);
+          writeSessionJson(cacheKey, result.user);
+          setActiveTab((current) => result.hadPendingRegistration ? 'profile-setup' : (current === 'landing' || current === 'login' || current === 'register' ? 'profile' : current));
+        }
+        // Mentor data is secondary to rendering the current page. Load it independently.
+        void loadMentors();
+      } catch (err: any) {
+        console.error('Could not load DevCollective profile:', err);
+        if (!cachedUser) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.');
+      } finally {
+        if (!cancelled && !cachedUser) setLoadingAuth(false);
+      }
     };
-    hydrate(); return () => { cancelled = true; };
-  }, [clerkLoaded, isSignedIn, syncProfile, loadMentors]);
+
+    void hydrate();
+    return () => { cancelled = true; };
+  }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors]);
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
   const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
@@ -97,9 +160,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setMentors([]); setActiveTab('landing'); };
 
   const updateProfile = async (updated: Partial<UserProfile>) => {
-    if (!user) return; setUser({ ...user, ...updated });
-    try { const data = await apiFetch('/api/users/profile', { method: 'PATCH', body: JSON.stringify(updated) }); if (data.user) setUser(data.user); }
-    catch (err) { console.error('Error saving profile to Supabase:', err); }
+    if (!user) return;
+    const optimisticUser = { ...user, ...updated };
+    setUser(optimisticUser);
+    if (clerkUser?.id) writeSessionJson(`${PROFILE_CACHE_PREFIX}${clerkUser.id}`, optimisticUser);
+    try {
+      const data = await apiFetch('/api/users/profile', { method: 'PATCH', body: JSON.stringify(updated) });
+      if (data.user) {
+        setUser(data.user);
+        if (clerkUser?.id) writeSessionJson(`${PROFILE_CACHE_PREFIX}${clerkUser.id}`, data.user);
+      }
+    } catch (err) { console.error('Error saving profile to Supabase:', err); }
   };
   const completeOnboarding = async () => { if (user) await updateProfile({ hasCompletedOnboarding: true }); };
   const toggleTaskCompletion = async (taskId: string) => { const task = tasks.find((t) => t.id === taskId); if (!task) return; const isNowCompleted = !task.completed; setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, completed: isNowCompleted } : t)); if (user) { const repChange = task.repReward || 50; const newRep = isNowCompleted ? user.rep + repChange : Math.max(0, user.rep - repChange); if (isNowCompleted) setRepAnimation({ amount: repChange, id: Date.now() }); await updateProfile({ rep: newRep }); } };
