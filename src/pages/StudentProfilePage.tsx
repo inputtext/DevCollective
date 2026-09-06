@@ -42,7 +42,7 @@ export const StudentProfilePage: React.FC = () => {
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(({ label, value, tone }) => (
-          <div key={label} className="relative overflow-hidden border-2 border-outline-variant bg-surface p-5 shadow-[4px_4px_0_#171717]">
+          <div key={label} className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-5 shadow-[4px_4px_0_#171717]">
             <div className={`absolute inset-x-0 top-0 h-2 ${tone}`} />
             <span className="font-label-mono text-[10px] uppercase text-on-surface-variant block mt-1">{label}</span>
             <span className="dc-display text-3xl mt-2 block">{value}{label === 'STREAK' && <Flame className="inline w-5 h-5 ml-1" />}</span>
@@ -59,19 +59,19 @@ export const StudentProfilePage: React.FC = () => {
         {interests.length ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 pl-2">
             {interests.map((interest, index) => (
-              <div key={interest} className="border-2 border-outline-variant bg-surface-container-low p-4 flex items-center gap-3">
+              <div key={interest} className="dc-hover-block border-2 border-outline-variant bg-surface-container-low p-4 flex items-center gap-3">
                 <span className={`w-8 h-8 border-2 border-outline-variant ${index % 3 === 0 ? 'bg-dc-blue' : index % 3 === 1 ? 'bg-dc-lavender' : 'bg-dc-mint'} flex items-center justify-center font-label-mono text-[10px] font-bold`}>0{index + 1}</span>
                 <div><p className="font-bold text-sm">{interest}</p><p className="font-label-mono text-[9px] uppercase text-on-surface-variant mt-1">Learning path selected</p></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="border-2 border-dashed border-outline-variant p-6 text-center ml-2"><p className="font-label-mono text-xs uppercase text-on-surface-variant">NO PATHS SELECTED</p><button onClick={() => setActiveTab('choose-path')} className="mt-3 text-sm font-bold text-primary">Choose your path →</button></div>
+          <div className="dc-hover-block border-2 border-dashed border-outline-variant p-6 text-center ml-2"><p className="font-label-mono text-xs uppercase text-on-surface-variant">NO PATHS SELECTED</p><button onClick={() => setActiveTab('choose-path')} className="mt-3 text-sm font-bold text-primary">Choose your path →</button></div>
         )}
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
           <div className="absolute inset-x-0 top-0 h-2 bg-dc-blue" />
           <div className="flex items-end justify-between border-b-2 border-outline-variant pb-4 mb-5 pt-1">
             <div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-blue flex items-center justify-center"><Code2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / SKILLS</p><h3 className="dc-display text-3xl mt-1">TECH STACK</h3></div></div>
@@ -80,7 +80,7 @@ export const StudentProfilePage: React.FC = () => {
           {user.skills.length ? <div className="flex flex-wrap gap-2">{user.skills.map((skill) => <span key={skill} className="px-3 py-2 bg-dc-blue border-2 border-outline-variant font-label-mono text-[10px] uppercase">{skill}</span>)}</div> : <p className="font-label-mono text-xs text-on-surface-variant">NO SKILLS ADDED YET.</p>}
         </div>
 
-        <div className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
           <div className="absolute inset-x-0 top-0 h-2 bg-dc-mint" />
           <div className="border-b-2 border-outline-variant pb-4 mb-5 pt-1"><div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-mint flex items-center justify-center"><Link2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / LINKS</p><h3 className="dc-display text-3xl mt-1">IDENTITY</h3></div></div></div>
           <div className="space-y-4 font-label-mono text-xs">
