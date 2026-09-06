@@ -110,7 +110,7 @@ export const SocialProfileOverlay: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] overflow-y-auto bg-background text-on-background">
+    <div data-lenis-prevent-wheel className="fixed inset-0 z-[70] overflow-y-auto overscroll-contain touch-pan-y bg-background text-on-background">
       <div className="min-h-screen p-4 sm:p-6 lg:p-10">
         <div className="max-w-6xl mx-auto pb-16">
           <div className="flex items-center justify-between mb-5">
