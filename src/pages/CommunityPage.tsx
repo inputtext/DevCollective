@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useClerk } from '@clerk/react';
+import { useAuth as useClerkAuth } from '@clerk/react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { Heart, MessageSquare, Plus, Send, Share2, X, Loader2, AlertTriangle, Pencil, Trash2 } from 'lucide-react';
@@ -9,7 +9,7 @@ const COMMENT_REP_REWARD = 5;
 export const CommunityPage: React.FC = () => {
   const { user, posts, commentsByPost, addPost, toggleLikePost, loadPostComments, updateProfile } = useAuth();
   const { toggleCommentLike } = useNotifications();
-  const { getToken } = useClerk();
+  const { getToken } = useClerkAuth();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showNewPostModal, setShowNewPostModal] = useState(false);
   const [postTitle, setPostTitle] = useState('');
