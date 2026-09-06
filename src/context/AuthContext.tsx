@@ -20,23 +20,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
 const PROFILE_CACHE_PREFIX = 'devcollective_profile_cache:';
 const MENTORS_CACHE_KEY = 'devcollective_mentors_cache';
+const PROFILE_CACHE_TTL_MS = 60 * 1000;
 const MENTORS_CACHE_TTL_MS = 5 * 60 * 1000;
 const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: details.name || '', role: details.role || 'student', college: details.college || '', branch: details.branch || '', academicYear: details.academicYear || '' });
 
-const readSessionJson = <T,>(key: string): T | null => {
+const readStorageJson = <T,>(storage: Storage, key: string): T | null => {
   try {
-    const raw = sessionStorage.getItem(key);
+    const raw = storage.getItem(key);
     return raw ? JSON.parse(raw) as T : null;
   } catch {
     return null;
   }
 };
 
-const writeSessionJson = (key: string, value: unknown) => {
+const writeStorageJson = (storage: Storage, key: string, value: unknown) => {
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    storage.setItem(key, JSON.stringify(value));
   } catch {
     // Cache is an optimization only; auth must continue to work without it.
+  }
+};
+
+const setLandingDestination = (setActiveTab: React.Dispatch<React.SetStateAction<PageTab>>, current: PageTab, profile: UserProfile, isNewRegistration = false) => {
+  if (isNewRegistration) {
+    setActiveTab('profile-setup');
+  } else if (current === 'landing' || current === 'login' || current === 'register') {
+    setActiveTab(profile.hasCompletedOnboarding ? 'profile' : 'profile-setup');
   }
 };
 
@@ -75,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadMentors = useCallback(async () => {
     if (!isSignedIn) { setMentors([]); return; }
-    const cached = readSessionJson<{ savedAt: number; mentors: Mentor[] }>(MENTORS_CACHE_KEY);
+    const cached = readStorageJson<{ savedAt: number; mentors: Mentor[] }>(sessionStorage, MENTORS_CACHE_KEY);
     if (cached?.mentors && Date.now() - cached.savedAt < MENTORS_CACHE_TTL_MS) {
       setMentors(cached.mentors);
       return;
@@ -84,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const data = await apiFetch('/api/mentors');
       const nextMentors = Array.isArray(data.mentors) ? data.mentors : [];
       setMentors(nextMentors);
-      writeSessionJson(MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors });
+      writeStorageJson(sessionStorage, MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors });
     } catch (err) {
       console.error('Could not load mentors from Supabase:', err);
       setMentors([]);
@@ -102,15 +111,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     let cancelled = false;
     const cacheKey = `${PROFILE_CACHE_PREFIX}${clerkUser.id}`;
-    const cachedUser = readSessionJson<UserProfile>(cacheKey);
+    const cached = readStorageJson<{ savedAt: number; user: UserProfile }>(localStorage, cacheKey);
+    const cachedUser = cached?.user || null;
+    const cacheFresh = Boolean(cached && Date.now() - cached.savedAt < PROFILE_CACHE_TTL_MS);
 
-    // A previously hydrated profile lets the shell render immediately after Clerk
-    // restores the session. The server refresh below keeps the cache authoritative.
+    // A cached profile lets the workspace render immediately after Clerk restores
+    // the session. Supabase remains authoritative and is refreshed in the background.
     if (cachedUser) {
       setUser(cachedUser);
+      setLandingDestination(setActiveTab, activeTab, cachedUser);
       setLoadingAuth(false);
     } else {
       setLoadingAuth(true);
+    }
+
+    // Fresh cached data does not need a blocking network round-trip on reload.
+    if (cacheFresh) {
+      void loadMentors();
+      return () => { cancelled = true; };
     }
 
     const hydrate = async () => {
@@ -119,8 +137,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (cancelled) return;
         if (result?.user) {
           setUser(result.user);
-          writeSessionJson(cacheKey, result.user);
-          setActiveTab((current) => result.hadPendingRegistration ? 'profile-setup' : (current === 'landing' || current === 'login' || current === 'register' ? 'profile' : current));
+          writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user });
+          setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration);
         }
         // Mentor data is secondary to rendering the current page. Load it independently.
         void loadMentors();
@@ -163,12 +181,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return;
     const optimisticUser = { ...user, ...updated };
     setUser(optimisticUser);
-    if (clerkUser?.id) writeSessionJson(`${PROFILE_CACHE_PREFIX}${clerkUser.id}`, optimisticUser);
+    if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: optimisticUser });
     try {
       const data = await apiFetch('/api/users/profile', { method: 'PATCH', body: JSON.stringify(updated) });
       if (data.user) {
         setUser(data.user);
-        if (clerkUser?.id) writeSessionJson(`${PROFILE_CACHE_PREFIX}${clerkUser.id}`, data.user);
+        if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: data.user });
       }
     } catch (err) { console.error('Error saving profile to Supabase:', err); }
   };
