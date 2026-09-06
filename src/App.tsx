@@ -20,7 +20,6 @@ import './styles/workspace-pastel.css';
 import './styles/dark-theme.css';
 import './styles/workspace-controls.css';
 import './styles/dashboard-ux.css';
-import './styles/dashboard-identity-fix.css';
 import './styles/rep-reward.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
