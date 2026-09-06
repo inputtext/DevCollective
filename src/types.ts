@@ -48,6 +48,18 @@ export interface CommunityPost {
   likedByMe?: boolean;
 }
 
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  authorRole: string;
+  authorRep: number;
+  content: string;
+  createdAt: string;
+}
+
 export interface Mentor {
   id: string;
   name: string;
