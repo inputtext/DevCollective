@@ -96,8 +96,15 @@ export const ProfileSetupPage: React.FC = () => {
   const handleAddSkill = (e: React.KeyboardEvent) => { if (e.key !== 'Enter') return; e.preventDefault(); const skill = newSkillInput.trim(); if (skill && !skills.includes(skill)) { setSkills([...skills, skill]); setNewSkillInput(''); } };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSaving(true); await updateProfile({ branch, academicYear, githubUrl, linkedinUrl, skills, bio }); setIsSaving(false); setIsSaved(true); setTimeout(() => setActiveTab('profile'), 1000);
+    e.preventDefault();
+    setIsSaving(true);
+    await updateProfile({ branch, academicYear, githubUrl, linkedinUrl, skills, bio });
+    setIsSaving(false);
+    setIsSaved(true);
+    setTimeout(() => setActiveTab(user?.hasCompletedOnboarding ? 'profile' : 'choose-path'), 600);
   };
+
+  const handleSkip = () => setActiveTab(user?.hasCompletedOnboarding ? 'profile' : 'choose-path');
 
   return <div className="profile-setup-page min-h-screen bg-background text-on-background flex flex-col pt-20">
     <nav className="fixed top-0 w-full z-50 flex justify-between items-center h-20 px-6 md:px-10 bg-background/80 backdrop-blur-xl border-b-2 border-outline-variant">
@@ -133,7 +140,7 @@ export const ProfileSetupPage: React.FC = () => {
 
             <div className="space-y-2"><div className="flex justify-between"><label className="font-label-mono text-xs uppercase text-on-surface-variant">Tell us about yourself</label><span className="font-label-mono text-[10px] text-on-surface-variant">{bio.length}/250</span></div><textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 250))} rows={4} placeholder="Your bio (optional)" className="w-full bg-surface border-2 border-outline-variant p-3.5 text-sm resize-none" /></div>
 
-            <div className="flex gap-3 pt-2"><button type="submit" disabled={isSaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] py-4 font-label-mono text-xs uppercase font-bold">{isSaved ? 'Saved' : isSaving ? 'Saving...' : 'Complete Profile'}</button><button type="button" onClick={() => setActiveTab('profile')} className="px-6 border-2 border-outline-variant py-4 font-label-mono text-xs uppercase">Skip for now</button></div>
+            <div className="flex gap-3 pt-2"><button type="submit" disabled={isSaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] py-4 font-label-mono text-xs uppercase font-bold">{isSaved ? 'Saved' : isSaving ? 'Saving...' : user?.hasCompletedOnboarding ? 'Save Profile' : 'Continue to Learning Path'}</button><button type="button" onClick={handleSkip} className="px-6 border-2 border-outline-variant py-4 font-label-mono text-xs uppercase">{user?.hasCompletedOnboarding ? 'Back to Profile' : 'Skip for now'}</button></div>
           </form>
         </div>
       </div>
