@@ -71,6 +71,8 @@ export interface NotificationItem {
   actorId: string;
   actorName: string;
   actorAvatar: string;
+  actorGithubUrl?: string | null;
+  actorLinkedinUrl?: string | null;
   postId?: string | null;
   commentId?: string | null;
   postTitle: string;
