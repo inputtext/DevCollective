@@ -10,7 +10,7 @@ interface AuthContextType {
   showResumePrompt: boolean; dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>; registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>; logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>; toggleTaskCompletion: (taskId: string) => Promise<void>;
-  addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => void; toggleLikePost: (postId: string) => void; completeOnboarding: () => Promise<void>;
+  addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => Promise<void>; toggleLikePost: (postId: string) => Promise<void>; completeOnboarding: () => Promise<void>;
   repAnimation: { amount: number; id: number } | null; requestPasswordReset: (email: string) => Promise<void>; resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   authRedirectError: string | null; clearAuthRedirectError: () => void;
   oauthInfo: { googleConfigured: boolean; githubConfigured: boolean; appUrl: string; googleCallbackUrl: string; githubCallbackUrl: string } | null;
@@ -100,10 +100,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [apiFetch, isSignedIn]);
 
+  const loadPosts = useCallback(async () => {
+    if (!isSignedIn) { setPosts([]); return; }
+    try {
+      const data = await apiFetch('/api/community/posts');
+      setPosts(Array.isArray(data.posts) ? data.posts : []);
+    } catch (err) {
+      console.error('Could not load community posts from Supabase:', err);
+      setPosts([]);
+    }
+  }, [apiFetch, isSignedIn]);
+
   useEffect(() => {
     if (!clerkLoaded) return;
     if (!isSignedIn || !clerkUser) {
       setUser(null);
+      setPosts([]);
       setMentors([]);
       setLoadingAuth(false);
       return;
@@ -115,8 +127,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cachedUser = cached?.user || null;
     const cacheFresh = Boolean(cached && Date.now() - cached.savedAt < PROFILE_CACHE_TTL_MS);
 
-    // A cached profile lets the workspace render immediately after Clerk restores
-    // the session. Supabase remains authoritative and is refreshed in the background.
     if (cachedUser) {
       setUser(cachedUser);
       setLandingDestination(setActiveTab, activeTab, cachedUser);
@@ -125,7 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoadingAuth(true);
     }
 
-    // Fresh cached data does not need a blocking network round-trip on reload.
+    // Community content is intentionally independent from profile hydration so the workspace is not blocked by it.
+    void loadPosts();
+
     if (cacheFresh) {
       void loadMentors();
       return () => { cancelled = true; };
@@ -140,7 +152,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user });
           setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration);
         }
-        // Mentor data is secondary to rendering the current page. Load it independently.
         void loadMentors();
       } catch (err: any) {
         console.error('Could not load DevCollective profile:', err);
@@ -152,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     void hydrate();
     return () => { cancelled = true; };
-  }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors]);
+  }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors, loadPosts]);
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
   const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
@@ -175,7 +186,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => { if (!details.email || !details.name) throw new Error('Name and email are required for registration.'); const pending = buildPendingRegistration(details); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: { emailAddress: details.email }, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); };
   const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
-  const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setMentors([]); setActiveTab('landing'); };
+  const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setPosts([]); setMentors([]); setActiveTab('landing'); };
 
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
@@ -192,8 +203,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   const completeOnboarding = async () => { if (user) await updateProfile({ hasCompletedOnboarding: true }); };
   const toggleTaskCompletion = async (taskId: string) => { const task = tasks.find((t) => t.id === taskId); if (!task) return; const isNowCompleted = !task.completed; setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, completed: isNowCompleted } : t)); if (user) { const repChange = task.repReward || 50; const newRep = isNowCompleted ? user.rep + repChange : Math.max(0, user.rep - repChange); if (isNowCompleted) setRepAnimation({ amount: repChange, id: Date.now() }); await updateProfile({ rep: newRep }); } };
-  const addPost = (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => { if (!user) return; const newPost: CommunityPost = { ...post, id: `post_${Date.now()}`, authorId: user.id, likes: 0, commentsCount: 0, createdAt: new Date().toLocaleString(), likedByMe: false }; setPosts((prev) => [newPost, ...prev]); };
-  const toggleLikePost = (postId: string) => setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, likes: p.likedByMe ? Math.max(0, p.likes - 1) : p.likes + 1, likedByMe: !p.likedByMe } : p));
+
+  const addPost = async (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => {
+    if (!user) return;
+    const data = await apiFetch('/api/community/posts', {
+      method: 'POST',
+      body: JSON.stringify({
+        category: post.category,
+        title: post.title,
+        content: post.content,
+        imageUrl: post.imageUrl,
+      }),
+    });
+    if (data.post) setPosts((prev) => [data.post as CommunityPost, ...prev.filter((existing) => existing.id !== data.post.id)]);
+  };
+
+  const toggleLikePost = async (postId: string) => {
+    if (!user) return;
+    const previousPosts = posts;
+    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: !post.likedByMe, likes: post.likedByMe ? Math.max(0, post.likes - 1) : post.likes + 1 } : post));
+    try {
+      const data = await apiFetch(`/api/community/posts/${encodeURIComponent(postId)}/like`, { method: 'POST' });
+      if (typeof data.likes === 'number') setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: Boolean(data.likedByMe), likes: data.likes } : post));
+    } catch (err) {
+      console.error('Error updating community post like:', err);
+      setPosts(previousPosts);
+    }
+  };
 
   return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, toggleTaskCompletion, addPost, toggleLikePost, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
 };
