@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from '@clerk/react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/react';
 import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
 
@@ -73,9 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hydrate(); return () => { cancelled = true; };
   }, [clerkLoaded, isSignedIn, syncProfile, loadMentors]);
 
-  // The registration flow intentionally uses Clerk's sign-up modal. The email/password
-  // login page is fully custom, so entering the login route must clear any sign-up attempt
-  // that may still be mounted from a previous registration interaction.
+  // Registration intentionally uses Clerk's sign-up modal. Custom email/password login must never inherit that attempt.
   useEffect(() => {
     if (activeTab !== 'login') return;
     clerk.client.resetSignUp();
