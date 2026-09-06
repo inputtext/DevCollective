@@ -31,12 +31,13 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
-      className={`sticky top-0 h-screen shrink-0 bg-surface border-r-2 border-outline-variant hidden md:flex flex-col py-6 overflow-y-auto transition-all duration-300 z-30 ${
+      data-lenis-prevent-wheel
+      className={`sticky top-0 h-screen shrink-0 bg-surface border-r-2 border-outline-variant hidden md:flex flex-col py-6 overflow-y-auto overscroll-contain transition-all duration-300 z-30 ${
         sidebarCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       {/* Header & Toggle Button */}
-      <div className="px-4 mb-6 flex items-center justify-between">
+      <div className="px-4 mb-6 flex items-center justify-between shrink-0">
         {!sidebarCollapsed ? (
           <div
             onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
@@ -78,7 +79,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {sidebarCollapsed && (
-        <div className="px-3 mb-4">
+        <div className="px-3 mb-4 shrink-0">
           <button
             onClick={toggleSidebar}
             title="Expand sidebar"
@@ -90,7 +91,7 @@ export const Sidebar: React.FC = () => {
       )}
 
       {/* Navigation Items */}
-      <nav className="flex-1 space-y-1.5 px-3">
+      <nav className="flex-1 min-h-0 space-y-1.5 px-3">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -116,7 +117,7 @@ export const Sidebar: React.FC = () => {
       </nav>
 
       {/* Action Footer */}
-      <div className="px-3 mt-auto space-y-4 pt-4 border-t-2 border-outline-variant">
+      <div className="px-3 mt-auto shrink-0 space-y-4 pt-4 border-t-2 border-outline-variant">
         {!sidebarCollapsed ? (
           <button
             onClick={() => setActiveTab('community')}
