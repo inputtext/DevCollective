@@ -60,7 +60,7 @@ const RepRewardToast: React.FC = () => {
     previousRepRef.current = user.rep;
 
     // Dashboard has its existing task-specific REP toast. This global layer handles
-    // reputation earned on other product surfaces, such as community comments.
+    // reputation earned on other product surfaces, such as community comments/posts.
     if (previousRep !== null && user.rep > previousRep && activeTab !== 'dashboard') {
       setReward({ amount: user.rep - previousRep, id: Date.now() });
     }
@@ -68,7 +68,7 @@ const RepRewardToast: React.FC = () => {
 
   useEffect(() => {
     if (!reward) return;
-    const timer = window.setTimeout(() => setReward(null), 2300);
+    const timer = window.setTimeout(() => setReward(null), 3000);
     return () => window.clearTimeout(timer);
   }, [reward]);
 
