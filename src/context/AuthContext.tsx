@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useAuth as useClerkAuth, useClerk, useUser } from '@clerk/react';
+import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/react';
 import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
 
 export type PageTab = 'landing' | 'login' | 'register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'profile' | 'admin';
@@ -23,13 +23,13 @@ const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: det
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
+  const { signIn } = useSignIn();
   const clerk = useClerk();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [repAnimation, setRepAnimation] = useState<{ amount: number; id: number } | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => localStorage.getItem('devcollective_sidebar_collapsed') === 'true');
   const [activeTab, setActiveTab] = useState<PageTab>('landing');
-  // No demo/seeded application data. Everything below starts empty and is populated only by real activity/database data.
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -79,7 +79,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (registrationDetails) { const pending = buildPendingRegistration(registrationDetails); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); return; }
     clerk.openSignIn({ signUpFallbackRedirectUrl: '/' });
   };
-  const loginWithEmail = async (email: string, _password?: string) => { if (!email) throw new Error('Please enter your email address.'); clerk.openSignIn({ initialValues: { emailAddress: email }, signUpFallbackRedirectUrl: '/' }); };
+  const loginWithEmail = async (email: string, password?: string) => {
+    if (!email.trim()) throw new Error('Please enter your email address.');
+    if (!password) throw new Error('Please enter your password.');
+    const { error } = await signIn.password({ emailAddress: email.trim(), password });
+    if (error) throw new Error(error.message || 'The email or password is incorrect.');
+    if (signIn.status === 'complete') {
+      const result = await signIn.finalize({ navigate: ({ decorateUrl }) => { window.location.href = decorateUrl('/'); } });
+      if (result.error) throw new Error(result.error.message || 'Could not complete sign in.');
+      return;
+    }
+    throw new Error('Additional verification is required for this account.');
+  };
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => { if (!details.email || !details.name) throw new Error('Name and email are required for registration.'); const pending = buildPendingRegistration(details); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: { emailAddress: details.email }, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); };
   const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
