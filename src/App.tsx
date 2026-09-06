@@ -15,6 +15,7 @@ import './styles/profile-setup.css';
 import './styles/login.css';
 import './styles/login-modern.css';
 import './styles/profile-setup-theme.css';
+import './styles/workspace-pastel.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
@@ -99,7 +100,7 @@ const MainContent: React.FC = () => {
       {!isFullLayout && <Sidebar />}
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <main className={`flex-1 min-w-0 ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}>
+        <main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}>
           <Suspense fallback={<PageLoadingFallback />}>
             {activeTab === 'landing' && <LandingPage />}
             {activeTab === 'login' && <LoginPage />}
