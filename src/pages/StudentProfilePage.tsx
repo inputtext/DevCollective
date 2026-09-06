@@ -1,12 +1,13 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Flame, Github, Linkedin, Pencil } from 'lucide-react';
+import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, setActiveTab } = useAuth();
   if (!user) return null;
 
   const display = (value: string | undefined, empty = 'Not set') => value?.trim() || empty;
+  const interests = user.selectedDomains || [];
 
   return (
     <div className="space-y-8 pb-16">
@@ -39,6 +40,25 @@ export const StudentProfilePage: React.FC = () => {
             <span className="dc-display text-3xl mt-2 block">{value}{label === 'STREAK' && <Flame className="inline w-5 h-5 ml-1" />}</span>
           </div>
         ))}
+      </section>
+
+      <section className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-outline-variant pb-4 mb-6">
+          <div className="flex items-start gap-3"><div className="w-10 h-10 border-2 border-outline-variant bg-dc-lavender flex items-center justify-center"><Compass className="w-5 h-5" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DISCOVERY / PATH SIGNAL</p><h3 className="dc-display text-3xl mt-1">INTERESTED IN</h3></div></div>
+          <button onClick={() => setActiveTab('choose-path')} className="font-label-mono text-[10px] uppercase tracking-[0.12em] text-primary inline-flex items-center gap-2">Edit paths <ArrowRight className="w-3.5 h-3.5" /></button>
+        </div>
+        {interests.length ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {interests.map((interest, index) => (
+              <div key={interest} className="border-2 border-outline-variant bg-surface-container-low p-4 flex items-center gap-3">
+                <span className="w-8 h-8 border-2 border-outline-variant bg-dc-blue flex items-center justify-center font-label-mono text-[10px] font-bold">0{index + 1}</span>
+                <div><p className="font-bold text-sm">{interest}</p><p className="font-label-mono text-[9px] uppercase text-on-surface-variant mt-1">Learning path selected</p></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="border-2 border-dashed border-outline-variant p-6 text-center"><p className="font-label-mono text-xs uppercase text-on-surface-variant">NO PATHS SELECTED</p><button onClick={() => setActiveTab('choose-path')} className="mt-3 text-sm font-bold text-primary">Choose your path →</button></div>
+        )}
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
