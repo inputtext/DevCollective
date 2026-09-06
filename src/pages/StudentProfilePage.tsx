@@ -1,13 +1,61 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity } from 'lucide-react';
+import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity, X, Loader2, Save } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
-  const { user, setActiveTab } = useAuth();
+  const { user, setActiveTab, updateProfile } = useAuth();
+  const [showIdentityEditor, setShowIdentityEditor] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editCollege, setEditCollege] = useState('');
+  const [identitySaving, setIdentitySaving] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
+
   if (!user) return null;
 
   const display = (value: string | undefined, empty = 'Not set') => value?.trim() || empty;
   const interests = user.selectedDomains || [];
+
+  const openIdentityEditor = () => {
+    setEditName(user.name || '');
+    setEditCollege(user.college || '');
+    setIdentityError(null);
+    setShowIdentityEditor(true);
+  };
+
+  const closeIdentityEditor = () => {
+    if (identitySaving) return;
+    setShowIdentityEditor(false);
+    setIdentityError(null);
+  };
+
+  const saveIdentity = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = editName.trim().replace(/\s+/g, ' ');
+    const college = editCollege.trim().replace(/\s+/g, ' ');
+    if (!name) {
+      setIdentityError('Name cannot be empty.');
+      return;
+    }
+    if (name.length > 100) {
+      setIdentityError('Name must be 100 characters or fewer.');
+      return;
+    }
+    if (college.length > 160) {
+      setIdentityError('College name must be 160 characters or fewer.');
+      return;
+    }
+
+    setIdentitySaving(true);
+    setIdentityError(null);
+    try {
+      await updateProfile({ name, college });
+      setShowIdentityEditor(false);
+    } catch (err: any) {
+      setIdentityError(err?.message || 'Could not save your profile details.');
+    } finally {
+      setIdentitySaving(false);
+    }
+  };
 
   const statCards = [
     { label: 'LEVEL', value: String(user.level), tone: 'bg-dc-blue' },
@@ -33,6 +81,7 @@ export const StudentProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
+            <button onClick={openIdentityEditor} className="flex items-center gap-2 px-4 py-3 bg-dc-blue border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit name & college</button>
             <button onClick={() => setActiveTab('profile-setup')} className="flex items-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit Profile</button>
             {user.githubUrl && <a href={user.githubUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Github className="w-5 h-5" /></a>}
             {user.linkedinUrl && <a href={user.linkedinUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Linkedin className="w-5 h-5" /></a>}
@@ -99,6 +148,8 @@ export const StudentProfilePage: React.FC = () => {
         </div>
         <p className="text-sm text-on-surface-variant">Your activity, achievements, projects, and learning history will appear here as you use DevCollective. Nothing is pre-populated.</p>
       </section>
+
+      {showIdentityEditor && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 sm:p-7 max-w-lg w-full shadow-[7px_7px_0_#171717] relative"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="absolute top-3 right-3 p-1 disabled:opacity-40" aria-label="Close editor"><X className="w-5 h-5" /></button><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">PROFILE / IDENTITY</p><h3 className="dc-display text-4xl mt-2">UPDATE SIGNAL.</h3><p className="text-sm text-on-surface-variant mt-2 mb-6">Keep the public identity on your DevCollective profile current.</p><form onSubmit={saveIdentity} className="space-y-4"><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">Full name</span><input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={100} autoFocus disabled={identitySaving} className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">College / Institution</span><input value={editCollege} onChange={(e) => setEditCollege(e.target.value)} maxLength={160} disabled={identitySaving} placeholder="Your college or institution" className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label>{identityError && <p className="text-xs text-error">{identityError}</p>}<div className="flex gap-3 pt-2"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="flex-1 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase">Cancel</button><button type="submit" disabled={identitySaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] flex items-center justify-center gap-2">{identitySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {identitySaving ? 'Saving...' : 'Save changes'}</button></div></form></div></div>}
     </div>
   );
 };
