@@ -102,6 +102,21 @@
   background: linear-gradient(135deg, var(--dc-blue), var(--dc-lavender));
 }
 
+/* ROADMAPS — light-mode text correction: the legacy white heading classes
+ * were designed for the older dark surface and become unreadable on warm white. */
+html.light .dc-page-roadmap h2.text-white,
+html.light .dc-page-roadmap h3.text-white,
+html.light .dc-page-roadmap h4.text-white {
+  color: var(--on-surface) !important;
+}
+html.light .dc-page-roadmap .text-white:not(button):not(a) {
+  color: var(--on-surface) !important;
+}
+html.light .dc-page-roadmap button.text-white,
+html.light .dc-page-roadmap a.text-white {
+  color: var(--on-primary) !important;
+}
+
 /* LEADERBOARD — yellow = achievement / recognition */
 .dc-page-leaderboard > header > div:first-child > div {
   background: var(--dc-yellow);
