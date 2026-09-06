@@ -33,6 +33,23 @@ const finalizeRoadmapFunctionDeclaration = { name: 'finalize_roadmap', descripti
 app.post('/api/ai/roadmap-chat', async (req, res) => { try { const { message, history } = req.body as { message: string; history?: { role: 'user' | 'model'; text: string }[] }; if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const contents = [...(history || []).slice(-16).map((h) => ({ role: h.role, parts: [{ text: h.text }] })), { role: 'user', parts: [{ text: message }] }]; const response = await ai.models.generateContent({ model: AI_MODEL, contents, config: { systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT, tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }] } }); const functionCalls = response.functionCalls; if (functionCalls?.length && functionCalls[0].name === 'finalize_roadmap') return res.json({ success: true, type: 'roadmap', roadmap: functionCalls[0].args }); return res.json({ success: true, type: 'question', message: response.text || "Could you tell me a bit more about what you're interested in?" }); } catch (err: any) { console.error('Error in /api/ai/roadmap-chat:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
 app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, res) => { try { if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const { PDFParse } = await import('pdf-parse'); const parser = new PDFParse({ data: req.file.buffer }); const textResult = await parser.getText(); await parser.destroy(); const resumeText = textResult.text.slice(0, 15000); if (!resumeText.trim()) return res.status(422).json({ error: 'Could not extract any text from this PDF. Try a text-based PDF, not a scanned image.' }); const prompt = `Here is the raw extracted text from a student's resume:\n\n"""\n${resumeText}\n"""\n\nRead it carefully and extract structured profile data for a college developer platform. Only include information actually present or strongly implied. Do not invent information.`; const response = await ai.models.generateContent({ model: AI_MODEL, contents: prompt, config: { systemInstruction: 'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements.', responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { branch: { type: Type.STRING }, academicYear: { type: Type.STRING }, bio: { type: Type.STRING }, skills: { type: Type.ARRAY, items: { type: Type.STRING } }, githubUrl: { type: Type.STRING }, linkedinUrl: { type: Type.STRING }, confidence: { type: Type.STRING } }, required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'] } } }); const parsed = JSON.parse(response.text || '{}'); return res.json({ success: true, extracted: parsed }); } catch (err: any) { console.error('Error parsing resume:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
 
-app.use(express.static(path.join(process.cwd(), 'dist')));
-app.get('*', async (req, res, next) => { if (req.path.startsWith('/api/')) return next(); try { if (process.env.NODE_ENV === 'production') return res.sendFile(path.join(process.cwd(), 'dist', 'index.html')); const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' }); vite.middlewares(req, res, next); } catch (err) { next(err); } });
-app.listen(PORT, () => console.log(`DevCollective server running on http://localhost:${PORT}`));
+async function startServer() {
+  if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(process.cwd(), 'dist')));
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) return next();
+      res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
+    });
+  } else {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
+  }
+
+  app.listen(PORT, () => console.log(`DevCollective server running on http://localhost:${PORT}`));
+}
+
+startServer();
+
