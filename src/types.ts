@@ -58,6 +58,7 @@ export interface CommunityComment {
   authorRep: number;
   content: string;
   createdAt: string;
+  updatedAt?: string;
   likes: number;
   likedByMe?: boolean;
 }
