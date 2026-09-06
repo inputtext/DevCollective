@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
-import { Search, Bell, Shield, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2 } from 'lucide-react';
+import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
 const timeAgo = (value: string) => {
@@ -17,7 +17,7 @@ const timeAgo = (value: string) => {
 };
 
 export const Navbar: React.FC = () => {
- const { user, activeTab, setActiveTab, logout, setShowOAuthModal } = useAuth();
+ const { user, activeTab, setActiveTab, logout } = useAuth();
  const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead, refreshNotifications } = useNotifications();
  const { openProfile, loadSocialSummary, respondToConnection } = useSocial();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -91,7 +91,6 @@ export const Navbar: React.FC = () => {
   <div className="flex items-center gap-2 sm:gap-3">
    <div className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW / IN BUILD</div>
    <ThemeToggle />
-   <button onClick={() => setShowOAuthModal(true)} className="hidden xl:flex items-center gap-2 px-3 py-2 border-2 border-outline-variant bg-surface dc-mono text-[9px] uppercase text-primary"><Shield className="w-3.5 h-3.5" /> OAuth Keys</button>
    <div className="relative" data-notification-panel>
     <button onClick={() => setPanelOpen(!panelOpen)} className={`relative p-2 border-2 hover:border-outline-variant hover:bg-surface ${unreadCount ? 'text-primary' : 'border-transparent text-on-surface-variant'}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
       <Bell className={`w-5 h-5 ${unreadCount ? 'animate-[dcBell_1.8s_ease-in-out_infinite]' : ''}`} />
