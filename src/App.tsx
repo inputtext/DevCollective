@@ -6,6 +6,8 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SocialProvider } from './context/SocialContext';
+import { SocialProfileOverlay } from './components/SocialProfileOverlay';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
@@ -59,8 +61,6 @@ const RepRewardToast: React.FC = () => {
     const previousRep = previousRepRef.current;
     previousRepRef.current = user.rep;
 
-    // Dashboard has its existing task-specific REP toast. This global layer handles
-    // reputation earned on other product surfaces, such as community comments/posts.
     if (previousRep !== null && user.rep > previousRep && activeTab !== 'dashboard') {
       setReward({ amount: user.rep - previousRep, id: Date.now() });
     }
@@ -173,10 +173,11 @@ const MainContent: React.FC = () => {
       <OAuthGuideModal />
       {user && <ChatWidget />}
       {user && <ResumeUploadPromptModal />}
+      <SocialProfileOverlay />
     </div>
   );
 };
 
 export default function App() {
-  return <AuthProvider><NotificationProvider><MainContent /></NotificationProvider></AuthProvider>;
+  return <AuthProvider><NotificationProvider><SocialProvider><MainContent /></SocialProvider></NotificationProvider></AuthProvider>;
 }
