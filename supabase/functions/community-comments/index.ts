@@ -23,13 +23,11 @@ async function getClerkUserId(req: Request): Promise<string> {
   const header = req.headers.get("authorization") || "";
   const token = header.replace(/^Bearer\s+/i, "").trim();
   if (!token) throw new Error("Not authenticated.");
-
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid authentication token.");
   const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
   const issuer = String(payload.iss || "").replace(/\/$/, "");
   if (!issuer || !issuer.startsWith("https://")) throw new Error("Invalid authentication token.");
-
   const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`));
   const verified = await jwtVerify(token, jwks, { issuer });
   const userId = String(verified.payload.sub || "");
@@ -37,7 +35,7 @@ async function getClerkUserId(req: Request): Promise<string> {
   return userId;
 }
 
-async function loadComments(postId: string) {
+async function loadComments(postId: string, viewerId: string) {
   const { data: comments, error } = await supabase
     .from("devcollective_post_comments")
     .select("id,post_id,author_clerk_user_id,content,created_at")
@@ -55,6 +53,19 @@ async function loadComments(postId: string) {
   if (profileError) throw profileError;
   const profileMap = new Map((profiles || []).map((profile) => [profile.clerk_user_id, profile]));
 
+  const commentIds = comments.map((comment) => comment.id);
+  const { data: likes, error: likeError } = await supabase
+    .from("devcollective_post_comment_likes")
+    .select("comment_id,user_clerk_user_id")
+    .in("comment_id", commentIds);
+  if (likeError) throw likeError;
+  const likeCount = new Map<string, number>();
+  const likedByViewer = new Set<string>();
+  for (const like of likes || []) {
+    likeCount.set(like.comment_id, (likeCount.get(like.comment_id) || 0) + 1);
+    if (like.user_clerk_user_id === viewerId) likedByViewer.add(like.comment_id);
+  }
+
   return comments.map((comment) => {
     const author = profileMap.get(comment.author_clerk_user_id);
     return {
@@ -67,6 +78,8 @@ async function loadComments(postId: string) {
       authorRep: Number(author?.rep) || 0,
       content: comment.content,
       createdAt: comment.created_at,
+      likes: likeCount.get(comment.id) || 0,
+      likedByMe: likedByViewer.has(comment.id),
     };
   });
 }
@@ -93,7 +106,7 @@ Deno.serve(async (req) => {
 
     if (req.method === "GET") {
       if (!postId) return json({ error: "postId is required." }, 400);
-      return json({ comments: await loadComments(postId), viewerId: userId });
+      return json({ comments: await loadComments(postId, userId), viewerId: userId });
     }
 
     if (req.method === "POST") {
@@ -118,7 +131,7 @@ Deno.serve(async (req) => {
         .single();
       if (error) throw error;
 
-      const comments = await loadComments(targetPostId);
+      const comments = await loadComments(targetPostId, userId);
       return json({ comment: comments.find((item) => item.id === created.id) || null, count: comments.length }, 201);
     }
 
