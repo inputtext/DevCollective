@@ -5,11 +5,12 @@ import { useSocial, type SocialSummary } from '../context/SocialContext';
 
 export const SocialProfileOverlay: React.FC = () => {
   const { user, posts } = useAuth();
-  const { viewedProfileId, openProfile, closeProfile, loadSocialSummary, toggleFollow, requestConnection, respondToConnection } = useSocial();
+  const { viewedProfileId, openProfile, closeProfile, loadSocialSummary, toggleFollow, requestConnection, respondToConnection, removeConnection } = useSocial();
   const [summary, setSummary] = useState<SocialSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [action, setAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [connectionMenuOpen, setConnectionMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!user || viewedProfileId) return;
@@ -74,11 +75,13 @@ export const SocialProfileOverlay: React.FC = () => {
   useEffect(() => {
     if (!viewedProfileId || viewedProfileId === user?.id) {
       setSummary(null);
+      setConnectionMenuOpen(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setConnectionMenuOpen(false);
     void loadSocialSummary(viewedProfileId)
       .then((next) => { if (!cancelled) setSummary(next); })
       .catch((err: any) => { if (!cancelled) setError(err?.message || 'Could not load this profile.'); })
@@ -107,6 +110,13 @@ export const SocialProfileOverlay: React.FC = () => {
     if (!summary?.connectionRequestId || isActing) return;
     setAction(response); setError(null);
     try { setSummary(await respondToConnection(summary.connectionRequestId, response) || summary); } catch (err: any) { setError(err?.message || 'Could not update connection request.'); } finally { setAction(null); }
+  };
+
+  const doRemoveConnection = async () => {
+    if (!profile || isActing) return;
+    if (!window.confirm(`Remove ${profile.name} from your connections?`)) return;
+    setAction('remove'); setError(null); setConnectionMenuOpen(false);
+    try { setSummary(await removeConnection(profile.id)); } catch (err: any) { setError(err?.message || 'Could not remove this connection.'); } finally { setAction(null); }
   };
 
   return (
@@ -139,7 +149,15 @@ export const SocialProfileOverlay: React.FC = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {summary && <button type="button" onClick={() => void doFollow()} disabled={isActing} className={`inline-flex items-center gap-2 px-4 py-3 border-2 border-outline-variant font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] ${summary.isFollowing ? 'bg-dc-mint' : 'bg-dc-blue'}`}>{action === 'follow' ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}{summary.isFollowing ? 'Following' : 'Follow'}</button>}
-                    {summary?.connectionStatus === 'connected' && <span className="inline-flex items-center gap-2 px-4 py-3 border-2 border-outline-variant bg-dc-lavender font-label-mono text-[10px] uppercase font-bold"><Check className="w-4 h-4" /> Connected</span>}
+                    {summary?.connectionStatus === 'connected' && <div className="relative">
+                      <button type="button" onClick={() => setConnectionMenuOpen((open) => !open)} disabled={isActing} className="inline-flex items-center gap-2 px-4 py-3 border-2 border-outline-variant bg-dc-lavender font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717]">
+                        {action === 'remove' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                        {action === 'remove' ? 'Removing...' : 'Connected'}
+                      </button>
+                      {connectionMenuOpen && !isActing && <div className="absolute right-0 top-full mt-2 min-w-[190px] z-10 border-2 border-outline-variant bg-surface shadow-[4px_4px_0_#171717] p-1">
+                        <button type="button" onClick={() => void doRemoveConnection()} className="w-full text-left px-3 py-2.5 font-label-mono text-[9px] uppercase font-bold hover:bg-dc-pink/60">Remove connection</button>
+                      </div>}
+                    </div>}
                     {summary?.connectionStatus === 'outgoing_pending' && <button type="button" disabled className="px-4 py-3 border-2 border-outline-variant bg-surface-container-low font-label-mono text-[10px] uppercase font-bold">Request sent</button>}
                     {summary?.connectionStatus === 'none' && <button type="button" onClick={() => void doConnect()} disabled={isActing} className="inline-flex items-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717]">{action === 'connect' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />} Connect</button>}
                     {summary?.connectionStatus === 'incoming_pending' && <><button type="button" onClick={() => void doRespond('accept')} disabled={isActing} className="inline-flex items-center gap-2 px-4 py-3 bg-dc-mint border-2 border-outline-variant font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717]"><Check className="w-4 h-4" /> {action === 'accept' ? 'Accepting...' : 'Accept'}</button><button type="button" onClick={() => void doRespond('reject')} disabled={isActing} className="px-4 py-3 bg-surface border-2 border-outline-variant font-label-mono text-[10px] uppercase font-bold">{action === 'reject' ? 'Ignoring...' : 'Ignore'}</button></>}
