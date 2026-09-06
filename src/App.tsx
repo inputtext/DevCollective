@@ -5,6 +5,7 @@
 
 import React, { lazy, Suspense, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
@@ -127,5 +128,5 @@ const MainContent: React.FC = () => {
 };
 
 export default function App() {
-  return <AuthProvider><MainContent /></AuthProvider>;
+  return <AuthProvider><NotificationProvider><MainContent /></NotificationProvider></AuthProvider>;
 }
