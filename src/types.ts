@@ -58,6 +58,21 @@ export interface CommunityComment {
   authorRep: number;
   content: string;
   createdAt: string;
+  likes: number;
+  likedByMe?: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'post_like' | 'comment_like';
+  actorName: string;
+  actorAvatar: string;
+  postId?: string | null;
+  commentId?: string | null;
+  postTitle: string;
+  commentPreview: string;
+  createdAt: string;
+  readAt?: string | null;
 }
 
 export interface Mentor {
