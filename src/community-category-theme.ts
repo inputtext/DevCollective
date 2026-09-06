@@ -11,36 +11,37 @@ const CATEGORY_STYLES: Record<string, { accent: string; soft: string; strong: st
 };
 
 const CATEGORY_NAMES = Object.keys(CATEGORY_STYLES);
-
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
 
+const setThemeVars = (element: HTMLElement, category: string) => {
+  const style = CATEGORY_STYLES[category];
+  if (!style) return;
+  element.dataset.dcCategory = category;
+  element.style.setProperty('--dc-cat-accent', style.accent);
+  element.style.setProperty('--dc-cat-soft', style.soft);
+  element.style.setProperty('--dc-cat-strong', style.strong);
+};
+
 const applyCategoryTheme = () => {
-  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('button'));
-  for (const button of buttons) {
-    const category = CATEGORY_NAMES.find((name) => normalize(button.textContent || '') === name);
-    if (!category) continue;
-    const style = CATEGORY_STYLES[category];
-    button.dataset.dcCategory = category;
-    button.style.setProperty('--dc-cat-accent', style.accent);
-    button.style.setProperty('--dc-cat-soft', style.soft);
-    button.style.setProperty('--dc-cat-strong', style.strong);
+  const allButton = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+    .find((button) => normalize(button.textContent || '') === 'All');
+
+  const filterRow = allButton?.parentElement;
+  if (filterRow) {
+    for (const button of Array.from(filterRow.querySelectorAll<HTMLButtonElement>(':scope > button'))) {
+      const category = normalize(button.textContent || '');
+      if (CATEGORY_NAMES.includes(category)) setThemeVars(button, category);
+    }
   }
 
-  const articles = Array.from(document.querySelectorAll<HTMLElement>('article'));
-  for (const article of articles) {
-    const badge = Array.from(article.querySelectorAll<HTMLElement>('span')).find((span) => CATEGORY_NAMES.includes(normalize(span.textContent || '')));
+  for (const article of Array.from(document.querySelectorAll<HTMLElement>('article'))) {
+    const badge = Array.from(article.querySelectorAll<HTMLElement>('span'))
+      .find((span) => CATEGORY_NAMES.includes(normalize(span.textContent || '')));
     if (!badge) continue;
     const category = normalize(badge.textContent || '');
-    const style = CATEGORY_STYLES[category];
-    if (!style) continue;
-    article.dataset.dcCommunityCategory = category;
-    badge.dataset.dcCommunityCategory = category;
-    const targets = [article, badge];
-    for (const target of targets) {
-      target.style.setProperty('--dc-cat-accent', style.accent);
-      target.style.setProperty('--dc-cat-soft', style.soft);
-      target.style.setProperty('--dc-cat-strong', style.strong);
-    }
+    if (!CATEGORY_STYLES[category]) continue;
+    setThemeVars(article, category);
+    setThemeVars(badge, category);
   }
 };
 
