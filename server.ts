@@ -19,11 +19,53 @@ function emptyProfile(userId: string, clerkUser: any, pending: any = {}) { const
 function toUserProfile(row: any) { return row ? { id: row.clerk_user_id, name: row.name, email: row.email, role: row.role, college: row.college, branch: row.branch, academicYear: row.academic_year, avatar: row.avatar, bio: row.bio, rep: row.rep, level: row.level, streakDays: row.streak_days, githubUrl: row.github_url, linkedinUrl: row.linkedin_url, skills: row.skills || [], selectedDomains: row.selected_domains || [], authProvider: 'clerk', createdAt: row.created_at, hasCompletedOnboarding: row.has_completed_onboarding ?? false } : null; }
 async function getOrCreateProfile(userId: string, pending: any = {}) { if (!supabaseAdmin) throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server.'); const { data: existing, error: selectError } = await supabaseAdmin.from('devcollective_profiles').select('*').eq('clerk_user_id', userId).maybeSingle(); if (selectError) throw selectError; if (existing) return existing; const clerkUser = await clerkClient.users.getUser(userId); const profile = emptyProfile(userId, clerkUser, pending); const { data, error } = await supabaseAdmin.from('devcollective_profiles').insert(profile).select('*').single(); if (error) throw error; return data; }
 function toMentorProfile(row: any) { return { id: row.clerk_user_id, name: row.name, title: row.role === 'faculty' ? 'Faculty Mentor' : 'Mentor', college: row.college || '', avatar: row.avatar || '', roleType: row.role === 'faculty' ? 'FACULTY' : 'SENIOR', skills: Array.isArray(row.skills) ? row.skills : [], level: Number(row.level) || 1, rep: Number(row.rep) || 0, bio: row.bio || '', availability: 'Not specified', isBusy: false, rating: 0, studentsHelped: 0 }; }
+async function loadCommunityPosts(userId: string) {
+  if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+  const { data: posts, error: postsError } = await supabaseAdmin.from('devcollective_posts').select('id,author_clerk_user_id,category,title,content,image_url,created_at,updated_at').order('created_at', { ascending: false }).limit(100);
+  if (postsError) throw postsError;
+  if (!posts?.length) return [];
+  const authorIds = Array.from(new Set(posts.map((post: any) => post.author_clerk_user_id)));
+  const { data: profiles, error: profilesError } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,college,avatar,role,rep').in('clerk_user_id', authorIds);
+  if (profilesError) throw profilesError;
+  const profileMap = new Map((profiles || []).map((profile: any) => [profile.clerk_user_id, profile]));
+  const postIds = posts.map((post: any) => post.id);
+  const { data: likes, error: likesError } = await supabaseAdmin.from('devcollective_post_likes').select('post_id,user_clerk_user_id').in('post_id', postIds);
+  if (likesError) throw likesError;
+  const likeCount = new Map<string, number>();
+  const likedByUser = new Set<string>();
+  for (const like of likes || []) {
+    likeCount.set(like.post_id, (likeCount.get(like.post_id) || 0) + 1);
+    if (like.user_clerk_user_id === userId) likedByUser.add(like.post_id);
+  }
+  return posts.map((post: any) => {
+    const author = profileMap.get(post.author_clerk_user_id) || {};
+    return {
+      id: post.id,
+      authorId: post.author_clerk_user_id,
+      authorName: author.name || 'Developer',
+      authorCollege: author.college || '',
+      authorAvatar: author.avatar || '',
+      authorRole: author.role || 'student',
+      authorRep: Number(author.rep) || 0,
+      category: post.category,
+      title: post.title || undefined,
+      content: post.content,
+      imageUrl: post.image_url || undefined,
+      likes: likeCount.get(post.id) || 0,
+      commentsCount: 0,
+      createdAt: post.created_at,
+      likedByMe: likedByUser.has(post.id),
+    };
+  });
+}
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/api/auth/info', (req, res) => res.json({ appUrl: getAppBaseUrl(req), authType: 'clerk', googleConfigured: true, githubConfigured: true, googleCallbackUrl: '', githubCallbackUrl: '', message: 'Clerk authentication active; Supabase stores application profiles.' }));
 app.get('/api/auth/me', requireAuth, async (req, res) => { try { const user = await getOrCreateProfile((req as any).authUserId); return res.json({ user: toUserProfile(user) }); } catch (err: any) { console.error('Error loading Clerk/Supabase profile:', err); return res.status(500).json({ error: err.message || 'Could not load your profile.' }); } });
 app.post('/api/auth/sync', requireAuth, async (req, res) => { try { const user = await getOrCreateProfile((req as any).authUserId, req.body || {}); return res.json({ user: toUserProfile(user) }); } catch (err: any) { console.error('Error syncing Clerk profile to Supabase:', err); return res.status(500).json({ error: err.message || 'Could not sync your profile.' }); } });
-app.get('/api/mentors', requireAuth, async (_req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const { data, error } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,email,role,college,avatar,bio,rep,level,skills').eq('role', 'mentor').order('name', { ascending: true }); if (error) throw error; return res.json({ mentors: (data || []).map(toMentorProfile) }); } catch (err: any) { console.error('Error loading mentors from Supabase:', err); return res.status(500).json({ error: err.message || 'Could not load mentors.' }); } });
+app.get('/api/mentors', requireAuth, async (_req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const { data, error } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,email,role,college,avatar,bio,rep,level,skills').in('role', ['mentor','faculty']).order('name', { ascending: true }); if (error) throw error; return res.json({ mentors: (data || []).map(toMentorProfile) }); } catch (err: any) { console.error('Error loading mentors from Supabase:', err); return res.status(500).json({ error: err.message || 'Could not load mentors.' }); } });
+app.get('/api/community/posts', requireAuth, async (req, res) => { try { const posts = await loadCommunityPosts((req as any).authUserId); return res.json({ posts }); } catch (err: any) { console.error('Error loading community posts:', err); return res.status(500).json({ error: err.message || 'Could not load community posts.' }); } });
+app.post('/api/community/posts', requireAuth, async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const userId = (req as any).authUserId as string; const category = String(req.body?.category || 'General'); const allowedCategories = new Set(['Build in Public','Questions','Projects','Hackathons','AI','Android','General']); const title = typeof req.body?.title === 'string' ? req.body.title.trim().slice(0, 160) : ''; const content = typeof req.body?.content === 'string' ? req.body.content.trim().slice(0, 5000) : ''; if (!allowedCategories.has(category)) return res.status(400).json({ error: 'Invalid post category.' }); if (!content) return res.status(400).json({ error: 'Post content is required.' }); const { data, error } = await supabaseAdmin.from('devcollective_posts').insert({ author_clerk_user_id: userId, category, title: title || null, content }).select('id,author_clerk_user_id,category,title,content,image_url,created_at,updated_at').single(); if (error) throw error; const posts = await loadCommunityPosts(userId); const created = posts.find((post: any) => post.id === data.id) || null; return res.status(201).json({ success: true, post: created }); } catch (err: any) { console.error('Error creating community post:', err); return res.status(500).json({ error: err.message || 'Could not create community post.' }); } });
+app.post('/api/community/posts/:postId/like', requireAuth, async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const userId = (req as any).authUserId as string; const postId = req.params.postId; const { data: existing, error: lookupError } = await supabaseAdmin.from('devcollective_post_likes').select('post_id').eq('post_id', postId).eq('user_clerk_user_id', userId).maybeSingle(); if (lookupError) throw lookupError; if (existing) { const { error } = await supabaseAdmin.from('devcollective_post_likes').delete().eq('post_id', postId).eq('user_clerk_user_id', userId); if (error) throw error; } else { const { error } = await supabaseAdmin.from('devcollective_post_likes').insert({ post_id: postId, user_clerk_user_id: userId }); if (error) throw error; } const { count, error: countError } = await supabaseAdmin.from('devcollective_post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId); if (countError) throw countError; return res.json({ success: true, likedByMe: !existing, likes: count || 0 }); } catch (err: any) { console.error('Error toggling community post like:', err); return res.status(500).json({ error: err.message || 'Could not update post like.' }); } });
 app.get('/api/auth/profile-by-email', async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const email = String(req.query.email || '').trim().toLowerCase(); if (!email) return res.status(400).json({ error: 'Email is required.' }); const { data, error } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id').ilike('email', email).maybeSingle(); if (error) throw error; return res.json({ exists: Boolean(data) }); } catch (err: any) { console.error('Error checking Supabase profile:', err); return res.status(500).json({ error: err.message || 'Could not check your profile.' }); } });
 app.patch('/api/users/profile', requireAuth, async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const userId = (req as any).authUserId as string; const allowedFields = ['branch', 'academicYear', 'githubUrl', 'linkedinUrl', 'skills', 'bio', 'selectedDomains', 'avatar', 'college', 'name', 'rep', 'hasCompletedOnboarding']; const updates: Record<string, any> = {}; for (const field of allowedFields) if (field in req.body) updates[field] = req.body[field]; const dbUpdates: Record<string, any> = {}; if ('branch' in updates) dbUpdates.branch = updates.branch; if ('academicYear' in updates) dbUpdates.academic_year = updates.academicYear; if ('githubUrl' in updates) dbUpdates.github_url = updates.githubUrl; if ('linkedinUrl' in updates) dbUpdates.linkedin_url = updates.linkedinUrl; if ('skills' in updates) dbUpdates.skills = updates.skills; if ('bio' in updates) dbUpdates.bio = updates.bio; if ('selectedDomains' in updates) dbUpdates.selected_domains = updates.selectedDomains; if ('avatar' in updates) dbUpdates.avatar = updates.avatar; if ('college' in updates) dbUpdates.college = updates.college; if ('name' in updates) dbUpdates.name = updates.name; if ('hasCompletedOnboarding' in updates) dbUpdates.has_completed_onboarding = Boolean(updates.hasCompletedOnboarding); if ('rep' in updates) { dbUpdates.rep = updates.rep; dbUpdates.level = Math.max(1, Math.floor((Number(updates.rep) || 0) / 150) + 1); } const { data, error } = await supabaseAdmin.from('devcollective_profiles').update(dbUpdates).eq('clerk_user_id', userId).select('*').single(); if (error) throw error; return res.json({ success: true, user: toUserProfile(data) }); } catch (err: any) { console.error('Error updating Supabase profile:', err); return res.status(500).json({ error: err.message || 'Failed to update profile.' }); } });
 
@@ -41,15 +83,9 @@ async function startServer() {
       res.sendFile(path.join(process.cwd(), 'dist', 'index.html'));
     });
   } else {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
+    const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });
     app.use(vite.middlewares);
   }
-
   app.listen(PORT, () => console.log(`DevCollective server running on http://localhost:${PORT}`));
 }
-
 startServer();
-
