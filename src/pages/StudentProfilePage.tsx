@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { DeleteAccountSection } from '../components/DeleteAccountSection';
 import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity, X, Loader2, Save } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
@@ -148,6 +149,8 @@ export const StudentProfilePage: React.FC = () => {
         </div>
         <p className="text-sm text-on-surface-variant">Your activity, achievements, projects, and learning history will appear here as you use DevCollective. Nothing is pre-populated.</p>
       </section>
+
+      <DeleteAccountSection />
 
       {showIdentityEditor && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 sm:p-7 max-w-lg w-full shadow-[7px_7px_0_#171717] relative"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="absolute top-3 right-3 p-1 disabled:opacity-40" aria-label="Close editor"><X className="w-5 h-5" /></button><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">PROFILE / IDENTITY</p><h3 className="dc-display text-4xl mt-2">UPDATE SIGNAL.</h3><p className="text-sm text-on-surface-variant mt-2 mb-6">Keep the public identity on your DevCollective profile current.</p><form onSubmit={saveIdentity} className="space-y-4"><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">Full name</span><input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={100} autoFocus disabled={identitySaving} className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">College / Institution</span><input value={editCollege} onChange={(e) => setEditCollege(e.target.value)} maxLength={160} disabled={identitySaving} placeholder="Your college or institution" className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label>{identityError && <p className="text-xs text-error">{identityError}</p>}<div className="flex gap-3 pt-2"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="flex-1 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase">Cancel</button><button type="submit" disabled={identitySaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] flex items-center justify-center gap-2">{identitySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {identitySaving ? 'Saving...' : 'Save changes'}</button></div></form></div></div>}
     </div>
