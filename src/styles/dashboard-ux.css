@@ -25,6 +25,7 @@
 .dc-dashboard-meta-item:nth-last-child(-n+2){border-bottom:0}
 .dc-dashboard-meta-label{font-family:"Space Mono",monospace;font-size:8px;letter-spacing:.12em;color:var(--on-surface-variant);text-transform:uppercase}
 .dc-dashboard-meta-value{font-size:14px;font-weight:800;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-dashboard-meta-item:nth-child(4) .dc-dashboard-meta-value{min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.35}
 .dc-dashboard-section-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;border-bottom:2px solid var(--outline-variant);padding-bottom:15px;margin-bottom:18px}
 .dc-dashboard-section-heading.compact{margin-bottom:14px;padding-bottom:12px}
 .dc-dashboard-section-label{font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.17em;text-transform:uppercase;color:var(--on-surface-variant)}
