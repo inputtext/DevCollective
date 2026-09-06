@@ -258,7 +258,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         imageUrl: post.imageUrl,
       }),
     });
-    if (data.post) setPosts((prev) => [data.post as CommunityPost, ...prev.filter((existing) => existing.id !== data.post.id)]);
+    if (data.post) {
+      setPosts((prev) => [data.post as CommunityPost, ...prev.filter((existing) => existing.id !== data.post.id)]);
+      const awardedRep = Number(data.post.authorRep);
+      if (Number.isFinite(awardedRep) && awardedRep > user.rep) {
+        setUser((current) => current ? { ...current, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } : current);
+        if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: { ...user, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } });
+      }
+    }
   };
 
   const toggleLikePost = async (postId: string) => {
