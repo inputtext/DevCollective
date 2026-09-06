@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { Github, Linkedin } from 'lucide-react';
 import { useAuth as useClerkAuth } from '@clerk/react';
 import type { UserProfile } from '../types';
 
@@ -28,6 +29,56 @@ interface SocialContextValue {
 }
 
 const SocialContext = createContext<SocialContextValue | null>(null);
+
+export const useSocial = () => {
+  const context = useContext(SocialContext);
+  if (!context) throw new Error('useSocial must be used inside SocialProvider.');
+  return context;
+};
+
+const SocialProfileLinksPanel: React.FC = () => {
+  const { viewedProfileId, loadSocialSummary } = useSocial();
+  const [summary, setSummary] = useState<SocialSummary | null>(null);
+
+  useEffect(() => {
+    if (!viewedProfileId) {
+      setSummary(null);
+      return;
+    }
+    let cancelled = false;
+    void loadSocialSummary(viewedProfileId)
+      .then((next) => { if (!cancelled) setSummary(next); })
+      .catch(() => { if (!cancelled) setSummary(null); });
+    return () => { cancelled = true; };
+  }, [viewedProfileId, loadSocialSummary]);
+
+  if (!viewedProfileId || !summary) return null;
+
+  const { githubUrl, linkedinUrl, name } = summary.profile;
+  if (!githubUrl && !linkedinUrl) return null;
+
+  const openExternal = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  return (
+    <div className="fixed left-4 bottom-5 sm:left-6 sm:bottom-6 z-[85] border-2 border-outline-variant bg-surface shadow-[5px_5px_0_#171717] p-3 max-w-[calc(100vw-32px)]">
+      <p className="font-label-mono text-[9px] uppercase text-on-surface-variant mb-2">SOCIAL LINKS / {name}</p>
+      <div className="flex flex-wrap gap-2">
+        {githubUrl && (
+          <button type="button" onClick={() => openExternal(githubUrl)} className="inline-flex items-center gap-2 px-3 py-2 bg-surface border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold hover:bg-dc-blue shadow-[2px_2px_0_#171717]">
+            <Github className="w-3.5 h-3.5" /> GitHub
+          </button>
+        )}
+        {linkedinUrl && (
+          <button type="button" onClick={() => openExternal(linkedinUrl)} className="inline-flex items-center gap-2 px-3 py-2 bg-surface border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold hover:bg-dc-lavender shadow-[2px_2px_0_#171717]">
+            <Linkedin className="w-3.5 h-3.5" /> LinkedIn
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { getToken } = useClerkAuth();
@@ -83,11 +134,5 @@ export const SocialProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     removeConnection,
   }), [viewedProfileId, loadSocialSummary, toggleFollow, requestConnection, respondToConnection, removeConnection]);
 
-  return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
-};
-
-export const useSocial = () => {
-  const context = useContext(SocialContext);
-  if (!context) throw new Error('useSocial must be used inside SocialProvider.');
-  return context;
+  return <SocialContext.Provider value={value}>{children}<SocialProfileLinksPanel /></SocialContext.Provider>;
 };
