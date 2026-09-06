@@ -1,281 +1,103 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import {
-  Flame,
-  Award,
-  Zap,
-  Globe,
-  Github,
-  Linkedin,
-  Code,
-  CheckCircle2,
-  ExternalLink,
-  Lock,
-  Pencil,
-} from 'lucide-react';
+import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, setActiveTab } = useAuth();
+  if (!user) return null;
+
+  const display = (value: string | undefined, empty = 'Not set') => value?.trim() || empty;
+  const interests = user.selectedDomains || [];
+
+  const statCards = [
+    { label: 'LEVEL', value: String(user.level), tone: 'bg-dc-blue' },
+    { label: 'REP', value: user.rep.toLocaleString(), tone: 'bg-dc-lavender' },
+    { label: 'STREAK', value: `${user.streakDays}d`, tone: 'bg-dc-mint' },
+    { label: 'ROLE', value: user.role.toUpperCase(), tone: 'bg-dc-yellow' },
+  ];
 
   return (
-    <div className="space-y-10 pb-16">
-      {/* Banner & Headshot Header */}
-      <section className="relative w-full rounded-2xl overflow-hidden border-2 border-outline-variant bg-surface-container-low">
-        <div className="h-48 md:h-64 w-full bg-gradient-to-r from-primary-container via-inverse-primary to-secondary-container opacity-90 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white/10 to-transparent" />
-        </div>
-
-        <div className="p-6 md:p-8 -mt-16 sm:-mt-20 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
-            <img
-              src={
-                user?.avatar ||
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuAoACwcivsiMbHH0a_RxINe7Ny_2s2FDDkCw2JWclPgXtJ8fz7Uttp54ejROeQZK800BxfBZ3--Os12blJYDlMW-3NWK3w6pw-IavFJGZ9nVxMmPTgkAfg5mHcurV6LU5BTMYzBBixPeKiSdCMJgGAmP0AkI18uS1NazoB0ZCwNPCYVCwS4NVFKnTGiPHSsp_QLsf6XES7XfY76G_VmAfFQQjmtlNSSkBTCh6uMJBfZSbVZ4q5v_SaYjCBR1p3HFKK6By1AalBNtiM'
-              }
-              alt={user?.name}
-              className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl border-4 border-surface bg-surface-container object-cover shadow-2xl"
-            />
-
-            <div className="space-y-1">
-              <h2 className="font-headline-lg text-2xl sm:text-3xl font-extrabold text-white">
-                {user?.name || 'Alex Rivera'}
-              </h2>
-              <p className="font-label-mono text-xs text-primary font-bold uppercase">
-                {user?.college || 'Stanford CS'} • {user?.branch || 'Computer Science'} ({user?.academicYear || 'Third Year'})
-              </p>
-              <p className="text-xs text-on-surface-variant max-w-lg leading-relaxed pt-1">
-                {user?.bio || 'Building AI solutions one project at a time.'}
-              </p>
+    <div className="space-y-8 pb-16">
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface shadow-[7px_7px_0_#171717]">
+        <div className="h-40 md:h-52 bg-[linear-gradient(135deg,var(--dc-blue),var(--dc-lavender),var(--dc-mint))] border-b-2 border-outline-variant" />
+        <div className="p-6 md:p-8 -mt-14 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-outline-variant bg-surface-container flex items-center justify-center overflow-hidden shadow-[4px_4px_0_#171717]">
+              {user.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : <span className="font-label-mono text-3xl font-bold">{user.name.slice(0, 1).toUpperCase()}</span>}
+            </div>
+            <div className="space-y-2">
+              <p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">PROFILE / {user.role.toUpperCase()}</p>
+              <h2 className="dc-display text-4xl sm:text-5xl">{display(user.name)}</h2>
+              <p className="font-label-mono text-xs uppercase text-primary font-bold">{display(user.college)} · {display(user.branch)} · {display(user.academicYear)}</p>
+              <p className="text-sm text-on-surface-variant max-w-2xl leading-relaxed">{display(user.bio, 'Your bio will appear here once you add it.')}</p>
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setActiveTab('profile-setup')}
-              className="flex items-center gap-2 px-4 py-3 bg-primary-container hover:brightness-110 rounded-xl text-white text-xs font-label-mono uppercase font-bold transition-all active:scale-95"
-            >
-              <Pencil className="w-4 h-4" />
-              <span>Edit Profile</span>
-            </button>
-            {user?.githubUrl && (
-              <a
-                href={user.githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-3 bg-surface-container border-2 border-outline-variant hover:border-primary rounded-xl text-white transition-all"
-              >
-                <Github className="w-5 h-5" />
-              </a>
-            )}
-            {user?.linkedinUrl && (
-              <a
-                href={user.linkedinUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-3 bg-surface-container border-2 border-outline-variant hover:border-primary rounded-xl text-white transition-all"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-            )}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button onClick={() => setActiveTab('profile-setup')} className="flex items-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit Profile</button>
+            {user.githubUrl && <a href={user.githubUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Github className="w-5 h-5" /></a>}
+            {user.linkedinUrl && <a href={user.linkedinUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Linkedin className="w-5 h-5" /></a>}
           </div>
         </div>
       </section>
 
-      {/* Developer Metrics Row */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-surface-container border-2 border-outline-variant p-5 rounded-2xl text-center space-y-1">
-          <span className="font-label-mono text-[10px] text-outline uppercase block">Level</span>
-          <span className="text-3xl font-bold text-primary">{user?.level || 18}</span>
-        </div>
-        <div className="bg-surface-container border-2 border-outline-variant p-5 rounded-2xl text-center space-y-1">
-          <span className="font-label-mono text-[10px] text-outline uppercase block">Reputation</span>
-          <span className="text-3xl font-bold text-tertiary">
-            {(user?.rep || 2450).toLocaleString()}
-          </span>
-        </div>
-        <div className="bg-surface-container border-2 border-outline-variant p-5 rounded-2xl text-center space-y-1">
-          <span className="font-label-mono text-[10px] text-outline uppercase block">Streak</span>
-          <span className="text-3xl font-bold text-error flex items-center justify-center gap-1">
-            {user?.streakDays || 42}d <Flame className="w-5 h-5 fill-error" />
-          </span>
-        </div>
-        <div className="bg-surface-container border-2 border-outline-variant p-5 rounded-2xl text-center space-y-1">
-          <span className="font-label-mono text-[10px] text-outline uppercase block">Global Rank</span>
-          <span className="text-3xl font-bold text-white">#42</span>
-        </div>
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statCards.map(({ label, value, tone }) => (
+          <div key={label} className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-5 shadow-[4px_4px_0_#171717]">
+            <div className={`absolute inset-x-0 top-0 h-2 ${tone}`} />
+            <span className="font-label-mono text-[10px] uppercase text-on-surface-variant block mt-1">{label}</span>
+            <span className="dc-display text-3xl mt-2 block">{value}{label === 'STREAK' && <Flame className="inline w-5 h-5 ml-1" />}</span>
+          </div>
+        ))}
       </section>
 
-      {/* Consistency Heatmap (GitHub Style) */}
-      <section className="bg-surface-container border-2 border-outline-variant p-6 sm:p-8 rounded-2xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="font-headline-md text-xl font-bold text-white">Consistency Engine</h3>
-            <p className="text-xs text-on-surface-variant font-label-mono">
-              245 Code & Learning Contributions in 2024
-            </p>
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="absolute inset-y-0 left-0 w-2 bg-dc-lavender" />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-outline-variant pb-4 mb-6 pl-2">
+          <div className="flex items-start gap-3"><div className="w-10 h-10 border-2 border-outline-variant bg-dc-lavender flex items-center justify-center"><Compass className="w-5 h-5" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DISCOVERY / PATH SIGNAL</p><h3 className="dc-display text-3xl mt-1">INTERESTED IN</h3></div></div>
+          <button onClick={() => setActiveTab('choose-path')} className="font-label-mono text-[10px] uppercase tracking-[0.12em] text-primary inline-flex items-center gap-2">Edit paths <ArrowRight className="w-3.5 h-3.5" /></button>
+        </div>
+        {interests.length ? (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 pl-2">
+            {interests.map((interest, index) => (
+              <div key={interest} className="dc-hover-block border-2 border-outline-variant bg-surface-container-low p-4 flex items-center gap-3">
+                <span className={`w-8 h-8 border-2 border-outline-variant ${index % 3 === 0 ? 'bg-dc-blue' : index % 3 === 1 ? 'bg-dc-lavender' : 'bg-dc-mint'} flex items-center justify-center font-label-mono text-[10px] font-bold`}>0{index + 1}</span>
+                <div><p className="font-bold text-sm">{interest}</p><p className="font-label-mono text-[9px] uppercase text-on-surface-variant mt-1">Learning path selected</p></div>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-label-mono text-outline">
-            <span>Less</span>
-            <div className="w-3 h-3 bg-surface-container-highest rounded-sm" />
-            <div className="w-3 h-3 bg-tertiary/30 rounded-sm" />
-            <div className="w-3 h-3 bg-tertiary/60 rounded-sm" />
-            <div className="w-3 h-3 bg-tertiary rounded-sm" />
-            <span>More</span>
+        ) : (
+          <div className="dc-hover-block border-2 border-dashed border-outline-variant p-6 text-center ml-2"><p className="font-label-mono text-xs uppercase text-on-surface-variant">NO PATHS SELECTED</p><button onClick={() => setActiveTab('choose-path')} className="mt-3 text-sm font-bold text-primary">Choose your path →</button></div>
+        )}
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="absolute inset-x-0 top-0 h-2 bg-dc-blue" />
+          <div className="flex items-end justify-between border-b-2 border-outline-variant pb-4 mb-5 pt-1">
+            <div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-blue flex items-center justify-center"><Code2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / SKILLS</p><h3 className="dc-display text-3xl mt-1">TECH STACK</h3></div></div>
+            <span className="font-label-mono text-[10px]">{user.skills.length} ITEMS</span>
           </div>
+          {user.skills.length ? <div className="flex flex-wrap gap-2">{user.skills.map((skill) => <span key={skill} className="px-3 py-2 bg-dc-blue border-2 border-outline-variant font-label-mono text-[10px] uppercase">{skill}</span>)}</div> : <p className="font-label-mono text-xs text-on-surface-variant">NO SKILLS ADDED YET.</p>}
         </div>
 
-        <div className="overflow-x-auto pb-2">
-          <div className="grid grid-rows-7 grid-flow-col gap-1.5 min-w-[700px]">
-            {Array.from({ length: 7 * 28 }).map((_, i) => {
-              const intensity = (i * 17) % 5;
-              let bg = 'bg-surface-container-highest';
-              if (intensity === 1) bg = 'bg-tertiary/20';
-              if (intensity === 2) bg = 'bg-tertiary/40';
-              if (intensity === 3) bg = 'bg-tertiary/70';
-              if (intensity === 4) bg = 'bg-tertiary';
-
-              return (
-                <div
-                  key={i}
-                  className={`w-3 h-3 rounded-sm ${bg} hover:border hover:border-white transition-all`}
-                  title={`Activity on day ${i + 1}`}
-                />
-              );
-            })}
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="absolute inset-x-0 top-0 h-2 bg-dc-mint" />
+          <div className="border-b-2 border-outline-variant pb-4 mb-5 pt-1"><div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-mint flex items-center justify-center"><Link2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / LINKS</p><h3 className="dc-display text-3xl mt-1">IDENTITY</h3></div></div></div>
+          <div className="space-y-4 font-label-mono text-xs">
+            <div className="flex justify-between gap-4 border-b border-outline-variant/40 pb-3"><span className="text-on-surface-variant">EMAIL</span><span className="text-right break-all">{user.email}</span></div>
+            <div className="flex justify-between gap-4 border-b border-outline-variant/40 pb-3"><span className="text-on-surface-variant">GITHUB</span><span className="text-right break-all">{display(user.githubUrl)}</span></div>
+            <div className="flex justify-between gap-4"><span className="text-on-surface-variant">LINKEDIN</span><span className="text-right break-all">{display(user.linkedinUrl)}</span></div>
           </div>
         </div>
       </section>
 
-      {/* Skills & Roadmaps Row */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Skills */}
-        <div className="bg-surface-container border-2 border-outline-variant p-6 sm:p-8 rounded-2xl space-y-6">
-          <h3 className="font-headline-md text-xl font-bold text-white">Skills & Stack</h3>
-          <div className="flex flex-wrap gap-2">
-            {(user?.skills || ['Python', 'TensorFlow', 'React', 'PyTorch', 'AWS', 'Docker', 'C++']).map(
-              (skill) => (
-                <span
-                  key={skill}
-                  className="px-3.5 py-1.5 bg-surface-container-lowest border border-outline-variant rounded-xl text-xs font-label-mono text-primary font-bold"
-                >
-                  {skill}
-                </span>
-              )
-            )}
-          </div>
-
-          <div className="space-y-4 pt-2">
-            <div>
-              <div className="flex justify-between text-xs font-label-mono mb-1">
-                <span className="text-white">Python & Deep Learning</span>
-                <span className="text-tertiary font-bold">Advanced (85%)</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                <div className="bg-tertiary h-full rounded-full w-[85%]" />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-label-mono mb-1">
-                <span className="text-white">React & TypeScript</span>
-                <span className="text-secondary font-bold">Proficient (70%)</span>
-              </div>
-              <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                <div className="bg-secondary h-full rounded-full w-[70%]" />
-              </div>
-            </div>
-          </div>
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="absolute inset-x-0 top-0 h-2 bg-dc-yellow" />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-outline-variant pb-4 mb-6 pt-1">
+          <div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center"><Activity className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">ACTIVITY / LIVE DATA</p><h3 className="dc-display text-3xl">STARTING POINT</h3></div></div>
+          <span className="font-label-mono text-[10px] uppercase bg-dc-mint border-2 border-outline-variant px-2 py-1">0 CONTRIBUTIONS</span>
         </div>
-
-        {/* Achievements */}
-        <div className="bg-surface-container border-2 border-outline-variant p-6 sm:p-8 rounded-2xl space-y-6">
-          <h3 className="font-headline-md text-xl font-bold text-white">Achievements & Badges</h3>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 bg-surface-container-lowest border border-outline-variant rounded-xl text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-full bg-tertiary/10 border border-tertiary flex items-center justify-center text-tertiary">
-                <Zap className="w-6 h-6" />
-              </div>
-              <p className="font-label-mono text-[11px] font-bold text-white uppercase">42d Streak</p>
-            </div>
-
-            <div className="p-4 bg-surface-container-lowest border border-outline-variant rounded-xl text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-full bg-primary/10 border border-primary flex items-center justify-center text-primary">
-                <Award className="w-6 h-6" />
-              </div>
-              <p className="font-label-mono text-[11px] font-bold text-white uppercase">Top 1% Dev</p>
-            </div>
-
-            <div className="p-4 bg-surface-container-lowest border border-outline-variant rounded-xl text-center space-y-2">
-              <div className="w-12 h-12 mx-auto rounded-full bg-secondary/10 border border-secondary flex items-center justify-center text-secondary">
-                <Code className="w-6 h-6" />
-              </div>
-              <p className="font-label-mono text-[11px] font-bold text-white uppercase">Capstones</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Showcased Projects */}
-      <section className="space-y-6">
-        <h3 className="font-headline-md text-xl font-bold text-white">Showcased Projects</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-surface-container border-2 border-outline-variant rounded-2xl overflow-hidden hover:border-primary transition-all group">
-            <div className="h-48 relative overflow-hidden bg-surface-container-lowest">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKWkQQe91VPBXhYbkApImVLxGtAoywz31reX6PdkZUhLNi--xNKiNXxZ2bs1GWY7ggW3_dRHBv09h4bNxJwt3s69I45YDlXIMXM6fWpJZCnksxMIqrTEXJL2nLLHnUZ7pDzHQne6G0dBKCr2x40PXlZtpL6Qz1UrJDAUvVCg9VnrBgyaQiVGFQfu7FVlKRbtStAEgBOdall9esXCgkhqGvvb1edq3kaC9AWj3QRwyQq7XKxdw2x_WnkCvb9S0NHR7R508BZ9bS5So"
-                alt="NeuroScan AI"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="p-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <h4 className="font-bold text-lg text-white">NeuroScan AI</h4>
-                <ExternalLink className="w-4 h-4 text-outline hover:text-white cursor-pointer" />
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Real-time neural pattern recognition platform for diagnostic assistance using TensorFlow and React.
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <span className="text-[10px] font-label-mono px-2 py-0.5 border border-outline-variant rounded text-tertiary">
-                  Python
-                </span>
-                <span className="text-[10px] font-label-mono px-2 py-0.5 border border-outline-variant rounded text-secondary">
-                  TensorFlow
-                </span>
-                <span className="text-[10px] font-label-mono px-2 py-0.5 border border-outline-variant rounded text-primary">
-                  React
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-surface-container border-2 border-outline-variant rounded-2xl overflow-hidden hover:border-primary transition-all group">
-            <div className="h-48 relative overflow-hidden bg-surface-container-lowest">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjb0CxvtZonW6W418s_mWK2uIeKC0_k8HqaQV-K0LtgpBqnPrx_ddei-rv9XXYilNN8tWueD7Yu6tRf0pVEbyWdjC9vhidFx4opSu3ki1vFdXwynCQzbhfbiyha8gXL73fcLLPGUo9jdMUHMJYsAfaa6Kqgk5K4wBA-7fdIcbCvTNN2p1K5s2UjClWF9WbETX6ck1LbW1KjAxLigxB-1Y2qw31p14yHe6s7mJGgeexFebaXFM6IJpii54RfxGDjTaMQW0cbyBqjB0"
-                alt="EcoSim Engine"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <div className="p-6 space-y-3">
-              <div className="flex justify-between items-center">
-                <h4 className="font-bold text-lg text-white">EcoSim Engine</h4>
-                <ExternalLink className="w-4 h-4 text-outline hover:text-white cursor-pointer" />
-              </div>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Simulation framework for urban sustainability modeling with interactive 3D visualizations.
-              </p>
-              <div className="flex flex-wrap gap-1.5 pt-2">
-                <span className="text-[10px] font-label-mono px-2 py-0.5 border border-outline-variant rounded text-tertiary">
-                  Three.js
-                </span>
-                <span className="text-[10px] font-label-mono px-2 py-0.5 border border-outline-variant rounded text-secondary">
-                  Node.js
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <p className="text-sm text-on-surface-variant">Your activity, achievements, projects, and learning history will appear here as you use DevCollective. Nothing is pre-populated.</p>
       </section>
     </div>
   );

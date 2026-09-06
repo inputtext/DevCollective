@@ -13,21 +13,13 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('devcollective_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      return saved;
-    }
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
   });
 
   const applyThemeToDOM = (newTheme: Theme, enableTransition = false) => {
     const root = document.documentElement;
-
-    if (enableTransition) {
-      root.classList.add('theme-transitioning');
-    }
+    if (enableTransition) root.classList.add('theme-transitioning');
 
     if (newTheme === 'light') {
       root.classList.remove('dark');
@@ -38,12 +30,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     root.style.colorScheme = newTheme;
-
-    if (enableTransition) {
-      setTimeout(() => {
-        root.classList.remove('theme-transitioning');
-      }, 400);
-    }
+    if (enableTransition) setTimeout(() => root.classList.remove('theme-transitioning'), 300);
   };
 
   useEffect(() => {
@@ -56,22 +43,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     applyThemeToDOM(newTheme, true);
   };
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-  };
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };

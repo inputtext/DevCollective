@@ -17,7 +17,7 @@ export interface UserProfile {
   linkedinUrl?: string;
   skills: string[];
   selectedDomains: string[];
-  authProvider: 'email' | 'google' | 'github';
+  authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
   createdAt: string;
 }
@@ -46,6 +46,33 @@ export interface CommunityPost {
   commentsCount: number;
   createdAt: string;
   likedByMe?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  authorRole: string;
+  authorRep: number;
+  content: string;
+  createdAt: string;
+  likes: number;
+  likedByMe?: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'post_like' | 'comment_like';
+  actorName: string;
+  actorAvatar: string;
+  postId?: string | null;
+  commentId?: string | null;
+  postTitle: string;
+  commentPreview: string;
+  createdAt: string;
+  readAt?: string | null;
 }
 
 export interface Mentor {
