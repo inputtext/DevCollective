@@ -4,21 +4,34 @@ const LEVEL_0_ID = 'level-0';
 
 function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey) {
-    throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured on the server.');
+  const secretKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !secretKey) {
+    throw new Error('SUPABASE_URL and SUPABASE_SECRET_KEY must be configured on the server.');
   }
-  return { url: url.replace(/\/$/, ''), serviceRoleKey };
+  return { url: url.replace(/\/$/, ''), secretKey };
+}
+
+function getSupabaseHeaders(secretKey: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    apikey: secretKey,
+    'Content-Type': 'application/json',
+  };
+
+  // New sb_secret_* keys must not be sent as a JWT Bearer token.
+  // Legacy service_role keys remain supported for backwards compatibility.
+  if (!secretKey.startsWith('sb_secret_')) {
+    headers.Authorization = `Bearer ${secretKey}`;
+  }
+
+  return headers;
 }
 
 async function supabaseRequest(path: string, init: RequestInit = {}) {
-  const { url, serviceRoleKey } = getSupabaseConfig();
+  const { url, secretKey } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      'Content-Type': 'application/json',
+      ...getSupabaseHeaders(secretKey),
       ...(init.headers || {}),
     },
   });
@@ -33,14 +46,10 @@ async function supabaseRequest(path: string, init: RequestInit = {}) {
 }
 
 async function completeSubmodule(userId: string, submoduleId: string) {
-  const { url, serviceRoleKey } = getSupabaseConfig();
+  const { url, secretKey } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1/rpc/complete_learning_submodule`, {
     method: 'POST',
-    headers: {
-      apikey: serviceRoleKey,
-      Authorization: `Bearer ${serviceRoleKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers: getSupabaseHeaders(secretKey),
     body: JSON.stringify({ p_user_id: userId, p_submodule_id: submoduleId }),
   });
 
@@ -91,7 +100,7 @@ export function registerLearningProgressRoutes(
 
       // The server derives the reward from the DB curriculum. The client never supplies REP.
       const result = await completeSubmodule(userId, submoduleId);
-      return res.json({ success: true, ...result });
+      return res.json({ success: true, result });
     } catch (error: any) {
       console.error('Error verifying Level 0 submodule:', error);
       const message = String(error?.message || '');
