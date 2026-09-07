@@ -1,21 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Check, Circle, RotateCcw, ShieldCheck, Sparkles, Terminal } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronDown, RotateCcw, ShieldCheck, Sparkles, Terminal } from 'lucide-react';
 import type { Level0Submodule } from '../data/level0';
 
-interface ActivityRendererProps {
-  submodule: Level0Submodule;
-  verified: boolean;
-  verifying?: boolean;
-  onVerify: () => Promise<void> | void;
-}
-
-type Config = {
-  order?: string[];
-  choices?: { id: string; prompt: string; answer: string; options: string[] }[];
-  reflectionPrompt?: string;
-  codePrompt?: string;
-  codeChecks?: string[];
-};
+interface ActivityRendererProps { submodule: Level0Submodule; verified: boolean; verifying?: boolean; onVerify: () => Promise<void> | void; }
+type Config = { order?: string[]; choices?: { id: string; prompt: string; answer: string; options: string[] }[]; reflectionPrompt?: string; codePrompt?: string; codeChecks?: string[]; };
 
 const configs: Record<string, Config> = {
   'cse-map': { order: ['Problem', 'Algorithm', 'Program', 'Operating System', 'Network', 'Database', 'User'], choices: [{ id: 'ai', prompt: 'Predicting patterns from data primarily belongs to…', answer: 'AI / Machine Learning', options: ['AI / Machine Learning', 'Operating Systems', 'Computer Networks'] }, { id: 'db', prompt: 'Persisting structured application records primarily belongs to…', answer: 'Databases', options: ['Databases', 'Graphics', 'Compilers'] }] },
@@ -44,8 +32,20 @@ const configs: Record<string, Config> = {
 const fallbackConfig = (submodule: Level0Submodule): Config => {
   if (submodule.kind === 'reflection') return { reflectionPrompt: `Reflect on: ${submodule.description} Write a practical response of at least 60 characters.` };
   if (submodule.kind === 'practical') return { codePrompt: `Complete this practical exercise: ${submodule.description} Describe the concrete steps you would take.`, codeChecks: ['step', 'result'] };
-  if (submodule.kind === 'assessment') return { choices: [{ id: 'ready', prompt: `Which statement best matches this checkpoint?`, answer: 'I can explain and apply the concept', options: ['I can explain and apply the concept', 'I have only skimmed it', 'I will skip it'] }] };
+  if (submodule.kind === 'assessment') return { choices: [{ id: 'ready', prompt: 'Which statement best matches this checkpoint?', answer: 'I can explain and apply the concept', options: ['I can explain and apply the concept', 'I have only skimmed it', 'I will skip it'] }] };
   return { choices: [{ id: 'understood', prompt: 'What is the goal of this lesson?', answer: 'Understand and apply the core concept', options: ['Understand and apply the core concept', 'Memorize unrelated facts', 'Skip the exercise'] }] };
+};
+
+interface CollapsiblePanelProps { label: string; title: string; children: React.ReactNode; defaultOpen?: boolean; }
+const CollapsiblePanel: React.FC<CollapsiblePanelProps> = ({ label, title, children, defaultOpen = true }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return <section className="border-2 border-outline-variant bg-surface">
+    <button type="button" onClick={() => setOpen((current) => !current)} className="flex w-full items-center justify-between gap-4 border-b border-outline-variant px-4 py-3 text-left" aria-expanded={open}>
+      <span className="min-w-0"><span className="block font-label-mono text-[9px] uppercase text-outline">{label}</span><span className="mt-1 block text-sm font-black">{title}</span></span>
+      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && <div>{children}</div>}
+  </section>;
 };
 
 export const ActivityRenderer: React.FC<ActivityRendererProps> = ({ submodule, verified, verifying = false, onVerify }) => {
@@ -56,33 +56,17 @@ export const ActivityRenderer: React.FC<ActivityRendererProps> = ({ submodule, v
   const [code, setCode] = useState('');
   const [passed, setPassed] = useState(false);
   const [checked, setChecked] = useState(false);
-
   const reset = () => { setOrdered(config.order || []); setAnswers({}); setReflection(''); setCode(''); setPassed(false); setChecked(false); };
   const move = (index: number, direction: -1 | 1) => { const nextIndex = index + direction; if (nextIndex < 0 || nextIndex >= ordered.length) return; const next = [...ordered]; [next[index], next[nextIndex]] = [next[nextIndex], next[index]]; setOrdered(next); setChecked(false); setPassed(false); };
-  const check = () => {
-    const orderPass = !config.order || ordered.every((item, index) => item === config.order?.[index]);
-    const choicePass = !config.choices || config.choices.every((item) => answers[item.id] === item.answer);
-    const reflectionPass = !config.reflectionPrompt || reflection.trim().length >= 40;
-    const codePass = !config.codeChecks || config.codeChecks.every((item) => code.toLowerCase().includes(item.toLowerCase()));
-    const result = Boolean(orderPass && choicePass && reflectionPass && codePass);
-    setChecked(true); setPassed(result);
-  };
+  const check = () => { const orderPass = !config.order || ordered.every((item, index) => item === config.order?.[index]); const choicePass = !config.choices || config.choices.every((item) => answers[item.id] === item.answer); const reflectionPass = !config.reflectionPrompt || reflection.trim().length >= 40; const codePass = !config.codeChecks || config.codeChecks.every((item) => code.toLowerCase().includes(item.toLowerCase())); const result = Boolean(orderPass && choicePass && reflectionPass && codePass); setChecked(true); setPassed(result); };
   const canVerify = passed && !verified;
-
   return <div className="mt-5 space-y-4">
-    <div className="border-2 border-primary/25 bg-primary/5 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2 font-label-mono text-[10px] uppercase text-primary"><Sparkles className="h-3.5 w-3.5" /> Guided activity</div><h4 className="mt-1 text-base font-black">{submodule.title}</h4><p className="mt-1 max-w-2xl text-xs leading-5 text-on-surface-variant">Estimated {submodule.estimatedMinutes} minutes is a learning estimate, not a countdown. Complete the exercise, then verify it.</p></div><span className="dc-level0-label">~{submodule.estimatedMinutes} min</span></div>
-    </div>
-
-    {config.order && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Interactive</div><h4 className="mt-1 text-sm font-black">Arrange the flow</h4><p className="mt-1 text-xs text-on-surface-variant">Move the blocks until the sequence is correct.</p></div><div className="space-y-2 p-3">{ordered.map((item, index) => <div key={item} className="flex items-center gap-2 border border-outline-variant bg-surface-container-low p-2"><span className="flex h-7 w-7 items-center justify-center border border-outline-variant bg-surface font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span className="flex-1 text-sm font-bold">{item}</span><button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move up"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" onClick={() => move(index, 1)} disabled={index === ordered.length - 1} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move down"><ArrowDown className="h-3.5 w-3.5" /></button></div>)}</div></section>}
-
-    {config.choices && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Checkpoint</div><h4 className="mt-1 text-sm font-black">Apply what you learned</h4></div><div className="space-y-4 p-3">{config.choices.map((item, index) => <div key={item.id} className="grid gap-2 sm:grid-cols-[1fr_240px] sm:items-center"><div className="flex items-start gap-2 text-sm"><span className="flex h-7 w-7 shrink-0 items-center justify-center border border-outline-variant bg-primary/10 font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span>{item.prompt}</span></div><select value={answers[item.id] || ''} onChange={(event) => { setAnswers((current) => ({ ...current, [item.id]: event.target.value })); setChecked(false); setPassed(false); }} className="border border-outline-variant bg-surface px-3 py-2 text-xs font-bold text-on-surface"><option value="">Choose an answer</option>{item.options.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>)}</div></section>}
-
-    {config.reflectionPrompt && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Reflection</div><h4 className="mt-1 text-sm font-black">Make it personal</h4></div><div className="p-3"><p className="text-sm font-bold">{config.reflectionPrompt}</p><textarea value={reflection} onChange={(event) => { setReflection(event.target.value); setChecked(false); setPassed(false); }} rows={6} className="mt-3 w-full resize-y border-2 border-outline-variant bg-surface-container-low p-3 text-sm outline-none focus:border-primary" placeholder="Write your response…" /></div></section>}
-
-    {config.codePrompt && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="flex items-center gap-2 font-label-mono text-[9px] uppercase text-outline"><Terminal className="h-3.5 w-3.5" /> Practical</div><h4 className="mt-1 text-sm font-black">Do the task</h4></div><div className="p-3"><p className="text-sm font-bold">{config.codePrompt}</p><textarea value={code} onChange={(event) => { setCode(event.target.value); setChecked(false); setPassed(false); }} rows={9} spellCheck={false} className="mt-3 w-full resize-y border-2 border-outline bg-[#111827] p-3 font-mono text-xs leading-5 text-white outline-none focus:border-primary" placeholder="Type your commands or code here…" /></div></section>}
-
-    <section className={`border-2 p-4 ${passed || verified ? 'border-tertiary/50 bg-tertiary/10' : 'border-primary/20 bg-primary/5'}`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4" /> Verification checkpoint</div><p className="mt-1 text-xs text-on-surface-variant">{verified ? 'This sub-module is verified.' : checked ? (passed ? 'Activity passed. You can now verify the sub-module.' : 'Not quite yet. Review the exercise and try again.') : 'Complete the activity before verification.'}</p></div><div className="flex gap-2"><button type="button" onClick={check} disabled={verified} className="border-2 border-outline bg-surface px-4 py-2.5 text-xs font-black uppercase">Check activity</button><button type="button" onClick={() => void onVerify()} disabled={!canVerify || verifying} className="border-2 border-outline bg-primary px-4 py-2.5 text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-40">{verified ? <><Check className="mr-1 inline h-4 w-4" /> Verified</> : verifying ? 'Verifying…' : 'Verify sub-module'}</button></div></div></section>
+    <div className="border-2 border-primary/25 bg-primary/5 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2 font-label-mono text-[10px] uppercase text-primary"><Sparkles className="h-3.5 w-3.5" /> Guided activity</div><h4 className="mt-1 text-base font-black">{submodule.title}</h4><p className="mt-1 max-w-2xl text-xs leading-5 text-on-surface-variant">Estimated {submodule.estimatedMinutes} minutes is a learning estimate, not a countdown. Complete the exercise, then verify it.</p></div><span className="dc-level0-label">~{submodule.estimatedMinutes} min</span></div></div>
+    {config.order && <CollapsiblePanel label="Interactive" title="Arrange the flow"><div className="space-y-2 p-3">{ordered.map((item, index) => <div key={item} className="flex items-center gap-2 border border-outline-variant bg-surface-container-low p-2"><span className="flex h-7 w-7 items-center justify-center border border-outline-variant bg-surface font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span className="flex-1 text-sm font-bold">{item}</span><button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move up"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" onClick={() => move(index, 1)} disabled={index === ordered.length - 1} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move down"><ArrowDown className="h-3.5 w-3.5" /></button></div>)}</div></CollapsiblePanel>}
+    {config.choices && <CollapsiblePanel label="Checkpoint" title="Apply what you learned"><div className="space-y-4 p-3">{config.choices.map((item, index) => <div key={item.id} className="grid gap-2 sm:grid-cols-[1fr_240px] sm:items-center"><div className="flex items-start gap-2 text-sm"><span className="flex h-7 w-7 shrink-0 items-center justify-center border border-outline-variant bg-primary/10 font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span>{item.prompt}</span></div><select value={answers[item.id] || ''} onChange={(event) => { setAnswers((current) => ({ ...current, [item.id]: event.target.value })); setChecked(false); setPassed(false); }} className="border border-outline-variant bg-surface px-3 py-2 text-xs font-bold text-on-surface"><option value="">Choose an answer</option>{item.options.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>)}</div></CollapsiblePanel>}
+    {config.reflectionPrompt && <CollapsiblePanel label="Reflection" title="Make it personal"><div className="p-3"><p className="text-sm font-bold">{config.reflectionPrompt}</p><textarea value={reflection} onChange={(event) => { setReflection(event.target.value); setChecked(false); setPassed(false); }} rows={6} className="mt-3 w-full resize-y border-2 border-outline-variant bg-surface-container-low p-3 text-sm outline-none focus:border-primary" placeholder="Write your response…" /></div></CollapsiblePanel>}
+    {config.codePrompt && <CollapsiblePanel label="Practical" title="Do the task"><div className="p-3"><p className="text-sm font-bold">{config.codePrompt}</p><textarea value={code} onChange={(event) => { setCode(event.target.value); setChecked(false); setPassed(false); }} rows={9} spellCheck={false} className="mt-3 w-full resize-y border-2 border-outline bg-[#111827] p-3 font-mono text-xs leading-5 text-white outline-none focus:border-primary" placeholder="Type your commands or code here…" /></div></CollapsiblePanel>}
+    <CollapsiblePanel label="Verification" title="Verification checkpoint"><div className={`p-4 ${passed || verified ? 'bg-tertiary/10' : 'bg-primary/5'}`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4" /> {verified ? 'Sub-module verified' : 'Ready to verify?'}</div><p className="mt-1 text-xs text-on-surface-variant">{verified ? 'This sub-module is verified.' : checked ? (passed ? 'Activity passed. You can now verify the sub-module.' : 'Not quite yet. Review the exercise and try again.') : 'Complete the activity before verification.'}</p></div><div className="flex gap-2"><button type="button" onClick={check} disabled={verified} className="border-2 border-outline bg-surface px-4 py-2.5 text-xs font-black uppercase">Check activity</button><button type="button" onClick={() => void onVerify()} disabled={!canVerify || verifying} className="border-2 border-outline bg-primary px-4 py-2.5 text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-40">{verified ? <><Check className="mr-1 inline h-4 w-4" /> Verified</> : verifying ? 'Verifying…' : 'Verify sub-module'}</button></div></div></div></CollapsiblePanel>
     {checked && !passed && <div className="border-2 border-red-400/30 bg-red-400/10 px-4 py-3 text-xs font-bold text-red-700 dark:text-red-300">Some answers are still incorrect or incomplete. You can retry without losing progress.</div>}
     <button type="button" onClick={reset} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase text-outline hover:text-on-surface"><RotateCcw className="h-3.5 w-3.5" /> Reset activity</button>
   </div>;
