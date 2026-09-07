@@ -11,6 +11,7 @@ import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { ChatWidget } from './components/ChatWidget';
 import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
+import { Level0Gate } from './components/Level0Gate';
 
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -26,13 +27,6 @@ import { StudentProfilePage } from './pages/StudentProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { Level0Page } from './pages/Level0Page';
 
-/**
- * Compatibility bridge for the existing Level0Page UI.
- *
- * Level0Page currently writes its visual progress snapshot to localStorage.
- * This bridge keeps that UI unchanged while making every newly verified
- * checkpoint go through the authoritative server/Supabase completion RPC.
- */
 const Level0ProgressBridge: React.FC = () => {
   const { user } = useAuth();
 
@@ -45,7 +39,7 @@ const Level0ProgressBridge: React.FC = () => {
     const key = `devcollective_level_progress_${user.id}`;
     const originalSetItem = Storage.prototype.setItem;
     let serverProgress: Record<string, Set<string>> = {};
-    let syncing = false;
+    let syncing = true;
     let queue = Promise.resolve();
 
     const loadServerProgress = async () => {
@@ -83,11 +77,11 @@ const Level0ProgressBridge: React.FC = () => {
           };
         }
 
-        syncing = true;
         originalSetItem.call(localStorage, key, JSON.stringify(snapshot));
-        syncing = false;
       } catch (error) {
         console.warn('Could not sync Level 0 progress from server:', error);
+      } finally {
+        syncing = false;
       }
     };
 
@@ -105,7 +99,7 @@ const Level0ProgressBridge: React.FC = () => {
       for (const module of Object.values(nextSnapshot)) {
         for (const submoduleId of module.verifiedSubmodules ?? []) {
           const alreadyVerified = Object.values(serverProgress).some((ids) => ids.has(submoduleId));
-          if (!alreadyVerified) newSubmodules.push(submoduleId);
+          if (!alreadyVerified && !newSubmodules.includes(submoduleId)) newSubmodules.push(submoduleId);
         }
       }
 
@@ -123,19 +117,10 @@ const Level0ProgressBridge: React.FC = () => {
               continue;
             }
 
-            const result = await response.json();
-            const authoritative = result?.progress;
-            if (authoritative) {
-              for (const [moduleId, ids] of Object.entries(authoritative)) {
+            for (const [moduleId, module] of Object.entries(nextSnapshot)) {
+              for (const id of module.verifiedSubmodules ?? []) {
                 if (!serverProgress[moduleId]) serverProgress[moduleId] = new Set<string>();
-                for (const id of ids as string[]) serverProgress[moduleId].add(id);
-              }
-            } else {
-              for (const [moduleId, module] of Object.entries(nextSnapshot)) {
-                for (const id of module.verifiedSubmodules ?? []) {
-                  if (!serverProgress[moduleId]) serverProgress[moduleId] = new Set<string>();
-                  serverProgress[moduleId].add(id);
-                }
+                serverProgress[moduleId].add(id);
               }
             }
           } catch (error) {
@@ -248,6 +233,26 @@ const MainContent: React.FC = () => {
     activeTab
   );
 
+  const pageContent = (
+    <>
+      {activeTab === 'landing' && <LandingPage />}
+      {activeTab === 'login' && <LoginPage />}
+      {activeTab === 'register' && <RegisterPage />}
+      {activeTab === 'profile-setup' && <ProfileSetupPage />}
+      {activeTab === 'choose-path' && <ChoosePathPage />}
+      {activeTab === 'dashboard' && <DashboardPage />}
+      {activeTab === 'community' && <CommunityPage />}
+      {activeTab === 'roadmap' && <RoadmapPage />}
+      {activeTab === 'leaderboard' && <LeaderboardPage />}
+      {activeTab === 'mentors' && <MentorDirectoryPage />}
+      {activeTab === 'profile' && <StudentProfilePage />}
+      {activeTab === 'level-0' && <Level0Page />}
+      {activeTab === 'admin' && <AdminPage />}
+    </>
+  );
+
+  const shouldGate = Boolean(user) && !isFullLayout && activeTab !== 'level-0';
+
   return (
     <div className="min-h-screen bg-background text-on-background flex flex-col md:flex-row">
       {!isFullLayout && <Sidebar />}
@@ -256,19 +261,7 @@ const MainContent: React.FC = () => {
         <Navbar />
 
         <main className={`flex-1 min-w-0 ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}>
-          {activeTab === 'landing' && <LandingPage />}
-          {activeTab === 'login' && <LoginPage />}
-          {activeTab === 'register' && <RegisterPage />}
-          {activeTab === 'profile-setup' && <ProfileSetupPage />}
-          {activeTab === 'choose-path' && <ChoosePathPage />}
-          {activeTab === 'dashboard' && <DashboardPage />}
-          {activeTab === 'community' && <CommunityPage />}
-          {activeTab === 'roadmap' && <RoadmapPage />}
-          {activeTab === 'leaderboard' && <LeaderboardPage />}
-          {activeTab === 'mentors' && <MentorDirectoryPage />}
-          {activeTab === 'profile' && <StudentProfilePage />}
-          {activeTab === 'level-0' && <Level0Page />}
-          {activeTab === 'admin' && <AdminPage />}
+          {shouldGate ? <Level0Gate>{pageContent}</Level0Gate> : pageContent}
         </main>
       </div>
 
