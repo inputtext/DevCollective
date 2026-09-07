@@ -14,6 +14,7 @@ export type PageTab =
   | 'leaderboard'
   | 'mentors'
   | 'profile'
+  | 'level-0'
   | 'admin';
 
 interface AuthContextType {
@@ -46,7 +47,6 @@ interface AuthContextType {
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   authRedirectError: string | null;
   clearAuthRedirectError: () => void;
-
   oauthInfo: {
     googleConfigured: boolean;
     githubConfigured: boolean;
@@ -93,9 +93,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     githubCallbackUrl: string;
   } | null>(null);
 
-  // Check persistent session token on app initialization.
-  // Also handles landing back here after a real Google/GitHub OAuth redirect, which
-  // arrives as ?token=...&newUser=1 (success) or ?authError=... (failure) in the URL.
   useEffect(() => {
     const checkSession = async () => {
       const params = new URLSearchParams(window.location.search);
@@ -156,7 +153,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
 
-  // Fetch Auth Status Info from Express Server
   useEffect(() => {
     fetch('/api/auth/info')
       .then((res) => res.json())
@@ -164,8 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .catch((err) => console.warn('Could not fetch Auth info from server', err));
   }, []);
 
-  // Kicks off a real Google/GitHub OAuth flow when configured; otherwise shows the
-  // setup guide so it's obvious what env vars are still needed.
   const triggerOAuthLogin = (provider: 'google' | 'github') => {
     const isConfigured = provider === 'google' ? oauthInfo?.googleConfigured : oauthInfo?.githubConfigured;
     if (isConfigured) {
@@ -176,7 +170,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowOAuthModal(true);
   };
 
-  // 1. Native Email/Password Login
   const loginWithEmail = async (email: string, password?: string) => {
     if (!email || !password) {
       throw new Error('Please enter both email and password.');
@@ -200,7 +193,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveTab('dashboard');
   };
 
-  // 2. Native User Registration
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => {
     if (!details.email || !details.password || !details.name) {
       throw new Error('Name, email, and password are required for registration.');
@@ -233,7 +225,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowResumePrompt(true);
   };
 
-  // 3. Forgot Password & Reset via DevCollective Email SMTP
   const requestPasswordReset = async (email: string) => {
     const res = await fetch('/api/auth/forgot-password', {
       method: 'POST',
@@ -258,7 +249,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // 4. Logout
   const logout = async () => {
     const token = localStorage.getItem('devcollective_token');
     if (token) {
@@ -277,11 +267,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveTab('landing');
   };
 
-  // 5. Update Profile
   const updateProfile = async (updated: Partial<UserProfile>) => {
     if (!user) return;
 
-    // Optimistic local update so the UI feels instant
     const newProfile = { ...user, ...updated };
     setUser(newProfile);
 
