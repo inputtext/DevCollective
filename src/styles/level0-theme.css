@@ -1,0 +1,47 @@
+/* Level 0 visual layer — keeps curriculum behavior untouched and follows DevCollective's pastel workspace language. */
+.dc-page-level-0{--level0-accent:var(--dc-blue);--level0-accent-2:var(--dc-lavender);--level0-soft:color-mix(in srgb,var(--surface) 92%,var(--level0-accent) 8%);color:var(--on-background)}
+.dc-page-level-0 .max-w-\[1500px\]{max-width:1500px}
+.dc-page-level-0 header{background:linear-gradient(135deg,color-mix(in srgb,var(--dc-blue) 72%,var(--surface) 28%),color-mix(in srgb,var(--dc-lavender) 64%,var(--surface) 36%),color-mix(in srgb,var(--dc-mint) 58%,var(--surface) 42%))!important;border:2px solid var(--outline-variant)!important;box-shadow:7px 7px 0 var(--on-background);border-radius:8px!important}
+.dc-page-level-0 header h1,.dc-page-level-0 header h2,.dc-page-level-0 header h3{color:var(--on-surface)!important}
+.dc-page-level-0 header p{color:var(--on-surface)!important}
+.dc-page-level-0 header .bg-surface{background:color-mix(in srgb,var(--surface) 78%,transparent)!important;border:2px solid var(--outline-variant)!important;box-shadow:4px 4px 0 var(--outline-variant)}
+.dc-page-level-0 header .text-white{color:var(--on-surface)!important}
+.dc-page-level-0 header .text-outline{color:var(--on-surface-variant)!important}
+.dc-page-level-0 header .bg-gradient-to-r{background:linear-gradient(90deg,var(--dc-blue),var(--dc-lavender),var(--dc-mint))!important}
+.dc-page-level-0>div>div.grid>aside{background:var(--surface)!important;border:2px solid var(--outline-variant)!important;box-shadow:5px 5px 0 var(--on-background);border-radius:8px!important;position:sticky;top:18px;max-height:calc(100vh - 36px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--outline-variant) transparent}
+.dc-page-level-0 aside .text-white,.dc-page-level-0 main .text-white{color:var(--on-surface)!important}
+.dc-page-level-0 aside .text-on-surface-variant,.dc-page-level-0 main .text-on-surface-variant{color:var(--on-surface-variant)!important}
+.dc-page-level-0 aside .bg-surface-container,.dc-page-level-0 aside .bg-surface-container-low,.dc-page-level-0 aside .bg-surface-container-high,.dc-page-level-0 aside .bg-surface-container-highest{background:var(--surface-container-low)!important}
+.dc-page-level-0 aside button{border-radius:6px!important}
+.dc-page-level-0 aside button:hover{background:color-mix(in srgb,var(--dc-blue) 18%,var(--surface))!important}
+.dc-page-level-0 aside button[class*="bg-primary"]{background:var(--dc-blue)!important;color:#171717!important}
+.dc-page-level-0 main section{border:2px solid var(--outline-variant)!important;border-radius:8px!important;box-shadow:5px 5px 0 var(--on-background);background:var(--surface)!important}
+.dc-page-level-0 main section>div:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--dc-lavender) 22%,var(--surface) 78%),color-mix(in srgb,var(--dc-mint) 15%,var(--surface) 85%));}
+.dc-page-level-0 main section .bg-surface{background:var(--surface-container-lowest)!important}
+.dc-page-level-0 main section .bg-surface-container-low,.dc-page-level-0 main section .bg-surface-container{background:var(--surface-container-low)!important}
+.dc-page-level-0 main section .text-secondary{color:color-mix(in srgb,var(--on-surface) 35%,var(--dc-mint) 65%)!important}
+.dc-page-level-0 main section .text-primary{color:color-mix(in srgb,var(--on-surface) 20%,var(--dc-blue) 80%)!important}
+.dc-page-level-0 main section .text-tertiary{color:color-mix(in srgb,var(--on-surface) 25%,var(--dc-yellow) 75%)!important}
+.dc-page-level-0 main section .border-primary\/40{border-color:var(--dc-blue)!important}
+.dc-page-level-0 main section .bg-primary\/10{background:color-mix(in srgb,var(--dc-blue) 18%,var(--surface))!important}
+.dc-page-level-0 main section .bg-primary\/5{background:color-mix(in srgb,var(--dc-blue) 9%,var(--surface))!important}
+.dc-page-level-0 main section .bg-secondary\/10{background:color-mix(in srgb,var(--dc-mint) 18%,var(--surface))!important}
+.dc-page-level-0 main section .bg-tertiary\/10{background:color-mix(in srgb,var(--dc-yellow) 20%,var(--surface))!important}
+.dc-page-level-0 main section button{border-radius:6px!important}
+.dc-page-level-0 main section button.bg-surface{background:var(--surface-container-low)!important;color:var(--on-surface)!important}
+.dc-page-level-0 main section button[class*="bg-gradient"]{background:linear-gradient(90deg,var(--dc-blue),var(--dc-lavender))!important;color:#171717!important;border:2px solid var(--outline-variant);box-shadow:4px 4px 0 var(--on-background)}
+.dc-page-level-0 main section button[class*="bg-gradient"]:active{box-shadow:1px 1px 0 var(--on-background)}
+.dc-page-level-0 main section iframe{border:0}
+.dc-page-level-0 main section .bg-black{background:#171717!important}
+.dc-page-level-0>div>div.grid>aside+main>section:last-child>div{border-top:5px solid var(--dc-blue)}
+.dc-page-level-0 .rounded-3xl,.dc-page-level-0 .rounded-2xl,.dc-page-level-0 .rounded-xl{border-radius:8px!important}
+.dc-page-level-0 .border-outline-variant{border-color:var(--outline-variant)!important}
+html.dark .dc-page-level-0 header{background:linear-gradient(135deg,#303845,#34313f,#293b36)!important;box-shadow:7px 7px 0 #0b0c0f}
+html.dark .dc-page-level-0 header .bg-surface{background:#25272c!important}
+html.dark .dc-page-level-0>div>div.grid>aside,html.dark .dc-page-level-0 main section{background:var(--surface)!important;box-shadow:5px 5px 0 #0b0c0f}
+html.dark .dc-page-level-0 main section>div:first-child{background:linear-gradient(90deg,#302d3b,#293a35)!important}
+html.dark .dc-page-level-0 aside button:hover{background:color-mix(in srgb,var(--dc-blue) 16%,var(--surface))!important}
+html.dark .dc-page-level-0 main section .bg-surface{background:#16171a!important}
+html.dark .dc-page-level-0 main section button[class*="bg-gradient"]{color:#171717!important;box-shadow:4px 4px 0 #0b0c0f}
+@media(max-width:1023px){.dc-page-level-0>div>div.grid>aside{position:relative;top:auto;max-height:none;overflow:visible}.dc-page-level-0 main section{box-shadow:4px 4px 0 var(--on-background)}}
+@media(max-width:640px){.dc-page-level-0>div{space-y:5}.dc-page-level-0 header{padding:20px!important}.dc-page-level-0 header .grid{min-width:0!important}.dc-page-level-0 main section>div{padding:20px!important}.dc-page-level-0 main section .grid{grid-template-columns:1fr!important}.dc-page-level-0 .text-4xl{font-size:2rem;line-height:1}.dc-page-level-0 .text-3xl{font-size:1.6rem;line-height:1.1}}
