@@ -24,14 +24,11 @@ import { LeaderboardPage } from './pages/LeaderboardPage';
 import { MentorDirectoryPage } from './pages/MentorDirectoryPage';
 import { StudentProfilePage } from './pages/StudentProfilePage';
 import { AdminPage } from './pages/AdminPage';
+import { Level0Page } from './pages/Level0Page';
 
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
 
-  // Navigate to dashboard when auth transitions from unauthenticated → authenticated on initial load.
-  // Never auto-redirect from 'login' or 'register', allowing users to freely access login,
-  // registration, and the Forgot Password -> Verification Code -> Reset Password flow even if
-  // an existing session was previously stored.
   const wasAuthenticatedRef = React.useRef(false);
 
   useEffect(() => {
@@ -59,7 +56,7 @@ const MainContent: React.FC = () => {
     );
   }
 
-  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
+  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'level-0', 'admin'];
   const isProtected = protectedTabs.includes(activeTab);
 
   if (isProtected && !user) {
@@ -133,6 +130,7 @@ const MainContent: React.FC = () => {
           {activeTab === 'leaderboard' && <LeaderboardPage />}
           {activeTab === 'mentors' && <MentorDirectoryPage />}
           {activeTab === 'profile' && <StudentProfilePage />}
+          {activeTab === 'level-0' && <Level0Page />}
           {activeTab === 'admin' && <AdminPage />}
         </main>
       </div>
