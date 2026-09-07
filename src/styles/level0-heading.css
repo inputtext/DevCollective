@@ -1,0 +1,101 @@
+/* Level 0 hero refinement — visual only. No curriculum or progression behavior changes. */
+
+.dc-page-level-0 > div > header {
+  padding: clamp(28px, 4vw, 48px) !important;
+  min-height: 0 !important;
+}
+
+.dc-page-level-0 > div > header h1 {
+  color: var(--on-surface) !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: clamp(3rem, 6vw, 6.25rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: -.075em !important;
+  line-height: .86 !important;
+  text-wrap: balance;
+  text-shadow: none !important;
+  margin-top: 18px !important;
+}
+
+/* Give the title a restrained pastel identity without sacrificing contrast. */
+html.light .dc-page-level-0 > div > header h1,
+:root .dc-page-level-0 > div > header h1 {
+  background: linear-gradient(100deg, #171717 0%, #171717 68%, #547aa8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html.dark .dc-page-level-0 > div > header h1 {
+  color: var(--on-surface) !important;
+  background: linear-gradient(100deg, #fff9f0 0%, #fff9f0 68%, #b9d7ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dc-page-level-0 > div > header h1::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 6px;
+  margin-top: 18px;
+  background: linear-gradient(90deg, var(--dc-blue), var(--dc-lavender), var(--dc-mint));
+  border: 1px solid var(--outline-variant);
+}
+
+.dc-page-level-0 > div > header p {
+  max-width: 780px !important;
+  font-size: clamp(1rem, 1.45vw, 1.25rem) !important;
+  line-height: 1.65 !important;
+  margin-top: 22px !important;
+}
+
+.dc-page-level-0 > div > header > div:first-child > div.inline-flex {
+  padding: 7px 11px !important;
+  background: var(--dc-blue) !important;
+  color: #171717 !important;
+  border: 2px solid var(--outline-variant) !important;
+  box-shadow: 3px 3px 0 var(--outline-variant);
+  letter-spacing: .08em;
+}
+
+.dc-page-level-0 > div > header > div:first-child > div.inline-flex svg {
+  color: #171717 !important;
+}
+
+.dc-page-level-0 > div > header::after {
+  top: 28px !important;
+  right: 30px !important;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.dc-page-level-0 > div > header > div:last-child {
+  align-self: stretch;
+}
+
+.dc-page-level-0 > div > header > div:last-child > div {
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.dc-page-level-0 > div > header > div:last-child .text-3xl {
+  font-size: 2.35rem !important;
+  letter-spacing: -.055em;
+}
+
+@media (max-width: 1279px) {
+  .dc-page-level-0 > div > header h1 { font-size: clamp(3rem, 7vw, 5rem) !important; }
+  .dc-page-level-0 > div > header::after { display: none; }
+}
+
+@media (max-width: 640px) {
+  .dc-page-level-0 > div > header { padding: 24px !important; }
+  .dc-page-level-0 > div > header h1 { font-size: 3rem !important; line-height: .9 !important; }
+  .dc-page-level-0 > div > header h1::after { height: 4px; width: 56px; margin-top: 14px; }
+  .dc-page-level-0 > div > header p { font-size: .95rem !important; }
+}
