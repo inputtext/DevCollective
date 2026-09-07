@@ -14,6 +14,7 @@ import {
   Terminal,
   PanelLeftClose,
   PanelLeftOpen,
+  BookOpen,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -21,6 +22,7 @@ export const Sidebar: React.FC = () => {
 
   const navItems: { id: PageTab; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'level-0', label: 'Level 0', icon: <BookOpen className="w-5 h-5" /> },
     { id: 'community', label: 'Community', icon: <Users className="w-5 h-5" /> },
     { id: 'roadmap', label: 'Roadmaps', icon: <Map className="w-5 h-5" /> },
     { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-5 h-5" /> },
@@ -35,7 +37,6 @@ export const Sidebar: React.FC = () => {
         sidebarCollapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Header & Toggle Button */}
       <div className="px-4 mb-6 flex items-center justify-between">
         {!sidebarCollapsed ? (
           <div
@@ -89,7 +90,6 @@ export const Sidebar: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation Items */}
       <nav className="flex-1 space-y-1.5 px-3">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
@@ -115,7 +115,6 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Action Footer */}
       <div className="px-3 mt-auto space-y-4 pt-4 border-t-2 border-outline-variant">
         {!sidebarCollapsed ? (
           <button
