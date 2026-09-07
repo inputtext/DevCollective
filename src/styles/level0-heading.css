@@ -1,22 +1,25 @@
-/* Level 0 hero refinement — visual only. No curriculum or progression behavior changes. */
+/* Level 0 heading refinement — visual only. No curriculum or progression behavior changes. */
 
 .dc-page-level-0 > div > header {
   padding: clamp(28px, 4vw, 48px) !important;
   min-height: 0 !important;
+  background: #eee8dc !important;
+  border-color: #171717 !important;
+  box-shadow: 7px 7px 0 #171717 !important;
 }
 
 .dc-page-level-0 > div > header h1 {
   color: #171717 !important;
+  background: none !important;
+  -webkit-text-fill-color: #171717 !important;
   font-family: "Inter", sans-serif !important;
-  font-size: clamp(3rem, 6vw, 6.25rem) !important;
+  font-size: clamp(3.25rem, 6vw, 6.25rem) !important;
   font-weight: 950 !important;
   letter-spacing: -.075em !important;
-  line-height: .86 !important;
+  line-height: .88 !important;
   text-wrap: balance;
   text-shadow: none !important;
   margin-top: 18px !important;
-  background: none !important;
-  -webkit-text-fill-color: #171717 !important;
 }
 
 .dc-page-level-0 > div > header h1::after {
@@ -37,6 +40,28 @@
   color: #303030 !important;
 }
 
+/* Module title: same bold editorial hierarchy, without adding visual clutter. */
+.dc-page-level-0 > div > div > main section:first-child > div:first-child h2 {
+  color: #171717 !important;
+  -webkit-text-fill-color: #171717 !important;
+  font-family: "Inter", sans-serif !important;
+  font-size: clamp(2.35rem, 4vw, 4rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: -.065em !important;
+  line-height: .95 !important;
+  margin-top: 4px !important;
+}
+
+.dc-page-level-0 > div > div > main section:first-child > div:first-child h2::after {
+  content: "";
+  display: block;
+  width: 54px;
+  height: 4px;
+  margin-top: 12px;
+  background: var(--dc-blue);
+  border: 1px solid var(--outline-variant);
+}
+
 .dc-page-level-0 > div > header > div:first-child > div.inline-flex {
   padding: 7px 11px !important;
   background: var(--dc-blue) !important;
@@ -46,61 +71,25 @@
   letter-spacing: .08em;
 }
 
-.dc-page-level-0 > div > header > div:first-child > div.inline-flex svg {
-  color: #171717 !important;
-}
-
-.dc-page-level-0 > div > header::after {
-  top: 28px !important;
-  right: 30px !important;
-  padding: 6px 8px;
-  border: 1px solid color-mix(in srgb, var(--outline-variant) 55%, transparent);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-}
-
-.dc-page-level-0 > div > header > div:last-child {
-  align-self: stretch;
-}
-
+.dc-page-level-0 > div > header > div:first-child > div.inline-flex svg { color: #171717 !important; }
+.dc-page-level-0 > div > header > div:last-child { align-self: stretch; }
 .dc-page-level-0 > div > header > div:last-child > div {
   min-height: 108px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
-
 .dc-page-level-0 > div > header > div:last-child .text-3xl {
   font-size: 2.35rem !important;
   letter-spacing: -.055em;
 }
-
 .dc-page-level-0 > div > header > div:last-child > div:first-child .text-3xl {
   color: #171717 !important;
   -webkit-text-fill-color: #171717 !important;
 }
-
 .dc-page-level-0 > div > header > div:last-child > div:nth-child(2) .text-3xl {
   color: #6d9fdc !important;
   -webkit-text-fill-color: #6d9fdc !important;
-}
-
-@media (max-width: 1279px) {
-  .dc-page-level-0 > div > header h1 { font-size: clamp(3rem, 7vw, 5rem) !important; }
-  .dc-page-level-0 > div > header::after { display: none; }
-}
-
-@media (max-width: 640px) {
-  .dc-page-level-0 > div > header { padding: 24px !important; }
-  .dc-page-level-0 > div > header h1 { font-size: 3rem !important; line-height: .9 !important; }
-  .dc-page-level-0 > div > header h1::after { height: 4px; width: 56px; margin-top: 14px; }
-  .dc-page-level-0 > div > header p { font-size: .95rem !important; }
-}
-
-/* Final visual pass: simple, editorial, and consistent with the pastel workspace. */
-.dc-page-level-0 > div > header {
-  background: #eee8dc !important;
-  border-color: #171717 !important;
-  box-shadow: 7px 7px 0 #171717 !important;
 }
 
 html.dark .dc-page-level-0 > div > header {
@@ -108,23 +97,29 @@ html.dark .dc-page-level-0 > div > header {
   border-color: #f5efe5 !important;
   box-shadow: 7px 7px 0 #f5efe5 !important;
 }
-
-html.dark .dc-page-level-0 > div > header h1 {
+html.dark .dc-page-level-0 > div > header h1,
+html.dark .dc-page-level-0 > div > div > main section:first-child > div:first-child h2 {
   color: #fff9f0 !important;
   -webkit-text-fill-color: #fff9f0 !important;
   background: none !important;
 }
-
-html.dark .dc-page-level-0 > div > header p {
-  color: #e8e1d7 !important;
-}
-
+html.dark .dc-page-level-0 > div > header p { color: #e8e1d7 !important; }
 html.dark .dc-page-level-0 > div > header > div:last-child > div:first-child .text-3xl {
   color: #fff9f0 !important;
   -webkit-text-fill-color: #fff9f0 !important;
 }
-
-html.dark .dc-page-level-0 > div > header > div:nth-child(2) .text-3xl {
+html.dark .dc-page-level-0 > div > header > div:last-child > div:nth-child(2) .text-3xl {
   color: #b9d7ff !important;
   -webkit-text-fill-color: #b9d7ff !important;
+}
+
+@media (max-width: 1279px) {
+  .dc-page-level-0 > div > header h1 { font-size: clamp(3rem, 7vw, 5rem) !important; }
+}
+@media (max-width: 640px) {
+  .dc-page-level-0 > div > header { padding: 24px !important; }
+  .dc-page-level-0 > div > header h1 { font-size: 3rem !important; line-height: .9 !important; }
+  .dc-page-level-0 > div > header h1::after { height: 4px; width: 56px; margin-top: 14px; }
+  .dc-page-level-0 > div > header p { font-size: .95rem !important; }
+  .dc-page-level-0 > div > div > main section:first-child > div:first-child h2 { font-size: 2.25rem !important; }
 }
