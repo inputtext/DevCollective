@@ -19,6 +19,7 @@ import {
   setPasswordResetCode,
   resetPasswordWithCode,
 } from './server/db';
+import { registerLearningProgressRoutes } from './server/learningProgress';
 
 dotenv.config();
 
@@ -72,6 +73,10 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
   (req as any).authUser = user;
   next();
 }
+
+// Level 0 learning progression routes. These use the existing DevCollective
+// session guard and keep learning progress/REP authoritative in Supabase.
+registerLearningProgressRoutes(app, requireAuth);
 
 // Shared: turn raw Gemini errors into something safe/readable to show the user
 function friendlyAiError(err: any): string {
@@ -524,7 +529,7 @@ app.get('/api/auth/github/url', (req, res) => {
   const configured = Boolean(GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET);
   res.json({
     configured,
-    message: configured ? 'GitHub OAuth is configured.' : 'GitHub OAuth is not configured yet. Set GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET in .env.',
+    message: configured ? 'GitHub OAuth is configured.' : 'GitHub OAuth is not configured yet. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.',
   });
 });
 
@@ -744,7 +749,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
     return res.status(500).json({ error: 'Could not reset the password right now. Please try again.' });
   }
 });
-
 
 // Vite Integration
 async function startServer() {
