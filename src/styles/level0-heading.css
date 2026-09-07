@@ -113,13 +113,197 @@ html.dark .dc-page-level-0 > div > header > div:last-child > div:nth-child(2) .t
   -webkit-text-fill-color: #b9d7ff !important;
 }
 
-@media (max-width: 1279px) {
-  .dc-page-level-0 > div > header h1 { font-size: clamp(3rem, 7vw, 5rem) !important; }
+/* -------------------------------------------------------------------------- */
+/* Final Level 0 workspace pass — compact pastel dashboard, not a new system. */
+/* -------------------------------------------------------------------------- */
+
+.dc-page-level-0 > div { max-width: 1380px !important; }
+
+.dc-page-level-0 > div > header {
+  border-radius: 14px !important;
+  padding: 34px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 410px) !important;
+  gap: 28px !important;
+  align-items: center !important;
+  position: relative !important;
 }
+
+.dc-page-level-0 > div > header::before {
+  content: "LEARNING  /  LEVEL 0";
+  grid-column: 1 / -1;
+  order: -2;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  color: #6d9fdc;
+  text-transform: uppercase;
+  margin-bottom: -10px;
+}
+
+.dc-page-level-0 > div > header > div:first-child {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dc-page-level-0 > div > header > div:first-child h1 {
+  margin-top: 12px !important;
+  font-size: clamp(3rem, 5.4vw, 5.4rem) !important;
+  line-height: .9 !important;
+}
+
+.dc-page-level-0 > div > header > div:first-child h1::after { display: none !important; }
+
+.dc-page-level-0 > div > header > div:last-child {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 10px !important;
+  min-width: 0 !important;
+  padding: 14px !important;
+  background: linear-gradient(135deg, #ddd9ff 0%, #d8ecff 52%, #cef3df 100%) !important;
+  border: 2px solid #171717 !important;
+  border-radius: 14px !important;
+  box-shadow: 5px 5px 0 #171717 !important;
+}
+
+.dc-page-level-0 > div > header > div:last-child > div {
+  min-height: 116px !important;
+  padding: 16px !important;
+  background: rgba(255, 250, 243, .88) !important;
+  border: 1.5px solid #171717 !important;
+  border-radius: 10px !important;
+}
+
+.dc-page-level-0 > div > header > div:last-child .text-3xl {
+  font-size: clamp(2rem, 3vw, 2.8rem) !important;
+  margin-top: 7px !important;
+}
+
+.dc-page-level-0 > div > header > div:last-child > div:first-child .text-3xl::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  vertical-align: 15%;
+  border-radius: 50%;
+  background: var(--dc-blue);
+}
+
+.dc-page-level-0 > div > header > div:last-child > div:nth-child(2) {
+  background: rgba(255, 250, 243, .74) !important;
+}
+
+.dc-page-level-0 > div > header > div:last-child > div:nth-child(2) .text-3xl { color: #5f8fc8 !important; }
+
+/* The progress rail becomes a quiet status strip beneath the hero. */
+.dc-page-level-0 > div > header > .relative.mt-7 {
+  grid-column: 1 / -1 !important;
+  grid-row: 3 !important;
+  margin-top: 0 !important;
+}
+.dc-page-level-0 > div > header > .relative.mt-7 .h-3 {
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #fffaf3 !important;
+  border: 1.5px solid #171717 !important;
+}
+.dc-page-level-0 > div > header > .relative.mt-7 .h-full {
+  border-radius: 999px !important;
+}
+
+/* Workspace below the hero: crisp panels, restrained rounding, readable text. */
+.dc-page-level-0 > div > div.grid {
+  grid-template-columns: 330px minmax(0, 1fr) !important;
+  gap: 14px !important;
+}
+.dc-page-level-0 > div > div.grid > aside,
+.dc-page-level-0 > div > div.grid > main section:first-child {
+  border-radius: 14px !important;
+  border: 2px solid #171717 !important;
+  box-shadow: 5px 5px 0 #171717 !important;
+}
+.dc-page-level-0 > div > div.grid > aside {
+  background: #eee8dc !important;
+  padding: 10px !important;
+}
+.dc-page-level-0 > div > div.grid > aside .font-bold,
+.dc-page-level-0 > div > div.grid > aside .text-white { color: #171717 !important; }
+.dc-page-level-0 > div > div.grid > aside .text-outline { color: #66605a !important; }
+.dc-page-level-0 > div > div.grid > aside button { border-radius: 10px !important; }
+.dc-page-level-0 > div > div.grid > aside button:hover { background: #e8e2d7 !important; }
+.dc-page-level-0 > div > div.grid > aside button[class*="bg-primary/10"] {
+  background: #dcecff !important;
+  border-color: #9fc8ff !important;
+}
+.dc-page-level-0 > div > div.grid > aside button[class*="bg-surface-container-highest"] {
+  background: #ddd7ca !important;
+  color: #171717 !important;
+}
+
+.dc-page-level-0 > div > div.grid > main section:first-child {
+  background: #faf6ef !important;
+  overflow: hidden !important;
+}
+.dc-page-level-0 > div > div.grid > main section:first-child > div:first-child {
+  padding: 22px 26px !important;
+  background: linear-gradient(100deg, #fff8f0 0%, #f6f3ff 52%, #effaf5 100%) !important;
+}
+.dc-page-level-0 > div > div.grid > main section:first-child > div:first-child h2 {
+  font-size: clamp(2rem, 3.4vw, 3.2rem) !important;
+  line-height: .95 !important;
+}
+.dc-page-level-0 > div > div.grid > main section:first-child > div:first-child p { color: #4f4a45 !important; }
+
+.dc-page-level-0 > div > div.grid > main section:first-child .text-white { color: #171717 !important; }
+.dc-page-level-0 > div > div.grid > main section:first-child .text-on-surface-variant { color: #56504a !important; }
+
+html.dark .dc-page-level-0 > div > header > div:last-child {
+  background: linear-gradient(135deg, #39345a 0%, #294153 52%, #24473b 100%) !important;
+  border-color: #f5efe5 !important;
+  box-shadow: 5px 5px 0 #f5efe5 !important;
+}
+html.dark .dc-page-level-0 > div > header > div:last-child > div {
+  background: rgba(35,35,35,.92) !important;
+  border-color: #f5efe5 !important;
+}
+html.dark .dc-page-level-0 > div > div.grid > aside {
+  background: #292929 !important;
+  border-color: #f5efe5 !important;
+  box-shadow: 5px 5px 0 #f5efe5 !important;
+}
+html.dark .dc-page-level-0 > div > div.grid > aside .font-bold,
+html.dark .dc-page-level-0 > div > div.grid > aside .text-white,
+html.dark .dc-page-level-0 > div > div.grid > main section:first-child .text-white { color: #fff9f0 !important; }
+html.dark .dc-page-level-0 > div > div.grid > aside .text-outline,
+html.dark .dc-page-level-0 > div > div.grid > main section:first-child .text-on-surface-variant { color: #c8c0b7 !important; }
+html.dark .dc-page-level-0 > div > div.grid > main section:first-child {
+  background: #242424 !important;
+  border-color: #f5efe5 !important;
+  box-shadow: 5px 5px 0 #f5efe5 !important;
+}
+html.dark .dc-page-level-0 > div > div.grid > main section:first-child > div:first-child {
+  background: linear-gradient(100deg, #292929 0%, #302d40 52%, #26352e 100%) !important;
+}
+html.dark .dc-page-level-0 > div > div.grid > main section:first-child > div:first-child p { color: #d4cdc5 !important; }
+
+@media (max-width: 1100px) {
+  .dc-page-level-0 > div > header { grid-template-columns: 1fr !important; }
+  .dc-page-level-0 > div > header > div:last-child { grid-column: 1 !important; grid-row: 3 !important; }
+  .dc-page-level-0 > div > header > .relative.mt-7 { grid-row: 4 !important; }
+}
+
+@media (max-width: 900px) {
+  .dc-page-level-0 > div > div.grid { grid-template-columns: 1fr !important; }
+  .dc-page-level-0 > div > div.grid > aside { position: static !important; }
+}
+
 @media (max-width: 640px) {
-  .dc-page-level-0 > div > header { padding: 24px !important; }
-  .dc-page-level-0 > div > header h1 { font-size: 3rem !important; line-height: .9 !important; }
-  .dc-page-level-0 > div > header h1::after { height: 4px; width: 56px; margin-top: 14px; }
-  .dc-page-level-0 > div > header p { font-size: .95rem !important; }
-  .dc-page-level-0 > div > div > main section:first-child > div:first-child h2 { font-size: 2.25rem !important; }
+  .dc-page-level-0 > div > header { padding: 22px !important; gap: 18px !important; }
+  .dc-page-level-0 > div > header > div:last-child { grid-template-columns: 1fr 1fr !important; padding: 9px !important; }
+  .dc-page-level-0 > div > header > div:last-child > div { min-height: 92px !important; padding: 12px !important; }
+  .dc-page-level-0 > div > header > div:last-child .text-3xl { font-size: 1.8rem !important; }
 }
