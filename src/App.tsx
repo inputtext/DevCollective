@@ -25,6 +25,7 @@ import './styles/dashboard-ux.css';
 import './styles/rep-reward.css';
 import './styles/social-profile.css';
 import './styles/level0-theme.css';
+import './styles/level0-heading.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
