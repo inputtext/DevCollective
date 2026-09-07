@@ -1,43 +1,15 @@
 export type Level0ResourceType = 'video' | 'documentation' | 'practice' | 'article';
 
-export interface Level0Resource {
-  id: string;
-  title: string;
-  type: Level0ResourceType;
-  provider?: string;
-  url: string;
-  embedUrl?: string;
-  description: string;
-}
-
-export interface Level0Submodule {
-  id: string;
-  title: string;
-  description: string;
-  estimatedMinutes: number;
-  kind: 'theory' | 'interactive' | 'practical' | 'reflection' | 'assessment';
-  content: string[];
-  resources?: Level0Resource[];
-  repReward: number;
-}
-
-export interface Level0Module {
-  id: string;
-  order: number;
-  title: string;
-  description: string;
-  icon: string;
-  estimatedMinutes: number;
-  repReward: number;
-  submodules: Level0Submodule[];
-}
+export interface Level0Resource { id: string; title: string; type: Level0ResourceType; provider?: string; url: string; embedUrl?: string; description: string; }
+export interface Level0Submodule { id: string; title: string; description: string; estimatedMinutes: number; kind: 'theory' | 'interactive' | 'practical' | 'reflection' | 'assessment'; content: string[]; resources?: Level0Resource[]; repReward: number; }
+export interface Level0Module { id: string; order: number; title: string; description: string; icon: string; estimatedMinutes: number; repReward: number; submodules: Level0Submodule[]; }
 
 export const LEVEL_0_MODULES: Level0Module[] = [
   {
     id: 'cse-foundations', order: 1, title: 'CSE Foundations', description: 'A compact map of the major areas of Computer Science and how they connect.', icon: 'layers', estimatedMinutes: 75, repReward: 120,
     submodules: [
       { id: 'cse-map', title: 'The CSE Map', description: 'Understand the major branches of Computer Science without going too deep yet.', estimatedMinutes: 20, kind: 'interactive', content: ['Programming, algorithms, operating systems, databases, networks, security, software engineering, cloud, web, mobile, and AI are connected parts of one larger discipline.', 'Learn what each area solves and where it appears in real software products.'], resources: [{ id: 'cse-foundations-video', title: 'What is Computer Science?', type: 'video', provider: 'YouTube', url: 'https://www.youtube.com/watch?v=zOjov-2OZ0E', embedUrl: 'https://www.youtube.com/embed/zOjov-2OZ0E', description: 'A visual introduction to the broader field of computer science.' }], repReward: 20 },
-      { id: 'how-software-comes-together', title: 'How Software Fits Together', description: 'Trace a simple idea from source code to a running application.', estimatedMinutes: 25, kind: 'theory', content: ['Source code becomes executable through a compiler or runtime.', 'Applications depend on operating systems, memory, storage, networks, and often databases and APIs.'], resources: [{ id: 'how-web-works-video', title: 'How The Web Works', type: 'video', provider: 'Learn.co / YouTube', url: 'https://www.youtube.com/watch?v=ao532DhZWiY', embedUrl: 'https://www.youtube.com/embed/ao532DhZWiY', description: 'A visual introduction to browsers, DNS, servers, requests, responses, and front-end/back-end roles.' }], repReward: 20 },
+      { id: 'how-software-comes-together', title: 'How Software Fits Together', description: 'Trace a simple idea from source code to a running application.', estimatedMinutes: 25, kind: 'theory', content: ['Source code becomes executable or runnable through a compiler or runtime.', 'A running application relies on the operating system for processes, memory, files, and hardware access.', 'In a web application, the browser communicates with server-side application logic through HTTP/APIs, and that application may read or write persistent data in a database.'], resources: [{ id: 'how-web-works-video', title: 'How The Web Works', type: 'video', provider: 'Learn.co / YouTube', url: 'https://www.youtube.com/watch?v=ao532DhZWiY', embedUrl: 'https://www.youtube.com/embed/ao532DhZWiY', description: 'A visual introduction to browsers, DNS, servers, requests, responses, and front-end/back-end roles.' }], repReward: 20 },
       { id: 'cse-foundations-checkpoint', title: 'Foundations Checkpoint', description: 'Prove that you can identify the role of the major CSE areas.', estimatedMinutes: 30, kind: 'assessment', content: ['Match real-world engineering problems to the CSE area that primarily solves them.', 'Explain in your own words how at least three CSE areas work together in a web application.'], repReward: 40 },
     ],
   },
