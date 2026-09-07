@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, BookOpen, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { LEVEL_0_MODULES } from '../data/level0';
-
-type ProgressMap = Record<string, { verifiedSubmodules: string[]; completedAt?: string }>;
 
 export const Level0Gate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, setActiveTab, activeTab } = useAuth();
@@ -11,20 +8,49 @@ export const Level0Gate: React.FC<{ children: React.ReactNode }> = ({ children }
   const [complete, setComplete] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setComplete(false);
-      setLoading(false);
-      return;
-    }
-    try {
-      const raw = localStorage.getItem(`devcollective_level_progress_${user.id}`);
-      const progress: ProgressMap = raw ? JSON.parse(raw) : {};
-      setComplete(LEVEL_0_MODULES.every((module) => Boolean(progress[module.id]?.completedAt)));
-    } catch {
-      setComplete(false);
-    } finally {
-      setLoading(false);
-    }
+    let cancelled = false;
+
+    const loadProgress = async () => {
+      if (!user) {
+        setComplete(false);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('devcollective_token');
+        if (!token) {
+          setComplete(false);
+          return;
+        }
+
+        const response = await fetch('/api/learning/level-0', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+          setComplete(false);
+          return;
+        }
+
+        const data = await response.json();
+        const levelProgress = data.levelProgress;
+        const isComplete = Boolean(levelProgress?.completed_at || levelProgress?.completedAt);
+
+        if (!cancelled) setComplete(isComplete);
+      } catch (error) {
+        console.error('Failed to load Level 0 gate state:', error);
+        if (!cancelled) setComplete(false);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadProgress();
+    return () => {
+      cancelled = true;
+    };
   }, [user, activeTab]);
 
   if (loading || !user || complete || activeTab === 'level-0') return <>{children}</>;
