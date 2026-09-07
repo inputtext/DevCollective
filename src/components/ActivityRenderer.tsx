@@ -1,0 +1,89 @@
+import React, { useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, Check, Circle, RotateCcw, ShieldCheck, Sparkles, Terminal } from 'lucide-react';
+import type { Level0Submodule } from '../data/level0';
+
+interface ActivityRendererProps {
+  submodule: Level0Submodule;
+  verified: boolean;
+  verifying?: boolean;
+  onVerify: () => Promise<void> | void;
+}
+
+type Config = {
+  order?: string[];
+  choices?: { id: string; prompt: string; answer: string; options: string[] }[];
+  reflectionPrompt?: string;
+  codePrompt?: string;
+  codeChecks?: string[];
+};
+
+const configs: Record<string, Config> = {
+  'cse-map': { order: ['Problem', 'Algorithm', 'Program', 'Operating System', 'Network', 'Database', 'User'], choices: [{ id: 'ai', prompt: 'Predicting patterns from data primarily belongs to…', answer: 'AI / Machine Learning', options: ['AI / Machine Learning', 'Operating Systems', 'Computer Networks'] }, { id: 'db', prompt: 'Persisting structured application records primarily belongs to…', answer: 'Databases', options: ['Databases', 'Graphics', 'Compilers'] }] },
+  'how-software-comes-together': { order: ['Browser', 'DNS', 'Network', 'Server', 'Application', 'Database', 'Response'], choices: [{ id: 'run', prompt: 'Running JavaScript is primarily handled by…', answer: 'Runtime', options: ['Runtime', 'Database', 'Router', 'Storage'] }, { id: 'store', prompt: 'Persisting users is primarily handled by…', answer: 'Database', options: ['Runtime', 'Database', 'Browser', 'CPU'] }, { id: 'request', prompt: 'Sending an HTTP request uses the…', answer: 'Network / HTTP', options: ['Network / HTTP', 'Database', 'Compiler', 'Filesystem'] }, { id: 'files', prompt: 'Managing files and memory is primarily an…', answer: 'Operating System', options: ['Operating System', 'API Gateway', 'Database', 'Browser'] }] },
+  'git-mental-model': { order: ['Working tree', 'Staging area', 'Commit', 'Local history', 'Remote'], choices: [{ id: 'stage', prompt: 'Where do selected changes wait before commit?', answer: 'Staging area', options: ['Working tree', 'Staging area', 'Remote'] }, { id: 'remote', prompt: 'Where does a pushed branch become shared?', answer: 'Remote', options: ['Staging area', 'Local history', 'Remote'] }] },
+  'git-core-workflow': { order: ['edit', 'status', 'add', 'commit', 'branch', 'merge', 'push'], codePrompt: 'Write the command sequence for checking status, staging, committing, creating a branch, and pushing.', codeChecks: ['git status', 'git add', 'git commit', 'git branch', 'git push'] },
+  'git-github-workflow': { choices: [{ id: 'git', prompt: 'Git is best described as…', answer: 'Version control software', options: ['Version control software', 'A code hosting website', 'A cloud database'] }, { id: 'pr', prompt: 'A pull request is primarily used to…', answer: 'Review and merge proposed changes', options: ['Review and merge proposed changes', 'Install Git', 'Create a database'] }] },
+  'git-practical-checkpoint': { codePrompt: 'Describe the commands you would use to make two commits, create a feature branch, merge it, and push the result.', codeChecks: ['commit', 'branch', 'merge', 'push'] },
+  'network-basics': { order: ['Device', 'Switch', 'Router', 'Internet', 'Server'], choices: [{ id: 'port', prompt: 'What identifies a service on a host?', answer: 'Port', options: ['Port', 'MAC address', 'Monitor'] }, { id: 'router', prompt: 'What primarily moves traffic between networks?', answer: 'Router', options: ['Router', 'Switch', 'RAM'] }] },
+  'dns-http-tcp': { choices: [{ id: 'dns', prompt: 'DNS primarily translates…', answer: 'Hostnames to addresses', options: ['Hostnames to addresses', 'Files to processes', 'HTML to CSS'] }, { id: 'https', prompt: 'HTTPS adds…', answer: 'TLS encryption', options: ['TLS encryption', 'A new CPU', 'A database'] }] },
+  'url-to-page': { order: ['Enter URL', 'DNS lookup', 'Connection/TLS', 'HTTP request', 'Server processing', 'HTTP response', 'Render page'] },
+  'network-checkpoint': { order: ['URL entered', 'DNS lookup', 'TCP/TLS connection', 'HTTP request', 'Server response', 'Browser render'], choices: [{ id: 'http', prompt: 'Which protocol describes web request/response semantics?', answer: 'HTTP', options: ['HTTP', 'DNS', 'MAC'] }] },
+  'c-syntax-control-flow': { codePrompt: 'Write a small C program that declares an integer, checks whether it is positive, and prints a message.', codeChecks: ['#include', 'main', 'int', 'if', 'printf'] },
+  'c-arrays-pointers': { order: ['Array', 'Element address', 'Pointer', 'Dereference', 'Value'], choices: [{ id: 'ptr', prompt: 'A pointer stores a…', answer: 'Memory address', options: ['Memory address', 'Database row', 'CPU core'] }, { id: 'str', prompt: 'A C string ends with…', answer: 'Null character', options: ['Null character', 'A period', 'A semicolon'] }] },
+  'c-memory-functions': { order: ['Source code', 'Compiler', 'Object code', 'Linker', 'Executable', 'Process memory'], choices: [{ id: 'stack', prompt: 'Function call frames are commonly associated with…', answer: 'Stack', options: ['Stack', 'Database', 'Network'] }] },
+  'c-foundations-checkpoint': { codePrompt: 'Write a C function that receives two integers and returns their sum, then call it from main.', codeChecks: ['int', 'return', 'main', 'sum'] },
+  'study-senior-stories': { reflectionPrompt: 'What is one study tactic from a senior story that you would actually adopt, and why? Write at least 40 characters.' },
+  'study-planning': { reflectionPrompt: 'Create your weekly learning system: name three learning blocks, one revision block, and one recovery block. Write at least 60 characters.' },
+  'study-reflection': { reflectionPrompt: 'Write three habits you will keep, two distractions you will reduce, and one weekly review ritual. Write at least 80 characters.' },
+  'hardware-basics': { choices: [{ id: 'cpu', prompt: 'Which component executes instructions?', answer: 'CPU', options: ['CPU', 'Storage', 'Monitor'] }, { id: 'ram', prompt: 'Which component primarily holds active working data?', answer: 'RAM', options: ['RAM', 'SSD', 'Keyboard'] }], order: ['CPU executes', 'RAM holds active data', 'Storage persists data', 'I/O connects the outside world'] },
+  'os-basics': { choices: [{ id: 'process', prompt: 'A running program instance is a…', answer: 'Process', options: ['Process', 'Database', 'Packet'] }, { id: 'files', prompt: 'Who provides filesystem and permission abstractions?', answer: 'Operating System', options: ['Operating System', 'Compiler', 'Browser'] }] },
+  'execution-cycle': { order: ['Source code', 'Compiler/runtime', 'Machine instructions', 'CPU fetch', 'CPU execute'], choices: [{ id: 'abstraction', prompt: 'Why do abstraction layers exist?', answer: 'To hide lower-level complexity', options: ['To hide lower-level complexity', 'To remove memory', 'To disable CPUs'] }] },
+  'fundamentals-checkpoint': { choices: [{ id: 'memory', prompt: 'Which is volatile?', answer: 'RAM', options: ['RAM', 'SSD', 'USB archive'] }, { id: 'os', prompt: 'Which manages processes and hardware resources?', answer: 'Operating System', options: ['Operating System', 'HTML', 'Database'] }, { id: 'cpu', prompt: 'Which executes instructions?', answer: 'CPU', options: ['CPU', 'Filesystem', 'DNS'] }] },
+};
+
+const fallbackConfig = (submodule: Level0Submodule): Config => {
+  if (submodule.kind === 'reflection') return { reflectionPrompt: `Reflect on: ${submodule.description} Write a practical response of at least 60 characters.` };
+  if (submodule.kind === 'practical') return { codePrompt: `Complete this practical exercise: ${submodule.description} Describe the concrete steps you would take.`, codeChecks: ['step', 'result'] };
+  if (submodule.kind === 'assessment') return { choices: [{ id: 'ready', prompt: `Which statement best matches this checkpoint?`, answer: 'I can explain and apply the concept', options: ['I can explain and apply the concept', 'I have only skimmed it', 'I will skip it'] }] };
+  return { choices: [{ id: 'understood', prompt: 'What is the goal of this lesson?', answer: 'Understand and apply the core concept', options: ['Understand and apply the core concept', 'Memorize unrelated facts', 'Skip the exercise'] }] };
+};
+
+export const ActivityRenderer: React.FC<ActivityRendererProps> = ({ submodule, verified, verifying = false, onVerify }) => {
+  const config = useMemo(() => ({ ...fallbackConfig(submodule), ...(configs[submodule.id] || {}) }), [submodule]);
+  const [ordered, setOrdered] = useState<string[]>(config.order || []);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [reflection, setReflection] = useState('');
+  const [code, setCode] = useState('');
+  const [passed, setPassed] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  const reset = () => { setOrdered(config.order || []); setAnswers({}); setReflection(''); setCode(''); setPassed(false); setChecked(false); };
+  const move = (index: number, direction: -1 | 1) => { const nextIndex = index + direction; if (nextIndex < 0 || nextIndex >= ordered.length) return; const next = [...ordered]; [next[index], next[nextIndex]] = [next[nextIndex], next[index]]; setOrdered(next); setChecked(false); setPassed(false); };
+  const check = () => {
+    const orderPass = !config.order || ordered.every((item, index) => item === config.order?.[index]);
+    const choicePass = !config.choices || config.choices.every((item) => answers[item.id] === item.answer);
+    const reflectionPass = !config.reflectionPrompt || reflection.trim().length >= 40;
+    const codePass = !config.codeChecks || config.codeChecks.every((item) => code.toLowerCase().includes(item.toLowerCase()));
+    const result = Boolean(orderPass && choicePass && reflectionPass && codePass);
+    setChecked(true); setPassed(result);
+  };
+  const canVerify = passed && !verified;
+
+  return <div className="mt-5 space-y-4">
+    <div className="border-2 border-primary/25 bg-primary/5 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><div className="flex items-center gap-2 font-label-mono text-[10px] uppercase text-primary"><Sparkles className="h-3.5 w-3.5" /> Guided activity</div><h4 className="mt-1 text-base font-black">{submodule.title}</h4><p className="mt-1 max-w-2xl text-xs leading-5 text-on-surface-variant">Estimated {submodule.estimatedMinutes} minutes is a learning estimate, not a countdown. Complete the exercise, then verify it.</p></div><span className="dc-level0-label">~{submodule.estimatedMinutes} min</span></div>
+    </div>
+
+    {config.order && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Interactive</div><h4 className="mt-1 text-sm font-black">Arrange the flow</h4><p className="mt-1 text-xs text-on-surface-variant">Move the blocks until the sequence is correct.</p></div><div className="space-y-2 p-3">{ordered.map((item, index) => <div key={item} className="flex items-center gap-2 border border-outline-variant bg-surface-container-low p-2"><span className="flex h-7 w-7 items-center justify-center border border-outline-variant bg-surface font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span className="flex-1 text-sm font-bold">{item}</span><button type="button" onClick={() => move(index, -1)} disabled={index === 0} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move up"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" onClick={() => move(index, 1)} disabled={index === ordered.length - 1} className="border border-outline-variant px-2 py-1 text-xs disabled:opacity-25" aria-label="Move down"><ArrowDown className="h-3.5 w-3.5" /></button></div>)}</div></section>}
+
+    {config.choices && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Checkpoint</div><h4 className="mt-1 text-sm font-black">Apply what you learned</h4></div><div className="space-y-4 p-3">{config.choices.map((item, index) => <div key={item.id} className="grid gap-2 sm:grid-cols-[1fr_240px] sm:items-center"><div className="flex items-start gap-2 text-sm"><span className="flex h-7 w-7 shrink-0 items-center justify-center border border-outline-variant bg-primary/10 font-label-mono text-[10px]">{String(index + 1).padStart(2, '0')}</span><span>{item.prompt}</span></div><select value={answers[item.id] || ''} onChange={(event) => { setAnswers((current) => ({ ...current, [item.id]: event.target.value })); setChecked(false); setPassed(false); }} className="border border-outline-variant bg-surface px-3 py-2 text-xs font-bold text-on-surface"><option value="">Choose an answer</option>{item.options.map((option) => <option key={option} value={option}>{option}</option>)}</select></div>)}</div></section>}
+
+    {config.reflectionPrompt && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="font-label-mono text-[9px] uppercase text-outline">Reflection</div><h4 className="mt-1 text-sm font-black">Make it personal</h4></div><div className="p-3"><p className="text-sm font-bold">{config.reflectionPrompt}</p><textarea value={reflection} onChange={(event) => { setReflection(event.target.value); setChecked(false); setPassed(false); }} rows={6} className="mt-3 w-full resize-y border-2 border-outline-variant bg-surface-container-low p-3 text-sm outline-none focus:border-primary" placeholder="Write your response…" /></div></section>}
+
+    {config.codePrompt && <section className="border-2 border-outline-variant bg-surface"><div className="border-b border-outline-variant px-4 py-3"><div className="flex items-center gap-2 font-label-mono text-[9px] uppercase text-outline"><Terminal className="h-3.5 w-3.5" /> Practical</div><h4 className="mt-1 text-sm font-black">Do the task</h4></div><div className="p-3"><p className="text-sm font-bold">{config.codePrompt}</p><textarea value={code} onChange={(event) => { setCode(event.target.value); setChecked(false); setPassed(false); }} rows={9} spellCheck={false} className="mt-3 w-full resize-y border-2 border-outline bg-[#111827] p-3 font-mono text-xs leading-5 text-white outline-none focus:border-primary" placeholder="Type your commands or code here…" /></div></section>}
+
+    <section className={`border-2 p-4 ${passed || verified ? 'border-tertiary/50 bg-tertiary/10' : 'border-primary/20 bg-primary/5'}`}><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><div className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4" /> Verification checkpoint</div><p className="mt-1 text-xs text-on-surface-variant">{verified ? 'This sub-module is verified.' : checked ? (passed ? 'Activity passed. You can now verify the sub-module.' : 'Not quite yet. Review the exercise and try again.') : 'Complete the activity before verification.'}</p></div><div className="flex gap-2"><button type="button" onClick={check} disabled={verified} className="border-2 border-outline bg-surface px-4 py-2.5 text-xs font-black uppercase">Check activity</button><button type="button" onClick={() => void onVerify()} disabled={!canVerify || verifying} className="border-2 border-outline bg-primary px-4 py-2.5 text-xs font-black uppercase disabled:cursor-not-allowed disabled:opacity-40">{verified ? <><Check className="mr-1 inline h-4 w-4" /> Verified</> : verifying ? 'Verifying…' : 'Verify sub-module'}</button></div></div></section>
+    {checked && !passed && <div className="border-2 border-red-400/30 bg-red-400/10 px-4 py-3 text-xs font-bold text-red-700 dark:text-red-300">Some answers are still incorrect or incomplete. You can retry without losing progress.</div>}
+    <button type="button" onClick={reset} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase text-outline hover:text-on-surface"><RotateCcw className="h-3.5 w-3.5" /> Reset activity</button>
+  </div>;
+};
