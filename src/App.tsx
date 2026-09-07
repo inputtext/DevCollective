@@ -83,7 +83,7 @@ const MainContent: React.FC = () => {
     {activeTab === 'mentors' && <MentorDirectoryPage />}
     {activeTab === 'profile' && <StudentProfilePage />}
     {activeTab === 'admin' && <AdminPage />}
-    {activeTab === 'level-0' && <Level0Page />}
+    {activeTab === ('level-0' as typeof activeTab) && <Level0Page />}
   </Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /></div>;
 };
 
