@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { LEVEL_0_MODULES, LEVEL_0_ID, LEVEL_0_SUBTITLE, LEVEL_0_TITLE, Level0Module, Level0Submodule } from '../data/level0';
+import {
+  LEVEL_0_MODULES,
+  LEVEL_0_SUBTITLE,
+  LEVEL_0_TITLE,
+  Level0Module,
+  Level0Submodule,
+} from '../data/level0';
 import {
   ArrowLeft,
   ArrowRight,
@@ -34,21 +40,19 @@ interface ModuleProgress {
 type ProgressMap = Record<string, ModuleProgress>;
 
 const ICONS: Record<string, React.ReactNode> = {
-  layers: <Layers className="w-5 h-5" />,
-  'git-branch': <GitBranch className="w-5 h-5" />,
-  network: <Network className="w-5 h-5" />,
-  'code-2': <Code2 className="w-5 h-5" />,
-  'graduation-cap': <GraduationCap className="w-5 h-5" />,
-  cpu: <Cpu className="w-5 h-5" />,
+  layers: <Layers className="h-5 w-5" />,
+  'git-branch': <GitBranch className="h-5 w-5" />,
+  network: <Network className="h-5 w-5" />,
+  'code-2': <Code2 className="h-5 w-5" />,
+  'graduation-cap': <GraduationCap className="h-5 w-5" />,
+  cpu: <Cpu className="h-5 w-5" />,
 };
 
 function youtubeEmbedUrl(resourceUrl: string, embedUrl?: string) {
   if (embedUrl) return embedUrl;
   try {
     const url = new URL(resourceUrl);
-    if (url.hostname.includes('youtu.be')) {
-      return `https://www.youtube.com/embed/${url.pathname.replace('/', '')}`;
-    }
+    if (url.hostname.includes('youtu.be')) return `https://www.youtube.com/embed/${url.pathname.replace('/', '')}`;
     if (url.hostname.includes('youtube.com')) {
       const id = url.searchParams.get('v');
       if (id) return `https://www.youtube.com/embed/${id}`;
@@ -66,8 +70,8 @@ export const Level0Page: React.FC = () => {
   const [selectedModuleId, setSelectedModuleId] = useState(LEVEL_0_MODULES[0]?.id ?? '');
   const [selectedSubmoduleId, setSelectedSubmoduleId] = useState(LEVEL_0_MODULES[0]?.submodules[0]?.id ?? '');
   const [progress, setProgress] = useState<ProgressMap>({});
-  const [videoResourceId, setVideoResourceId] = useState<string | null>(null);
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(LEVEL_0_MODULES[0]?.id ?? null);
+  const [videoResourceId, setVideoResourceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -83,166 +87,149 @@ export const Level0Page: React.FC = () => {
     () => LEVEL_0_MODULES.find((module) => module.id === selectedModuleId) ?? LEVEL_0_MODULES[0],
     [selectedModuleId]
   );
-
   const selectedSubmodule = useMemo(
     () => selectedModule?.submodules.find((submodule) => submodule.id === selectedSubmoduleId) ?? selectedModule?.submodules[0],
     [selectedModule, selectedSubmoduleId]
   );
 
-  const moduleCompletedCount = LEVEL_0_MODULES.reduce((count, module) => {
-    const moduleProgress = progress[module.id];
-    return count + (moduleProgress?.completedAt ? 1 : 0);
-  }, 0);
-
-  const verifiedSubmoduleCount = LEVEL_0_MODULES.reduce(
-    (total, module) => total + (progress[module.id]?.verifiedSubmodules.length ?? 0),
+  const totalSubmodules = LEVEL_0_MODULES.reduce((sum, module) => sum + module.submodules.length, 0);
+  const verifiedSubmodules = LEVEL_0_MODULES.reduce(
+    (sum, module) => sum + (progress[module.id]?.verifiedSubmodules.length ?? 0),
     0
   );
+  const completedModules = LEVEL_0_MODULES.reduce(
+    (sum, module) => sum + (progress[module.id]?.completedAt ? 1 : 0),
+    0
+  );
+  const overallPercent = totalSubmodules ? Math.round((verifiedSubmodules / totalSubmodules) * 100) : 0;
+  const levelComplete = completedModules === LEVEL_0_MODULES.length;
 
-  const totalSubmoduleCount = LEVEL_0_MODULES.reduce((total, module) => total + module.submodules.length, 0);
-  const levelComplete = moduleCompletedCount === LEVEL_0_MODULES.length;
-  const overallPercent = Math.round((verifiedSubmoduleCount / totalSubmoduleCount) * 100);
+  const selectModule = (module: Level0Module) => {
+    setSelectedModuleId(module.id);
+    setSelectedSubmoduleId(module.submodules[0]?.id ?? '');
+    setExpandedModuleId(module.id);
+    setVideoResourceId(null);
+  };
 
-  const persistProgress = (next: ProgressMap) => {
-    setProgress(next);
-    if (user) localStorage.setItem(storageKey(user.id), JSON.stringify(next));
+  const selectSubmodule = (module: Level0Module, submodule: Level0Submodule) => {
+    setSelectedModuleId(module.id);
+    setSelectedSubmoduleId(submodule.id);
+    setExpandedModuleId(module.id);
+    setVideoResourceId(null);
   };
 
   const markSubmoduleVerified = (module: Level0Module, submodule: Level0Submodule) => {
     if (!user) return;
     const current = progress[module.id] ?? { verifiedSubmodules: [] };
     if (current.verifiedSubmodules.includes(submodule.id)) return;
-
-    const verifiedSubmodules = [...current.verifiedSubmodules, submodule.id];
-    const completed = verifiedSubmodules.length === module.submodules.length;
-
-    persistProgress({
+    const verified = [...current.verifiedSubmodules, submodule.id];
+    const next: ProgressMap = {
       ...progress,
       [module.id]: {
-        verifiedSubmodules,
-        completedAt: completed ? new Date().toISOString() : current.completedAt,
+        verifiedSubmodules: verified,
+        completedAt: verified.length === module.submodules.length ? new Date().toISOString() : current.completedAt,
       },
-    });
+    };
+    setProgress(next);
+    localStorage.setItem(storageKey(user.id), JSON.stringify(next));
   };
 
-  const selectModule = (module: Level0Module) => {
-    setSelectedModuleId(module.id);
-    setExpandedModuleId(module.id);
-    setSelectedSubmoduleId(module.submodules[0]?.id ?? '');
-  };
-
-  const selectSubmodule = (module: Level0Module, submodule: Level0Submodule) => {
-    setSelectedModuleId(module.id);
-    setExpandedModuleId(module.id);
-    setSelectedSubmoduleId(submodule.id);
-    setVideoResourceId(null);
-  };
+  const moduleProgress = selectedModule ? progress[selectedModule.id]?.verifiedSubmodules.length ?? 0 : 0;
+  const selectedVerified = Boolean(
+    selectedModule && selectedSubmodule && progress[selectedModule.id]?.verifiedSubmodules.includes(selectedSubmodule.id)
+  );
 
   return (
-    <div className="min-h-full text-on-background pb-16">
-      <div className="max-w-[1500px] mx-auto space-y-7">
-        <header className="bg-surface-container border-2 border-primary/30 rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative flex flex-col xl:flex-row xl:items-end justify-between gap-7">
-            <div className="max-w-4xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary font-label-mono text-[11px] font-bold uppercase">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Mandatory Level 0
-              </div>
-              <h1 className="font-display-2xl text-4xl sm:text-5xl font-black text-white tracking-tight mt-4">
-                {LEVEL_0_TITLE}
-              </h1>
-              <p className="text-on-surface-variant max-w-3xl mt-3 text-base leading-relaxed">
-                {LEVEL_0_SUBTITLE}. Build the common CSE foundation before unlocking specialization.
-              </p>
-            </div>
+    <div className="dc-level0 min-h-full pb-12 text-on-background">
+      <div className="mx-auto max-w-[1500px] space-y-5">
+        <div className="flex items-center gap-2 px-1 pt-1 font-label-mono text-[10px] uppercase tracking-[0.08em] text-outline">
+          <span className="text-primary">●</span>
+          Learning
+          <span>/</span>
+          <span className="text-on-surface">Level 0</span>
+        </div>
 
-            <div className="grid grid-cols-2 gap-3 min-w-[260px]">
-              <div className="bg-surface border border-outline-variant rounded-2xl p-4">
-                <span className="font-label-mono text-[10px] uppercase text-outline">Level Progress</span>
-                <div className="text-3xl font-black text-white mt-1">{overallPercent}%</div>
-              </div>
-              <div className="bg-surface border border-outline-variant rounded-2xl p-4">
-                <span className="font-label-mono text-[10px] uppercase text-outline">Modules</span>
-                <div className="text-3xl font-black text-primary mt-1">{moduleCompletedCount}/{LEVEL_0_MODULES.length}</div>
-              </div>
+        <header className="dc-level0-hero border-2 border-outline-variant bg-surface-container shadow-[7px_7px_0_var(--outline)]">
+          <div className="dc-level0-hero-copy">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 font-label-mono text-[10px] font-bold uppercase text-primary">
+              <ShieldCheck className="h-3.5 w-3.5" /> Mandatory foundation
+            </div>
+            <h1 className="dc-level0-title">
+              <span className="dc-level0-title-accent">Level 0</span>
+              <span> — {LEVEL_0_TITLE}</span>
+            </h1>
+            <p className="dc-level0-subtitle">{LEVEL_0_SUBTITLE}. Build the common CSE foundation before specializing.</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <span className="dc-level0-chip"><Layers className="h-3.5 w-3.5" /> {LEVEL_0_MODULES.length} modules</span>
+              <span className="dc-level0-chip"><BookOpen className="h-3.5 w-3.5" /> {totalSubmodules} sub-modules</span>
+              <span className="dc-level0-chip"><ShieldCheck className="h-3.5 w-3.5" /> mandatory</span>
+              <span className="dc-level0-chip"><Clock className="h-3.5 w-3.5" /> foundation path</span>
             </div>
           </div>
 
-          <div className="relative mt-7">
-            <div className="h-3 bg-surface-container-lowest border border-outline-variant rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary via-secondary to-tertiary transition-all duration-700"
-                style={{ width: `${overallPercent}%` }}
-              />
+          <div className="dc-level0-progress-card">
+            <div className="flex items-center justify-between gap-4">
+              <span className="font-label-mono text-[10px] uppercase tracking-wider text-outline">Your progress</span>
+              <span className="font-label-mono text-[10px] uppercase text-outline">{verifiedSubmodules}/{totalSubmodules}</span>
             </div>
-            <div className="flex justify-between mt-2 text-[11px] font-label-mono uppercase text-outline">
-              <span>{verifiedSubmoduleCount} / {totalSubmoduleCount} verified sub-modules</span>
-              <span>{levelComplete ? 'Level Unlocked' : 'Specialization Locked'}</span>
+            <div className="dc-level0-progress-ring" style={{ '--progress': `${overallPercent * 3.6}deg` } as React.CSSProperties}>
+              <span>{overallPercent}%</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><span>Modules</span><strong>{completedModules}/{LEVEL_0_MODULES.length}</strong></div>
+              <div><span>Sub-modules</span><strong>{verifiedSubmodules}/{totalSubmodules}</strong></div>
             </div>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[310px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)] gap-6 items-start">
-          <aside className="bg-surface-container border-2 border-outline-variant rounded-3xl p-3 sticky top-4">
-            <div className="px-3 py-3 flex items-center gap-3 border-b border-outline-variant/60 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/30 text-primary flex items-center justify-center">
-                <Target className="w-5 h-5" />
-              </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[350px_minmax(0,1fr)]">
+          <aside className="dc-level0-modules border-2 border-outline-variant bg-surface-container">
+            <div className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
               <div>
-                <div className="font-bold text-white text-sm">Foundation Path</div>
-                <div className="text-[10px] text-outline font-label-mono uppercase">6 modules · mandatory</div>
+                <div className="font-label-mono text-[10px] uppercase text-outline">Modules ({LEVEL_0_MODULES.length})</div>
+                <div className="mt-1 text-sm font-black">Foundation Path</div>
               </div>
+              <Target className="h-5 w-5 text-primary" />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1 p-2">
               {LEVEL_0_MODULES.map((module) => {
-                const moduleProgress = progress[module.id]?.verifiedSubmodules.length ?? 0;
-                const moduleComplete = Boolean(progress[module.id]?.completedAt);
+                const count = progress[module.id]?.verifiedSubmodules.length ?? 0;
                 const active = selectedModule?.id === module.id;
                 const expanded = expandedModuleId === module.id;
+                const complete = Boolean(progress[module.id]?.completedAt);
                 return (
-                  <div key={module.id} className="rounded-2xl overflow-hidden">
+                  <div key={module.id}>
                     <button
                       type="button"
                       onClick={() => {
                         selectModule(module);
-                        setExpandedModuleId(expanded ? null : module.id);
+                        if (expanded) setExpandedModuleId(null);
                       }}
-                      className={`w-full text-left px-3 py-3 rounded-2xl border transition-all flex items-center gap-3 ${
-                        active
-                          ? 'bg-primary/10 border-primary/40'
-                          : 'border-transparent hover:border-outline-variant hover:bg-surface-container-low'
-                      }`}
+                      className={`dc-level0-module ${active ? 'is-active' : ''}`}
                     >
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${moduleComplete ? 'bg-tertiary/10 text-tertiary' : active ? 'bg-primary/15 text-primary' : 'bg-surface-container-high text-on-surface-variant'}`}>
-                        {moduleComplete ? <CheckCircle2 className="w-5 h-5" /> : ICONS[module.icon]}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-bold text-sm text-white truncate">{module.order}. {module.title}</div>
-                        <div className="mt-1 flex items-center justify-between gap-2">
-                          <span className="font-label-mono text-[9px] uppercase text-outline">{moduleProgress}/{module.submodules.length} verified</span>
-                          <ChevronDown className={`w-4 h-4 text-outline transition-transform ${expanded ? 'rotate-180' : ''}`} />
-                        </div>
-                      </div>
+                      <span className="dc-level0-module-icon">{complete ? <CheckCircle2 className="h-5 w-5" /> : ICONS[module.icon]}</span>
+                      <span className="min-w-0 flex-1 text-left">
+                        <strong>{module.order}. {module.title}</strong>
+                        <small>{count}/{module.submodules.length} completed</small>
+                      </span>
+                      <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} />
                     </button>
-
                     {expanded && (
-                      <div className="px-2 pb-2 pt-1 space-y-1">
-                        {module.submodules.map((submodule) => {
+                      <div className="space-y-1 px-2 pb-2 pt-1">
+                        {module.submodules.map((submodule, index) => {
                           const verified = progress[module.id]?.verifiedSubmodules.includes(submodule.id);
                           const activeSub = selectedSubmodule?.id === submodule.id;
                           return (
                             <button
-                              key={submodule.id}
                               type="button"
+                              key={submodule.id}
                               onClick={() => selectSubmodule(module, submodule)}
-                              className={`w-full text-left pl-12 pr-2 py-2 rounded-xl text-xs transition-all flex items-center gap-2 ${
-                                activeSub ? 'bg-surface-container-highest text-white' : 'text-on-surface-variant hover:bg-surface-container-low'
-                              }`}
+                              className={`dc-level0-submodule ${activeSub ? 'is-active' : ''}`}
                             >
-                              {verified ? <CheckCircle2 className="w-3.5 h-3.5 text-tertiary shrink-0" /> : <Circle className="w-3.5 h-3.5 text-outline shrink-0" />}
-                              <span className="truncate">{submodule.title}</span>
+                              {verified ? <CheckCircle2 className="h-4 w-4 text-tertiary" /> : <Circle className="h-4 w-4 text-outline" />}
+                              <span>{index + 1}. {submodule.title}</span>
+                              <small>{submodule.estimatedMinutes}m</small>
                             </button>
                           );
                         })}
@@ -252,243 +239,127 @@ export const Level0Page: React.FC = () => {
                 );
               })}
             </div>
-
-            <div className="mt-4 p-3 rounded-2xl bg-surface border border-outline-variant">
-              <div className="flex items-center gap-2 text-xs font-bold text-white">
-                <Award className="w-4 h-4 text-primary" />
-                Verified progression
-              </div>
-              <p className="text-[11px] text-on-surface-variant mt-1 leading-relaxed">
-                Completion is recorded from verified learning actions in this Level-0 workspace, not from a client-side progress percentage.
-              </p>
-            </div>
           </aside>
 
-          <main className="min-w-0 space-y-6">
-            {selectedModule && selectedSubmodule && (
-              <>
-                <section className="bg-surface-container border-2 border-outline-variant rounded-3xl overflow-hidden">
-                  <div className="p-6 sm:p-8 border-b border-outline-variant/60">
-                    <div className="flex flex-wrap items-center gap-2 mb-4">
-                      <span className="px-2.5 py-1 rounded-full bg-secondary/10 border border-secondary/30 text-secondary text-[10px] font-label-mono uppercase font-bold">
-                        Module {selectedModule.order}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full bg-surface border border-outline-variant text-outline text-[10px] font-label-mono uppercase">
-                        {selectedModule.estimatedMinutes} min total
-                      </span>
+          {selectedModule && selectedSubmodule && (
+            <main className="min-w-0 border-2 border-outline-variant bg-surface-container">
+              <section className="dc-level0-module-header">
+                <div>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <span className="dc-level0-label bg-tertiary/10 text-tertiary">Module {selectedModule.order}</span>
+                    <span className="dc-level0-label">~ {selectedModule.estimatedMinutes} min</span>
+                  </div>
+                  <h2>{selectedModule.title}</h2>
+                  <p>{selectedModule.description}</p>
+                </div>
+                <div className="dc-level0-module-count"><strong>{moduleProgress}/{selectedModule.submodules.length}</strong><span>completed</span></div>
+              </section>
+
+              <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(320px,1.15fr)]">
+                <div className="border-b border-outline-variant p-4 lg:border-b-0 lg:border-r">
+                  <div className="mb-3 font-label-mono text-[10px] uppercase text-outline">Sub-modules ({selectedModule.submodules.length})</div>
+                  <div className="space-y-1.5">
+                    {selectedModule.submodules.map((submodule, index) => {
+                      const active = submodule.id === selectedSubmodule.id;
+                      const verified = progress[selectedModule.id]?.verifiedSubmodules.includes(submodule.id);
+                      return (
+                        <button type="button" key={submodule.id} onClick={() => selectSubmodule(selectedModule, submodule)} className={`dc-level0-lesson ${active ? 'is-active' : ''}`}>
+                          <span className="dc-level0-lesson-number">{verified ? <Check className="h-4 w-4" /> : `0${index + 1}`}</span>
+                          <span className="min-w-0 flex-1 text-left"><strong>{submodule.title}</strong><small><Clock className="h-3 w-3" /> {submodule.estimatedMinutes} min</small></span>
+                          <ArrowRight className="h-4 w-4" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 font-label-mono text-[10px] uppercase text-primary">
+                        {selectedSubmodule.kind === 'interactive' && <Sparkles className="h-3.5 w-3.5" />}
+                        {selectedSubmodule.kind === 'practical' && <Terminal className="h-3.5 w-3.5" />}
+                        {selectedSubmodule.kind === 'assessment' && <ShieldCheck className="h-3.5 w-3.5" />}
+                        {selectedSubmodule.kind}
+                      </div>
+                      <h3 className="dc-level0-lesson-title">{selectedSubmodule.title}</h3>
+                      <p className="mt-1 text-sm leading-6 text-on-surface-variant">{selectedSubmodule.description}</p>
                     </div>
-                    <h2 className="text-3xl sm:text-4xl font-black text-white">{selectedModule.title}</h2>
-                    <p className="text-on-surface-variant mt-2 max-w-3xl">{selectedModule.description}</p>
+                    {selectedVerified && <span className="dc-level0-verified"><Check className="h-4 w-4" /> Verified</span>}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)]">
-                    <div className="p-4 border-b md:border-b-0 md:border-r border-outline-variant/60 bg-surface-container-low/50">
-                      <div className="font-label-mono text-[10px] uppercase text-outline px-2 pb-2">Sub-module</div>
-                      <div className="space-y-1">
-                        {selectedModule.submodules.map((submodule, index) => {
-                          const verified = progress[selectedModule.id]?.verifiedSubmodules.includes(submodule.id);
-                          const active = submodule.id === selectedSubmodule.id;
+                  <div className="mt-5 space-y-2">
+                    {selectedSubmodule.content.map((paragraph, index) => (
+                      <div key={index} className="dc-level0-content-row">
+                        <span>{index + 1}</span>
+                        <p>{paragraph}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedSubmodule.resources?.length ? (
+                    <div className="mt-5 border-2 border-outline-variant bg-surface">
+                      <div className="flex items-center gap-2 border-b border-outline-variant px-4 py-3">
+                        <BookOpen className="h-4 w-4 text-secondary" />
+                        <span className="text-xs font-black">Best Free Resources</span>
+                      </div>
+                      <div className="space-y-2 p-3">
+                        {selectedSubmodule.resources.map((resource) => {
+                          const embed = resource.type === 'video' ? youtubeEmbedUrl(resource.url, resource.embedUrl) : undefined;
                           return (
-                            <button
-                              type="button"
-                              key={submodule.id}
-                              onClick={() => selectSubmodule(selectedModule, submodule)}
-                              className={`w-full text-left p-3 rounded-xl border transition-all ${active ? 'border-primary/40 bg-primary/10' : 'border-transparent hover:border-outline-variant'}`}
-                            >
-                              <div className="flex items-start gap-2.5">
-                                <div className={`mt-0.5 shrink-0 ${verified ? 'text-tertiary' : active ? 'text-primary' : 'text-outline'}`}>
-                                  {verified ? <CheckCircle2 className="w-4 h-4" /> : <span className="font-label-mono text-[10px]">0{index + 1}</span>}
+                            <div key={resource.id} className="border border-outline-variant bg-surface-container-low p-3">
+                              {embed && (
+                                <div className="mb-3 aspect-video overflow-hidden bg-black">
+                                  <iframe src={embed} title={resource.title} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" />
                                 </div>
+                              )}
+                              <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
-                                  <div className="font-bold text-xs text-white leading-snug">{submodule.title}</div>
-                                  <div className="flex items-center gap-1 mt-1 text-[10px] text-outline">
-                                    <Clock className="w-3 h-3" /> {submodule.estimatedMinutes} min
-                                  </div>
+                                  <div className="font-label-mono text-[9px] uppercase text-outline">{resource.provider ?? resource.type}</div>
+                                  <div className="mt-1 text-sm font-bold">{resource.title}</div>
+                                  <p className="mt-1 text-xs text-on-surface-variant">{resource.description}</p>
                                 </div>
+                                {!embed && <a href={resource.url} target="_blank" rel="noreferrer" className="shrink-0 border border-outline-variant bg-surface px-3 py-2 text-xs font-bold">Open <ExternalLink className="ml-1 inline h-3 w-3" /></a>}
+                                {embed && resource.type === 'video' && <button type="button" onClick={() => setVideoResourceId(resource.id)} className="shrink-0 border border-outline-variant bg-surface px-3 py-2 text-xs font-bold"><Play className="mr-1 inline h-3 w-3" /> View</button>}
                               </div>
-                            </button>
+                            </div>
                           );
                         })}
                       </div>
                     </div>
+                  ) : null}
 
-                    <div className="p-6 sm:p-8 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2 text-[10px] font-label-mono uppercase text-primary mb-2">
-                            {selectedSubmodule.kind === 'interactive' && <Sparkles className="w-3.5 h-3.5" />}
-                            {selectedSubmodule.kind === 'practical' && <Terminal className="w-3.5 h-3.5" />}
-                            {selectedSubmodule.kind === 'assessment' && <ShieldCheck className="w-3.5 h-3.5" />}
-                            {selectedSubmodule.kind}
-                          </div>
-                          <h3 className="text-2xl font-black text-white">{selectedSubmodule.title}</h3>
-                          <p className="text-sm text-on-surface-variant mt-1 max-w-2xl">{selectedSubmodule.description}</p>
-                        </div>
-                        {progress[selectedModule.id]?.verifiedSubmodules.includes(selectedSubmodule.id) && (
-                          <div className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-tertiary/10 border border-tertiary/30 text-tertiary text-xs font-bold">
-                            <Check className="w-4 h-4" /> Verified
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-7 grid gap-3">
-                        {selectedSubmodule.content.map((paragraph, index) => (
-                          <div key={index} className="p-4 bg-surface border border-outline-variant rounded-2xl flex gap-3">
-                            <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 font-label-mono text-xs font-bold">{index + 1}</div>
-                            <p className="text-sm leading-7 text-on-surface-variant">{paragraph}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {selectedSubmodule.resources && selectedSubmodule.resources.length > 0 && (
-                        <div className="mt-8 rounded-2xl border-2 border-outline-variant bg-surface overflow-hidden">
-                          <div className="px-5 py-4 border-b border-outline-variant/60 flex items-center gap-3">
-                            <BookOpen className="w-5 h-5 text-secondary" />
-                            <div>
-                              <div className="font-bold text-white">Best Free Resources</div>
-                              <div className="text-[10px] font-label-mono text-outline uppercase">Curated for this sub-module</div>
-                            </div>
-                          </div>
-                          <div className="p-4 space-y-3">
-                            {selectedSubmodule.resources.map((resource) => {
-                              const embed = resource.type === 'video' ? youtubeEmbedUrl(resource.url, resource.embedUrl) : undefined;
-                              return (
-                                <div key={resource.id} className="rounded-2xl bg-surface-container border border-outline-variant overflow-hidden">
-                                  {embed ? (
-                                    <div className="aspect-video bg-black">
-                                      <iframe
-                                        src={embed}
-                                        title={resource.title}
-                                        className="w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                        referrerPolicy="strict-origin-when-cross-origin"
-                                      />
-                                    </div>
-                                  ) : null}
-                                  <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-1">
-                                        {resource.type === 'video' ? <Play className="w-4 h-4 text-primary" /> : <BookOpen className="w-4 h-4 text-secondary" />}
-                                        <span className="text-xs font-label-mono uppercase text-outline">{resource.provider ?? resource.type}</span>
-                                      </div>
-                                      <div className="font-bold text-white">{resource.title}</div>
-                                      <p className="text-xs text-on-surface-variant mt-1">{resource.description}</p>
-                                    </div>
-                                    {!embed && (
-                                      <a
-                                        href={resource.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-outline-variant hover:border-primary text-xs font-bold text-white shrink-0"
-                                      >
-                                        Open resource <ExternalLink className="w-3.5 h-3.5" />
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="mt-8 p-5 rounded-2xl border border-primary/20 bg-primary/5 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                        <div>
-                          <div className="text-xs font-bold text-white">Verification checkpoint</div>
-                          <p className="text-xs text-on-surface-variant mt-1 max-w-xl">
-                            Review the material and complete the sub-module activity. Only an explicit verified checkpoint changes stored Level-0 progress.
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => markSubmoduleVerified(selectedModule, selectedSubmodule)}
-                          disabled={progress[selectedModule.id]?.verifiedSubmodules.includes(selectedSubmodule.id)}
-                          className="px-5 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold uppercase tracking-wide disabled:opacity-50 disabled:cursor-default shrink-0"
-                        >
-                          {progress[selectedModule.id]?.verifiedSubmodules.includes(selectedSubmodule.id) ? 'Verified' : 'Complete Checkpoint'}
-                        </button>
-                      </div>
-
-                      <div className="mt-6 flex items-center justify-between gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const index = selectedModule.submodules.findIndex((sub) => sub.id === selectedSubmodule.id);
-                            if (index > 0) selectSubmodule(selectedModule, selectedModule.submodules[index - 1]);
-                          }}
-                          disabled={selectedModule.submodules.findIndex((sub) => sub.id === selectedSubmodule.id) <= 0}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-outline-variant text-xs font-bold text-on-surface-variant disabled:opacity-30"
-                        >
-                          <ArrowLeft className="w-4 h-4" /> Previous
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const index = selectedModule.submodules.findIndex((sub) => sub.id === selectedSubmodule.id);
-                            if (index < selectedModule.submodules.length - 1) {
-                              selectSubmodule(selectedModule, selectedModule.submodules[index + 1]);
-                            }
-                          }}
-                          disabled={selectedModule.submodules.findIndex((sub) => sub.id === selectedSubmodule.id) >= selectedModule.submodules.length - 1}
-                          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface border border-outline-variant text-xs font-bold text-white disabled:opacity-30"
-                        >
-                          Next <ArrowRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
+                  <div className="mt-5 flex flex-col gap-3 border-2 border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div><div className="text-xs font-black">Verification checkpoint</div><p className="mt-1 text-xs text-on-surface-variant">Finish this sub-module, then mark the checkpoint complete.</p></div>
+                    <button type="button" onClick={() => markSubmoduleVerified(selectedModule, selectedSubmodule)} disabled={selectedVerified} className="shrink-0 border-2 border-outline bg-primary px-4 py-2.5 text-xs font-black uppercase disabled:cursor-default disabled:opacity-50">{selectedVerified ? 'Verified' : 'Mark complete'}</button>
                   </div>
-                </section>
 
-                <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-surface-container border-2 border-outline-variant rounded-2xl p-5">
-                    <span className="font-label-mono text-[10px] text-outline uppercase">Module REP</span>
-                    <div className="text-2xl font-black text-primary mt-1">+{selectedModule.repReward}</div>
-                    <p className="text-xs text-on-surface-variant mt-1">Awarded when the module is genuinely completed.</p>
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <button type="button" disabled={selectedModule.submodules.findIndex((item) => item.id === selectedSubmodule.id) <= 0} onClick={() => { const i = selectedModule.submodules.findIndex((item) => item.id === selectedSubmodule.id); if (i > 0) selectSubmodule(selectedModule, selectedModule.submodules[i - 1]); }} className="inline-flex items-center gap-2 border border-outline-variant px-3 py-2 text-xs font-bold disabled:opacity-30"><ArrowLeft className="h-4 w-4" /> Previous</button>
+                    <button type="button" disabled={selectedModule.submodules.findIndex((item) => item.id === selectedSubmodule.id) >= selectedModule.submodules.length - 1} onClick={() => { const i = selectedModule.submodules.findIndex((item) => item.id === selectedSubmodule.id); if (i < selectedModule.submodules.length - 1) selectSubmodule(selectedModule, selectedModule.submodules[i + 1]); }} className="inline-flex items-center gap-2 border-2 border-outline bg-surface px-3 py-2 text-xs font-bold disabled:opacity-30">Next <ArrowRight className="h-4 w-4" /></button>
                   </div>
-                  <div className="bg-surface-container border-2 border-outline-variant rounded-2xl p-5">
-                    <span className="font-label-mono text-[10px] text-outline uppercase">Sub-module REP</span>
-                    <div className="text-2xl font-black text-secondary mt-1">+{selectedSubmodule.repReward}</div>
-                    <p className="text-xs text-on-surface-variant mt-1">Curriculum reward metadata; server-side REP will be authoritative.</p>
-                  </div>
-                  <div className="bg-surface-container border-2 border-outline-variant rounded-2xl p-5">
-                    <span className="font-label-mono text-[10px] text-outline uppercase">Unlock State</span>
-                    <div className={`text-2xl font-black mt-1 ${levelComplete ? 'text-tertiary' : 'text-error'}`}>
-                      {levelComplete ? 'OPEN' : 'LOCKED'}
-                    </div>
-                    <p className="text-xs text-on-surface-variant mt-1">Level 1 stays locked until every Level-0 module is verified.</p>
-                  </div>
-                </section>
-              </>
-            )}
-          </main>
+                </div>
+              </section>
+            </main>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="dc-level0-stat"><span>Module REP</span><strong>+{selectedModule?.repReward ?? 0}</strong><small>Earned on module completion.</small></div>
+          <div className="dc-level0-stat"><span>Sub-module REP</span><strong>+{selectedSubmodule?.repReward ?? 0}</strong><small>Curriculum reward metadata.</small></div>
+          <div className="dc-level0-stat"><span>Level state</span><strong className={levelComplete ? 'text-tertiary' : 'text-primary'}>{levelComplete ? 'OPEN' : 'LOCKED'}</strong><small>{levelComplete ? 'Specialization unlocked.' : 'Complete all Level 0 modules first.'}</small></div>
         </div>
       </div>
 
-      {videoResourceId && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setVideoResourceId(null)}>
-          <div className="max-w-4xl w-full bg-surface-container border-2 border-outline-variant rounded-2xl overflow-hidden" onClick={(event) => event.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b border-outline-variant">
-              <div className="font-bold text-white">Video Resource</div>
-              <button type="button" onClick={() => setVideoResourceId(null)} className="p-2 rounded-lg hover:bg-surface-container-high text-on-surface-variant">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {videoResourceId && selectedSubmodule && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onClick={() => setVideoResourceId(null)}>
+          <div className="w-full max-w-4xl border-2 border-outline bg-surface-container" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center justify-between border-b border-outline-variant p-3"><span className="text-sm font-black">Video Resource</span><button type="button" onClick={() => setVideoResourceId(null)}><X className="h-5 w-5" /></button></div>
             <div className="aspect-video bg-black">
               {(() => {
-                const resource = selectedSubmodule?.resources?.find((item) => item.id === videoResourceId);
-                if (!resource) return null;
-                const embed = youtubeEmbedUrl(resource.url, resource.embedUrl);
-                return embed ? (
-                  <iframe
-                    src={embed}
-                    title={resource.title}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    referrerPolicy="strict-origin-when-cross-origin"
-                  />
-                ) : null;
+                const resource = selectedSubmodule.resources?.find((item) => item.id === videoResourceId);
+                const embed = resource ? youtubeEmbedUrl(resource.url, resource.embedUrl) : undefined;
+                return embed ? <iframe src={embed} title={resource.title} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" /> : null;
               })()}
             </div>
           </div>
