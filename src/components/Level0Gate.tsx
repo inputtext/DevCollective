@@ -9,79 +9,26 @@ export const Level0Gate: React.FC<{ children: React.ReactNode }> = ({ children }
 
   useEffect(() => {
     let cancelled = false;
-
     const loadProgress = async () => {
-      if (!user) {
-        setComplete(false);
-        setLoading(false);
-        return;
-      }
-
+      if (!user) { setComplete(false); setLoading(false); return; }
       setLoading(true);
       try {
-        const token = localStorage.getItem('devcollective_token');
-        if (!token) {
-          setComplete(false);
-          return;
-        }
-
-        const response = await fetch('/api/learning/level-0', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          setComplete(false);
-          return;
-        }
-
+        const response = await fetch('/api/learning/level-0');
+        if (!response.ok) { setComplete(false); return; }
         const data = await response.json();
         const levelProgress = data.levelProgress;
         const isComplete = Boolean(levelProgress?.completed_at || levelProgress?.completedAt);
-
         if (!cancelled) setComplete(isComplete);
       } catch (error) {
         console.error('Failed to load Level 0 gate state:', error);
         if (!cancelled) setComplete(false);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      } finally { if (!cancelled) setLoading(false); }
     };
-
-    loadProgress();
-    return () => {
-      cancelled = true;
-    };
+    void loadProgress();
+    return () => { cancelled = true; };
   }, [user, activeTab]);
 
   if (loading || !user || complete || activeTab === 'level-0') return <>{children}</>;
 
-  return (
-    <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-md flex items-center justify-center p-6">
-      <div className="max-w-2xl w-full bg-surface-container border-2 border-primary/30 rounded-3xl p-7 sm:p-9 shadow-2xl">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary text-[10px] font-label-mono font-bold uppercase">
-          <LockKeyhole className="w-3.5 h-3.5" /> Level 0 Required
-        </div>
-        <div className="flex items-start gap-4 mt-5">
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
-            <BookOpen className="w-7 h-7" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-black text-white">Complete your CSE foundation first.</h2>
-            <p className="text-sm text-on-surface-variant mt-2 leading-relaxed">
-              Level 0 is mandatory for every student. Finish all six foundation modules before continuing to specialization and later progression.
-            </p>
-          </div>
-        </div>
-        <div className="mt-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-4 rounded-2xl bg-surface border border-outline-variant"><div className="text-2xl font-black text-white">6</div><div className="text-[10px] font-label-mono uppercase text-outline mt-1">Modules</div></div>
-          <div className="p-4 rounded-2xl bg-surface border border-outline-variant"><div className="text-2xl font-black text-white">∞</div><div className="text-[10px] font-label-mono uppercase text-outline mt-1">Practice</div></div>
-          <div className="p-4 rounded-2xl bg-surface border border-outline-variant"><div className="text-2xl font-black text-primary">✓</div><div className="text-[10px] font-label-mono uppercase text-outline mt-1">Verified checkpoints</div></div>
-        </div>
-        <button type="button" onClick={() => setActiveTab('level-0')} className="mt-7 w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-gradient-to-r from-primary to-secondary text-white font-bold uppercase text-sm font-label-mono">
-          Enter Level 0 <ArrowRight className="w-5 h-5" />
-        </button>
-        <div className="mt-4 flex items-center justify-center gap-2 text-[10px] uppercase font-label-mono text-outline"><ShieldCheck className="w-3.5 h-3.5" /> Your access state is re-evaluated from stored progress</div>
-      </div>
-    </div>
-  );
+  return <div className="fixed inset-0 z-40 flex items-center justify-center bg-background/95 p-6 backdrop-blur-md"><div className="w-full max-w-2xl rounded-3xl border-2 border-primary/30 bg-surface-container p-7 shadow-2xl sm:p-9"><div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase text-primary font-label-mono"><LockKeyhole className="h-3.5 w-3.5" /> Level 0 Required</div><div className="mt-5 flex items-start gap-4"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary"><BookOpen className="h-7 w-7" /></div><div><h2 className="text-3xl font-black text-white">Complete your CSE foundation first.</h2><p className="mt-2 text-sm leading-relaxed text-on-surface-variant">Level 0 is mandatory for every student. Finish all six foundation modules before continuing to specialization and later progression.</p></div></div><div className="mt-7 grid grid-cols-1 gap-3 sm:grid-cols-3"><div className="rounded-2xl border border-outline-variant bg-surface p-4"><div className="text-2xl font-black text-white">6</div><div className="mt-1 text-[10px] uppercase text-outline font-label-mono">Modules</div></div><div className="rounded-2xl border border-outline-variant bg-surface p-4"><div className="text-2xl font-black text-white">∞</div><div className="mt-1 text-[10px] uppercase text-outline font-label-mono">Practice</div></div><div className="rounded-2xl border border-outline-variant bg-surface p-4"><div className="text-2xl font-black text-primary">✓</div><div className="mt-1 text-[10px] uppercase text-outline font-label-mono">Verified checkpoints</div></div></div><button type="button" onClick={() => setActiveTab('level-0')} className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-secondary px-6 py-4 text-sm font-bold uppercase text-white font-label-mono">Enter Level 0 <ArrowRight className="h-5 w-5" /></button><div className="mt-4 flex items-center justify-center gap-2 text-[10px] uppercase text-outline font-label-mono"><ShieldCheck className="h-3.5 w-3.5" /> Your access state is re-evaluated from stored progress</div></div></div>;
 };
