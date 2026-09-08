@@ -1,0 +1,14 @@
+/* Keep the chat header quiet until the conversation actually has saved or pinned messages. */
+main button[title="Pinned"],
+main button[title="Saved"] {
+  display: none;
+}
+
+main:has(.ring-2.ring-dc-yellow) button[title="Pinned"] {
+  display: inline-flex;
+}
+
+/* A starred message renders Lucide Star with a filled currentColor attribute. */
+main:has(svg.w-3.h-3[fill="currentColor"]) button[title="Saved"] {
+  display: inline-flex;
+}
