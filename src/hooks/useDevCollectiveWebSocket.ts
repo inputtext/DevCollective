@@ -26,10 +26,21 @@ export function useDevCollectiveWebSocket() {
     const token = await getToken();
     if (!token || manuallyClosedRef.current || !isSignedIn) return;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const host = window.location.hostname;
-    const port = import.meta.env.VITE_WS_PORT || '3001';
-    const socket = new WebSocket(`${protocol}://${host}:${port}/ws`);
+    const configuredUrl = import.meta.env.VITE_WS_URL as string | undefined;
+    let socketUrl: string;
+
+    if (configuredUrl?.trim()) {
+      const trimmedUrl = configuredUrl.trim();
+      const baseUrl = trimmedUrl.endsWith('/') ? trimmedUrl.slice(0, -1) : trimmedUrl;
+      socketUrl = `${baseUrl}/ws`;
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = window.location.hostname;
+      const port = import.meta.env.VITE_WS_PORT || '3001';
+      socketUrl = `${protocol}://${host}:${port}/ws`;
+    }
+
+    const socket = new WebSocket(socketUrl);
     socketRef.current = socket;
 
     socket.onopen = () => socket.send(JSON.stringify({ type: 'auth', token }));
