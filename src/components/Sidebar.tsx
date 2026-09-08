@@ -14,6 +14,7 @@ import {
   Terminal,
   PanelLeftClose,
   PanelLeftOpen,
+  BookOpen,
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -29,14 +30,39 @@ export const Sidebar: React.FC = () => {
     { id: 'admin', label: 'Admin Terminal', icon: <ShieldCheck className="w-5 h-5" /> },
   ];
 
+  const levelItems: { id: PageTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'level-0' as PageTab, label: 'Level 0', icon: <BookOpen className="w-5 h-5" /> },
+  ];
+
+  const renderNavItem = (item: { id: PageTab; label: string; icon: React.ReactNode }) => {
+    const isActive = activeTab === item.id;
+    return (
+      <button
+        key={item.id}
+        onClick={() => setActiveTab(item.id)}
+        title={sidebarCollapsed ? item.label : undefined}
+        className={`w-full flex items-center rounded-xl transition-all duration-200 font-label-mono text-sm uppercase ${
+          sidebarCollapsed ? 'justify-center p-3' : 'gap-3.5 px-4 py-3 text-left'
+        } ${
+          isActive
+            ? 'text-primary bg-primary/10 border-l-4 border-primary font-bold shadow-sm'
+            : 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
+        }`}
+      >
+        <div className="shrink-0">{item.icon}</div>
+        {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+      </button>
+    );
+  };
+
   return (
     <aside
-      className={`sticky top-0 h-screen shrink-0 bg-surface border-r-2 border-outline-variant hidden md:flex flex-col py-6 overflow-y-auto transition-all duration-300 z-30 ${
+      data-lenis-prevent-wheel
+      className={`sticky top-0 h-screen shrink-0 bg-surface border-r-2 border-outline-variant hidden md:flex flex-col py-6 overflow-hidden transition-all duration-300 z-30 ${
         sidebarCollapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Header & Toggle Button */}
-      <div className="px-4 mb-6 flex items-center justify-between">
+      <div className="px-4 mb-6 flex items-center justify-between shrink-0">
         {!sidebarCollapsed ? (
           <div
             onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
@@ -78,7 +104,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {sidebarCollapsed && (
-        <div className="px-3 mb-4">
+        <div className="px-3 mb-4 shrink-0">
           <button
             onClick={toggleSidebar}
             title="Expand sidebar"
@@ -89,34 +115,29 @@ export const Sidebar: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation Items */}
-      <nav className="flex-1 space-y-1.5 px-3">
-        {navItems.map((item) => {
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              title={sidebarCollapsed ? item.label : undefined}
-              className={`w-full flex items-center rounded-xl transition-all duration-200 font-label-mono text-sm uppercase ${
-                sidebarCollapsed
-                  ? 'justify-center p-3'
-                  : 'gap-3.5 px-4 py-3 text-left'
-              } ${
-                isActive
-                  ? 'text-primary bg-primary/10 border-l-4 border-primary font-bold shadow-sm'
-                  : 'text-on-surface-variant hover:bg-surface-container-highest hover:text-on-surface'
-              }`}
-            >
-              <div className="shrink-0">{item.icon}</div>
-              {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-            </button>
-          );
-        })}
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 pb-4">
+        <div className="space-y-1.5">
+          {navItems.slice(0, 3).map(renderNavItem)}
+        </div>
+
+        {!sidebarCollapsed && (
+          <div className="px-2 pt-5 pb-2">
+            <p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-outline font-bold">
+              Levels
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          {levelItems.map(renderNavItem)}
+        </div>
+
+        <div className="space-y-1.5 pt-3">
+          {navItems.slice(3).map(renderNavItem)}
+        </div>
       </nav>
 
-      {/* Action Footer */}
-      <div className="px-3 mt-auto space-y-4 pt-4 border-t-2 border-outline-variant">
+      <div className="px-3 mt-2 shrink-0 space-y-3 pt-4 border-t-2 border-outline-variant bg-surface">
         {!sidebarCollapsed ? (
           <button
             onClick={() => setActiveTab('community')}

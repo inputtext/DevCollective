@@ -9,69 +9,47 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const TRANSITION_MS = 620;
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<Theme>(() => {
     const saved = localStorage.getItem('devcollective_theme') as Theme | null;
-    if (saved === 'dark' || saved === 'light') {
-      return saved;
-    }
-    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      return 'light';
-    }
-    return 'dark';
+    return saved === 'dark' || saved === 'light' ? saved : 'light';
   });
 
-  const applyThemeToDOM = (newTheme: Theme, enableTransition = false) => {
-    const root = document.documentElement;
-
-    if (enableTransition) {
-      root.classList.add('theme-transitioning');
-    }
-
-    if (newTheme === 'light') {
-      root.classList.remove('dark');
-      root.classList.add('light');
-    } else {
-      root.classList.remove('light');
-      root.classList.add('dark');
-    }
-
-    root.style.colorScheme = newTheme;
-
-    if (enableTransition) {
-      setTimeout(() => {
-        root.classList.remove('theme-transitioning');
-      }, 400);
-    }
-  };
-
   useEffect(() => {
-    applyThemeToDOM(theme, false);
-  }, []);
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.classList.toggle('light', theme === 'light');
+    root.style.colorScheme = theme;
+  }, [theme]);
 
   const setTheme = (newTheme: Theme) => {
+    if (newTheme === theme) return;
+
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+
+    // Apply the new theme immediately so the UI always switches reliably.
+    root.classList.toggle('dark', newTheme === 'dark');
+    root.classList.toggle('light', newTheme === 'light');
+    root.style.colorScheme = newTheme;
+
     setThemeState(newTheme);
     localStorage.setItem('devcollective_theme', newTheme);
-    applyThemeToDOM(newTheme, true);
+
+    window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, TRANSITION_MS);
   };
 
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-  };
+  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
+  if (!context) throw new Error('useTheme must be used within a ThemeProvider');
   return context;
 };

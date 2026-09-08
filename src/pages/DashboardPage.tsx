@@ -1,357 +1,395 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowRight, CalendarDays, CheckCircle2, Circle, Clock3, Flame, GitBranch, Keyboard, Map, Search, Sparkles, Terminal, Trophy, UserRound, Users, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import {
-  Flame,
-  Zap,
-  Award,
-  ArrowRight,
-  CheckCircle2,
-  Circle,
-  Play,
-  Trophy,
-  Heart,
-  MessageSquare,
-  Share2,
-} from 'lucide-react';
+
+type ActivityItem = {
+  id: string;
+  label: string;
+  meta: string;
+  timestamp: number;
+  tone: 'blue' | 'mint' | 'yellow' | 'lavender';
+};
+
+const DASHBOARD_ACTIVITY_PREFIX = 'devcollective_dashboard_activity:';
+const DASHBOARD_LAST_LOCATION_PREFIX = 'devcollective_dashboard_last_location:';
+
+const formatRelativeTime = (timestamp: number) => {
+  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+  if (seconds < 60) return 'JUST NOW';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}M AGO`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}H AGO`;
+  const days = Math.floor(hours / 24);
+  return `${days}D AGO`;
+};
+
+const readActivity = (userId: string): ActivityItem[] => {
+  try {
+    const raw = localStorage.getItem(`${DASHBOARD_ACTIVITY_PREFIX}${userId}`);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.slice(0, 8) : [];
+  } catch {
+    return [];
+  }
+};
+
+const writeActivity = (userId: string, item: Omit<ActivityItem, 'id' | 'timestamp'>) => {
+  try {
+    const next: ActivityItem = { ...item, id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, timestamp: Date.now() };
+    const previous = readActivity(userId);
+    localStorage.setItem(`${DASHBOARD_ACTIVITY_PREFIX}${userId}`, JSON.stringify([next, ...previous].slice(0, 8)));
+    return next;
+  } catch {
+    return null;
+  }
+};
+
+const titleForTab = (tab: string) => {
+  const map: Record<string, string> = {
+    roadmap: 'ROADMAP WORKSPACE',
+    community: 'COMMUNITY WORKSPACE',
+    profile: 'PROFILE WORKSPACE',
+    leaderboard: 'LEADERBOARD WORKSPACE',
+    mentors: 'MENTOR WORKSPACE',
+  };
+  return map[tab] || 'YOUR WORKSPACE';
+};
 
 export const DashboardPage: React.FC = () => {
-  const { user, tasks, toggleTaskCompletion, leaderboard, posts, toggleLikePost, setActiveTab } = useAuth();
+  const { user, tasks, toggleTaskCompletion, leaderboard, setActiveTab, completeOnboarding, repAnimation } = useAuth();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [now, setNow] = useState(Date.now());
 
-  const completedTasksCount = tasks.filter((t) => t.completed).length;
+  useEffect(() => {
+    if (!user) return;
+    setActivity(readActivity(user.id));
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [user]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPaletteOpen(true);
+      }
+      if (event.key === 'Escape') setPaletteOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  if (!user) return null;
+
+  const completedTasksCount = tasks.filter((task) => task.completed).length;
+  const taskProgress = tasks.length ? Math.round((completedTasksCount / tasks.length) * 100) : 0;
+  const firstName = user.name.split(' ')[0].toUpperCase();
+  const selectedPathCount = user.selectedDomains?.length || 0;
+  const visibleLeaderboard = leaderboard.slice(0, 5);
+  const recentActivity = activity.slice(0, 4);
+  const streakSlots = Array.from({ length: 7 }, (_, index) => index < Math.min(user.streakDays, 7));
+
+  const continueItem = useMemo(() => {
+    const nextTask = tasks.find((task) => !task.completed);
+    if (nextTask) {
+      return {
+        eyebrow: 'CONTINUE WHERE YOU LEFT OFF',
+        title: nextTask.title,
+        meta: `${nextTask.estimatedMinutes} MIN · +${nextTask.repReward} REP`,
+        action: 'Resume task',
+        onClick: () => setActiveTab('dashboard'),
+        tone: 'blue',
+      };
+    }
+    const lastLocation = (() => {
+      try {
+        return localStorage.getItem(`${DASHBOARD_LAST_LOCATION_PREFIX}${user.id}`) || '';
+      } catch {
+        return '';
+      }
+    })();
+    const fallbackTab = ['roadmap', 'community', 'profile', 'leaderboard', 'mentors'].includes(lastLocation) ? lastLocation : 'roadmap';
+    return {
+      eyebrow: 'NEXT WORKSPACE MOVE',
+      title: selectedPathCount ? `Explore ${user.selectedDomains[0]} next` : titleForTab(fallbackTab),
+      meta: selectedPathCount ? `${selectedPathCount} PATH${selectedPathCount === 1 ? '' : 'S'} SELECTED` : 'START WITH YOUR ROADMAP',
+      action: 'Open workspace',
+      onClick: () => setActiveTab(fallbackTab as any),
+      tone: 'lavender',
+    };
+  }, [tasks, selectedPathCount, user, setActiveTab]);
+
+  const stats = [
+    { label: 'REP', value: user.rep.toLocaleString(), note: 'TOTAL REPUTATION', tone: 'blue' },
+    { label: 'LEVEL', value: String(user.level), note: 'CURRENT LEVEL', tone: 'lavender' },
+    { label: 'STREAK', value: `${user.streakDays}d`, note: 'CURRENT STREAK', tone: 'mint' },
+    { label: 'TASKS', value: `${completedTasksCount}/${tasks.length}`, note: 'TASK PROGRESS', tone: 'yellow' },
+  ];
+
+  const recommendations = (user.selectedDomains?.length ? user.selectedDomains : ['Web Development', 'AI', 'Open Source'])
+    .slice(0, 3)
+    .map((domain, index) => ({
+      title: index === 0 ? `Build something in ${domain}` : `Explore ${domain}`,
+      meta: index === 0 ? 'MATCHED TO YOUR PATH' : 'DISCOVERY SUGGESTION',
+    }));
+
+  const quickActions = [
+    { title: 'Roadmaps', meta: 'BUILD YOUR NEXT STEP', icon: Map, target: 'roadmap' as const },
+    { title: 'Community', meta: 'SEE WHAT PEOPLE SHIP', icon: Users, target: 'community' as const },
+    { title: 'Profile', meta: 'KEEP YOUR SIGNAL FRESH', icon: UserRound, target: 'profile' as const },
+  ];
+
+  const recordDashboardActivity = (label: string, meta: string, tone: ActivityItem['tone']) => {
+    const next = writeActivity(user.id, { label, meta, tone });
+    if (next) setActivity((prev) => [next, ...prev].slice(0, 8));
+  };
+
+  const navigateAndRemember = (target: 'roadmap' | 'community' | 'profile' | 'leaderboard' | 'mentors') => {
+    try { localStorage.setItem(`${DASHBOARD_LAST_LOCATION_PREFIX}${user.id}`, target); } catch { /* best-effort UX memory */ }
+    setActiveTab(target);
+  };
+
+  const handleTaskToggle = async (taskId: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    await toggleTaskCompletion(taskId);
+    if (task && !task.completed) {
+      recordDashboardActivity(`Completed “${task.title}”`, `+${task.repReward} REP EARNED`, 'mint');
+    }
+  };
+
+  const paletteActions = [
+    { title: 'Open roadmap', meta: 'Learning workspace', icon: Map, target: 'roadmap' as const },
+    { title: 'Open community', meta: 'Posts and discussions', icon: Users, target: 'community' as const },
+    { title: 'Open profile', meta: 'Identity and skills', icon: UserRound, target: 'profile' as const },
+    { title: 'Open leaderboard', meta: 'Rankings and REP', icon: Trophy, target: 'leaderboard' as const },
+    { title: 'Find a mentor', meta: 'Mentor workspace', icon: Sparkles, target: 'mentors' as const },
+  ];
+  const filteredPaletteActions = paletteActions.filter((item) => `${item.title} ${item.meta}`.toLowerCase().includes(paletteQuery.toLowerCase().trim()));
 
   return (
-    <div className="space-y-10 pb-16">
-      {/* Welcome Hero */}
-      <section className="py-2">
-        <div className="flex flex-col gap-2">
-          <p className="font-label-mono text-secondary text-sm font-bold tracking-wide italic">
-            "Consistency beats intensity."
-          </p>
-          <h2 className="font-display-2xl text-4xl sm:text-5xl font-black text-white tracking-tight leading-none">
-            Good Morning, {user ? user.name.split(' ')[0] : 'Developer'}
-          </h2>
-          <div className="mt-4 flex items-center gap-3 bg-primary/10 border border-primary/20 p-4 rounded-xl w-fit">
-            <Zap className="w-5 h-5 text-primary" />
-            <p className="text-sm font-medium text-on-surface-variant">
-              Welcome back! You're only{' '}
-              <span className="text-primary font-bold">
-                {user ? 3000 - user.rep : 550} REP
-              </span>{' '}
-              away from reaching Level {user ? user.level + 1 : 19}.
-            </p>
+    <div className="space-y-7 pb-16 relative">
+      {user.hasCompletedOnboarding === false && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md">
+          <div className="bg-surface border-2 border-outline-variant p-8 max-w-lg w-full shadow-[7px_7px_0_#171717] space-y-6">
+            <p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">SESSION / INITIALIZED</p>
+            <h3 className="dc-display text-5xl">WELCOME, {firstName}.</h3>
+            <p className="text-sm text-on-surface-variant leading-relaxed">Your DevCollective workspace is empty by design. Build your profile, choose a path, and start creating your own activity.</p>
+            <div className="grid grid-cols-3 border-2 border-outline-variant">
+              <div className="p-4 border-r-2 border-outline-variant"><span className="font-label-mono text-[9px] uppercase text-on-surface-variant block">REP</span><strong className="dc-display text-2xl block mt-1">0</strong></div>
+              <div className="p-4 border-r-2 border-outline-variant"><span className="font-label-mono text-[9px] uppercase text-on-surface-variant block">LEVEL</span><strong className="dc-display text-2xl block mt-1">1</strong></div>
+              <div className="p-4"><span className="font-label-mono text-[9px] uppercase text-on-surface-variant block">STREAK</span><strong className="dc-display text-2xl block mt-1">0</strong></div>
+            </div>
+            <button onClick={() => completeOnboarding()} className="w-full bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] py-4 font-label-mono text-xs uppercase font-bold flex items-center justify-center gap-2">ENTER WORKSPACE <ArrowRight className="w-4 h-4" /></button>
+          </div>
+        </div>
+      )}
+
+      {paletteOpen && (
+        <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 md:p-10 bg-background/65 backdrop-blur-sm" onMouseDown={() => setPaletteOpen(false)}>
+          <div className="dc-dashboard-command" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="dc-dashboard-command-search">
+              <Search className="w-4 h-4 shrink-0" />
+              <input autoFocus value={paletteQuery} onChange={(event) => setPaletteQuery(event.target.value)} placeholder="Search DevCollective..." aria-label="Search DevCollective" />
+              <kbd>ESC</kbd>
+            </div>
+            <div className="dc-dashboard-command-hint"><Keyboard className="w-3.5 h-3.5" /> NAVIGATE THE WORKSPACE</div>
+            <div className="dc-dashboard-command-list">
+              {filteredPaletteActions.map(({ title, meta, icon: Icon, target }) => (
+                <button key={title} onClick={() => { setPaletteOpen(false); setPaletteQuery(''); navigateAndRemember(target); }} className="dc-dashboard-command-item">
+                  <span className="dc-dashboard-command-item-icon"><Icon className="w-4 h-4" /></span>
+                  <span><strong>{title}</strong><small>{meta}</small></span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+                </button>
+              ))}
+              {!filteredPaletteActions.length && <div className="p-6 text-center text-sm text-on-surface-variant">No workspace actions match that search.</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {repAnimation && <div key={repAnimation.id} className="dc-dashboard-rep-toast"><Zap className="w-3.5 h-3.5" /> +{repAnimation.amount} REP EARNED</div>}
+
+      <section className="dc-dashboard-hero" data-gsap-reveal>
+        <div className="relative z-10">
+          <p className="dc-dashboard-kicker">Workspace / Personal Command Center</p>
+          <h2 className="dc-dashboard-title mt-4">GOOD TO SEE YOU,<br /><span className="accent">{firstName}.</span></h2>
+          <p className="dc-dashboard-copy">A focused snapshot of your learning progress, reputation, and what to do next. Your workspace gets richer as you actually use it.</p>
+          <div className="dc-dashboard-hero-actions">
+            <button onClick={() => navigateAndRemember('roadmap')} className="dc-dashboard-action"><Map className="w-4 h-4" /> Explore roadmap <ArrowRight className="w-3.5 h-3.5" /></button>
+            <button onClick={() => navigateAndRemember('profile')} className="dc-dashboard-action secondary"><UserRound className="w-4 h-4" /> Edit profile</button>
+            <button onClick={() => setPaletteOpen(true)} className="dc-dashboard-action command-trigger"><Terminal className="w-4 h-4" /> Command <kbd>Ctrl K</kbd></button>
+          </div>
+        </div>
+
+        <aside className="dc-dashboard-snapshot">
+          <div className="dc-dashboard-snapshot-top">
+            {user.avatar ? <img src={user.avatar} alt={user.name} className="dc-dashboard-avatar" /> : <div className="dc-dashboard-avatar dc-dashboard-avatar-fallback">{user.name.slice(0, 1).toUpperCase()}</div>}
+            <div className="min-w-0">
+              <p className="dc-dashboard-snapshot-name truncate">{user.name}</p>
+              <p className="dc-dashboard-snapshot-role">{user.role} · level {user.level}</p>
+            </div>
+          </div>
+          <div className="dc-dashboard-meta">
+            <div className="dc-dashboard-meta-item"><p className="dc-dashboard-meta-label">COLLEGE</p><p className="dc-dashboard-meta-value" title={user.college || 'Not set'}>{user.college || 'Not set'}</p></div>
+            <div className="dc-dashboard-meta-item"><p className="dc-dashboard-meta-label">PATHS</p><p className="dc-dashboard-meta-value">{selectedPathCount} selected</p></div>
+            <div className="dc-dashboard-meta-item"><p className="dc-dashboard-meta-label">BRANCH</p><p className="dc-dashboard-meta-value" title={user.branch || 'Not set'}>{user.branch || 'Not set'}</p></div>
+            <div className="dc-dashboard-meta-item"><p className="dc-dashboard-meta-label">IDENTITY</p><p className="dc-dashboard-meta-value">{user.email}</p></div>
+          </div>
+        </aside>
+      </section>
+
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-4" data-gsap-reveal>
+        {stats.map((stat) => (
+          <div key={stat.label} className={`dc-dashboard-stat ${stat.tone}`}>
+            <span className="dc-dashboard-stat-label">{stat.label}</span>
+            <span className="dc-dashboard-stat-value">{stat.value}{stat.label === 'STREAK' && <Flame className="w-5 h-5" />}</span>
+            <span className="dc-dashboard-stat-note">{stat.note}</span>
+            {stat.label === 'TASKS' && (
+              <div className="dc-dashboard-progress-wrap">
+                <div className="dc-dashboard-progress-head"><span>Completion</span><strong>{taskProgress}%</strong></div>
+                <div className="dc-dashboard-progress-rail"><div className="dc-dashboard-progress-fill" style={{ width: `${taskProgress}%` }} /></div>
+              </div>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <section className="dc-dashboard-intelligence" data-gsap-reveal>
+        <div className={`dc-dashboard-continue ${continueItem.tone}`}>
+          <div className="dc-dashboard-continue-icon"><Clock3 className="w-5 h-5" /></div>
+          <div className="min-w-0 flex-1">
+            <p className="dc-dashboard-section-label">{continueItem.eyebrow}</p>
+            <h3 className="dc-dashboard-continue-title">{continueItem.title}</h3>
+            <p className="dc-dashboard-continue-meta">{continueItem.meta}</p>
+          </div>
+          <button onClick={continueItem.onClick} className="dc-dashboard-continue-button">{continueItem.action} <ArrowRight className="w-3.5 h-3.5" /></button>
+        </div>
+
+        <div className="dc-dashboard-weekly">
+          <div className="dc-dashboard-section-heading compact">
+            <div><p className="dc-dashboard-section-label">Progress / Current run</p><h3 className="dc-dashboard-card-title">THIS WEEK</h3></div>
+            <CalendarDays className="w-4 h-4 text-on-surface-variant" />
+          </div>
+          <div className="dc-dashboard-week-grid">
+            <div><span>TASKS</span><strong>{completedTasksCount}</strong><small>{taskProgress}% complete</small></div>
+            <div><span>REP</span><strong>+{Math.max(0, activity.filter((item) => item.meta.includes('REP EARNED')).reduce((sum, item) => sum + Number(item.meta.match(/\+(\d+)/)?.[1] || 0), 0))}</strong><small>FROM DASHBOARD ACTIVITY</small></div>
+            <div><span>STREAK</span><strong>{user.streakDays}D</strong><small>CURRENT RUN</small></div>
+          </div>
+          <div className="dc-dashboard-streak-track" aria-label={`${user.streakDays} day current streak`}>
+            {streakSlots.map((active, index) => <span key={index} className={active ? 'active' : ''}>{index + 1}</span>)}
           </div>
         </div>
       </section>
 
-      {/* Metrics Row */}
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        {/* REP Status */}
-        <div className="lg:col-span-2 bg-surface border-2 border-outline-variant p-6 rounded-2xl relative overflow-hidden group hover:border-primary transition-all">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <span className="text-[11px] font-label-mono text-outline uppercase tracking-wider block mb-1">
-                Reputation Status
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white">
-                  {user ? user.rep.toLocaleString() : '2,450'}
-                </span>
-                <span className="text-primary font-label-mono text-sm font-bold">/ 3,000 REP</span>
-              </div>
-            </div>
-            <Award className="w-10 h-10 text-primary opacity-80 group-hover:rotate-12 transition-transform" />
+      <section className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-6" data-gsap-reveal>
+        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="dc-dashboard-section-heading">
+            <div><p className="dc-dashboard-section-label">Learning / Live</p><h3 className="dc-dashboard-section-title">TODAY'S TASKS</h3></div>
+            <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">{completedTasksCount}/{tasks.length} COMPLETE</span>
           </div>
-
-          <div>
-            <div className="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden mb-2">
-              <div
-                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-1000"
-                style={{ width: `${Math.min(100, ((user?.rep || 2450) / 3000) * 100)}%` }}
-              />
+          {tasks.length === 0 ? (
+            <div className="border-2 border-dashed border-outline-variant p-8 text-center">
+              <Zap className="w-6 h-6 mx-auto mb-3 text-primary" />
+              <p className="font-label-mono text-xs uppercase font-bold">NO TASKS YET</p>
+              <p className="text-xs text-on-surface-variant mt-2 max-w-sm mx-auto">Your learning tasks will appear here when a roadmap assigns them.</p>
+              <button onClick={() => navigateAndRemember('roadmap')} className="mt-5 border-2 border-outline-variant bg-dc-mint px-4 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] inline-flex items-center gap-2">EXPLORE ROADMAPS <ArrowRight className="w-3 h-3" /></button>
             </div>
-            <div className="flex justify-between items-center text-xs font-label-mono uppercase">
-              <span className="text-outline">Level {user?.level || 18}</span>
-              <span className="text-primary font-bold">Next: Level {(user?.level || 18) + 1}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Streak */}
-        <div className="bg-surface border-2 border-outline-variant p-6 rounded-2xl flex flex-col justify-between hover:border-error transition-all">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 bg-error/10 rounded-xl flex items-center justify-center">
-              <Flame className="w-7 h-7 text-error fill-error animate-pulse" />
-            </div>
-            <span className="text-[11px] font-label-mono text-outline uppercase">Daily Streak</span>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl font-black text-white">
-              {user?.streakDays || 42} <span className="text-sm font-normal text-outline">Days</span>
-            </div>
-            <p className="text-xs font-label-mono text-tertiary uppercase font-bold mt-1">
-              Next Reward: +100 REP
-            </p>
-          </div>
-        </div>
-
-        {/* Achievements */}
-        <div className="bg-surface border-2 border-outline-variant p-6 rounded-2xl flex flex-col justify-between hover:border-tertiary transition-all">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 bg-tertiary/10 rounded-xl flex items-center justify-center text-tertiary">
-              <Trophy className="w-7 h-7" />
-            </div>
-            <span className="text-[11px] font-label-mono text-outline uppercase">Achievements</span>
-          </div>
-          <div className="mt-4">
-            <div className="text-3xl font-black text-white">
-              12 <span class="text-sm font-normal text-outline">Badges</span>
-            </div>
-            <p className="text-xs font-label-mono text-secondary uppercase font-bold mt-1">
-              Top 1% Developer
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Centerpiece "Active Mission" */}
-      <section>
-        <div className="bg-surface-container border-2 border-outline-variant rounded-2xl p-8 relative overflow-hidden group">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 bg-primary/10 border border-primary/30 text-primary rounded-full font-label-mono text-[11px] uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5" />
-                <span>Active Mission</span>
-              </div>
-
-              <h3 className="font-headline-lg text-3xl font-black text-white leading-tight">
-                Artificial Intelligence & Machine Learning
-              </h3>
-
-              <div className="grid grid-cols-2 gap-4 text-xs">
-                <div className="space-y-1">
-                  <span className="font-label-mono text-outline uppercase">Roadmap Track</span>
-                  <p className="text-white font-bold">AI Beginner Roadmap</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-label-mono text-outline uppercase">Current Lesson</span>
-                  <p className="text-white font-bold">Neural Networks 101</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-label-mono text-outline uppercase">Est. Time</span>
-                  <p className="text-white font-bold">20m Remaining</p>
-                </div>
-                <div className="space-y-1">
-                  <span className="font-label-mono text-outline uppercase">Completion Reward</span>
-                  <p className="text-tertiary font-bold">+50 REP</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setActiveTab('roadmap')}
-                className="bg-primary text-on-primary px-8 py-4 rounded-xl font-bold brutalist-shadow transition-all flex items-center gap-3 hover:scale-105 active:scale-95"
-              >
-                <span>CONTINUE LEARNING</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div
-              onClick={() => setActiveTab('roadmap')}
-              className="relative group cursor-pointer aspect-video rounded-xl border-2 border-outline-variant overflow-hidden bg-surface-container-lowest"
-            >
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFc9BnSHHvbBdL9P-dd_D1AG53lLPRk2sO0b0v9ls2aHtrM2CVq9CQyibrrj75pdam1Px6oBYzoug07s-aEdiurKxdbV35tEZHC-Dmzgn6RwdFu-Sk8QPm67NJazGHkiXG0arwoBn6Hga2nICr-IbxIiJy0uZF1ri6nAAXZ7_cQ_1lGgQSPC-9Tntp87tx7xO1V6NgDH2BTnt_wtBnBhD5JaZk_u6LcaEkDt_Cio-Qrbg3ynh09xwLeLlXQNo1vHeI09190clSV7g"
-                alt="Neural Network Visualization"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-16 h-16 bg-primary/20 backdrop-blur-xl border-2 border-primary/50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Play className="w-8 h-8 text-white fill-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Two Column Section */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Tasks Checklist */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-end justify-between">
-            <div>
-              <h4 className="font-headline-md text-2xl font-bold text-white">Today's Tasks</h4>
-              <p className="text-on-surface-variant text-sm mt-0.5">
-                Complete your daily set to earn bonus streak REP.
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="font-label-mono text-primary text-xs font-bold uppercase tracking-wider block">
-                {completedTasksCount} / {tasks.length} Completed
-              </span>
-              <div className="w-36 h-2 bg-surface-container-highest rounded-full mt-1.5 overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${(completedTasksCount / tasks.length) * 100}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {tasks.map((task) => (
-              <div
-                key={task.id}
-                onClick={() => toggleTaskCompletion(task.id)}
-                className={`flex items-center justify-between p-5 border-2 rounded-2xl transition-all cursor-pointer ${
-                  task.completed
-                    ? 'bg-surface-container-low border-outline-variant/30 opacity-65'
-                    : 'bg-surface border-outline-variant hover:border-primary'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  {task.completed ? (
-                    <CheckCircle2 className="w-6 h-6 text-tertiary fill-tertiary/20" />
-                  ) : (
-                    <Circle className="w-6 h-6 text-outline hover:text-primary" />
-                  )}
-                  <span
-                    className={`text-sm font-medium ${
-                      task.completed ? 'line-through text-on-surface-variant' : 'text-white'
-                    }`}
-                  >
-                    {task.title}
+          ) : (
+            <div className="space-y-3">
+              {tasks.map((task) => (
+                <button key={task.id} onClick={() => void handleTaskToggle(task.id)} className={`dc-dashboard-task-row ${task.completed ? 'completed' : ''}`}>
+                  <span className="dc-dashboard-task-main">
+                    {task.completed ? <CheckCircle2 className="dc-dashboard-task-icon text-dc-mint" /> : <Circle className="dc-dashboard-task-icon" />}
+                    <span className={task.completed ? 'line-through decoration-2 opacity-70' : ''}>{task.title}</span>
                   </span>
-                </div>
+                  <span className="dc-dashboard-task-rep">+{task.repReward} REP</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-                <div className="flex items-center gap-4 font-label-mono text-xs uppercase">
-                  <span className="text-outline">{task.estimatedMinutes}m</span>
-                  <span className="text-primary font-bold">+{task.repReward} REP</span>
+        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="dc-dashboard-section-heading">
+            <div><p className="dc-dashboard-section-label">Momentum / Signal</p><h3 className="dc-dashboard-section-title">RECENT ACTIVITY</h3></div>
+            <GitBranch className="w-5 h-5 text-dc-blue" />
+          </div>
+          {recentActivity.length ? (
+            <div className="dc-dashboard-activity-list">
+              {recentActivity.map((item) => (
+                <div key={item.id} className={`dc-dashboard-activity ${item.tone}`}>
+                  <span className="dc-dashboard-activity-dot" />
+                  <div className="min-w-0"><p>{item.label}</p><small>{item.meta}</small></div>
+                  <time>{formatRelativeTime(item.timestamp + (now - now))}</time>
                 </div>
-              </div>
+              ))}
+            </div>
+          ) : (
+            <div className="dc-dashboard-empty-activity"><Terminal className="w-5 h-5 mx-auto mb-3 text-primary" /><p>YOUR ACTIVITY FEED STARTS HERE</p><small>Finish a task or use a dashboard workspace to build your first local activity trail.</small></div>
+          )}
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 xl:grid-cols-[.9fr_1.1fr] gap-6" data-gsap-reveal>
+        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="dc-dashboard-section-heading">
+            <div><p className="dc-dashboard-section-label">Personalized / Signal</p><h3 className="dc-dashboard-section-title">RECOMMENDED FOR YOU</h3></div>
+            <Sparkles className="w-5 h-5 text-dc-lavender" />
+          </div>
+          <div className="space-y-3">
+            {recommendations.map((item, index) => (
+              <button key={`${item.title}-${index}`} onClick={() => navigateAndRemember('roadmap')} className="dc-dashboard-recommendation text-left">
+                <span className="dc-dashboard-recommendation-index">0{index + 1}</span>
+                <span className="min-w-0"><strong>{item.title}</strong><small>{item.meta}</small></span>
+                <ArrowRight className="w-3.5 h-3.5 ml-auto" />
+              </button>
             ))}
           </div>
         </div>
 
-        {/* Right Column: Leaderboard Standings Snippet */}
-        <div className="space-y-6">
-          <div className="bg-surface-container rounded-2xl border-2 border-outline-variant p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h4 className="font-label-mono text-xs uppercase text-outline font-bold tracking-widest">
-                Leaderboard Standings
-              </h4>
-              <Trophy className="w-5 h-5 text-primary" />
+        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="dc-dashboard-section-heading">
+            <div><p className="dc-dashboard-section-label">Ranking / Live</p><h3 className="dc-dashboard-section-title">LEADERBOARD</h3></div>
+            <Trophy className="w-5 h-5 text-dc-yellow" />
+          </div>
+          {visibleLeaderboard.length === 0 ? (
+            <div className="border-2 border-dashed border-outline-variant p-6 text-center">
+              <p className="font-label-mono text-xs uppercase font-bold">NO RANKINGS YET</p>
+              <p className="text-xs text-on-surface-variant mt-2">Rankings will populate when real community activity exists.</p>
             </div>
-
-            <div className="space-y-4">
-              {leaderboard.slice(0, 4).map((entry) => (
-                <div
-                  key={entry.id}
-                  className={`flex items-center justify-between p-3 rounded-xl transition-all ${
-                    entry.isUser
-                      ? 'bg-primary/10 border-2 border-primary/40'
-                      : 'hover:bg-surface-container-highest/30'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-5 font-black text-sm text-outline italic">
-                      #{entry.rank}
-                    </span>
-                    <img
-                      src={entry.avatar}
-                      alt={entry.name}
-                      className="w-10 h-10 rounded-full border border-primary object-cover"
-                    />
-                    <div>
-                      <span className="text-sm font-bold text-white block">{entry.name}</span>
-                      <span className="text-[10px] font-label-mono text-outline uppercase">
-                        {entry.college}
-                      </span>
-                    </div>
+          ) : (
+            <div>
+              {visibleLeaderboard.map((entry) => (
+                <div key={entry.id} className={`dc-dashboard-rank-row ${entry.isUser ? 'current' : ''}`}>
+                  <span className="dc-dashboard-rank-chip">{entry.rank}</span>
+                  <div className="dc-dashboard-rank-avatar-wrap">
+                    {entry.avatar ? <img src={entry.avatar} alt="" className="dc-dashboard-rank-avatar" /> : <span className="dc-dashboard-rank-avatar grid place-items-center text-xs font-bold">{entry.name.slice(0, 1).toUpperCase()}</span>}
+                    <div className="min-w-0"><p className="dc-dashboard-rank-name">{entry.name}{entry.isUser && <span className="ml-2 text-[8px] uppercase text-primary">YOU</span>}</p><p className="dc-dashboard-rank-sub">{entry.college || 'College not set'} · {entry.branch || 'Branch not set'}</p></div>
                   </div>
-                  <span className="font-label-mono text-xs font-bold text-primary">
-                    {entry.rep.toLocaleString()}
-                  </span>
+                  <span className="dc-dashboard-rank-rep">{entry.rep.toLocaleString()} REP</span>
                 </div>
               ))}
             </div>
-
-            <button
-              onClick={() => setActiveTab('leaderboard')}
-              className="w-full mt-6 py-3 text-primary font-label-mono text-xs font-bold uppercase border-t border-outline-variant hover:underline"
-            >
-              View Full Standings
-            </button>
-          </div>
+          )}
+          <button onClick={() => navigateAndRemember('leaderboard')} className="w-full mt-5 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold inline-flex items-center justify-center gap-2">VIEW FULL RANKINGS <ArrowRight className="w-3 h-3" /></button>
         </div>
       </section>
 
-      {/* Community Activity Feed Snippet */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h4 className="font-headline-md text-2xl font-bold text-white">Community Activity</h4>
-          <button
-            onClick={() => setActiveTab('community')}
-            className="text-primary font-label-mono text-xs uppercase hover:underline"
-          >
-            View All Community Feed
-          </button>
+      <section data-gsap-reveal>
+        <div className="dc-dashboard-section-heading">
+          <div><p className="dc-dashboard-section-label">Navigation / Shortcuts</p><h3 className="dc-dashboard-section-title">QUICK ACTIONS</h3></div>
+          <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">3 entry points</span>
         </div>
-
-        <div className="space-y-6">
-          {posts.map((post) => (
-            <div
-              key={post.id}
-              className="bg-surface border-2 border-outline-variant rounded-2xl p-6 sm:p-8 hover:border-secondary transition-all"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <img
-                    src={post.authorAvatar}
-                    alt={post.authorName}
-                    className="w-12 h-12 rounded-full border-2 border-secondary/30 object-cover"
-                  />
-                  <div>
-                    <h5 className="text-white text-base font-bold">{post.authorName}</h5>
-                    <p className="text-xs font-label-mono text-outline uppercase">
-                      {post.authorCollege} • {post.createdAt}
-                    </p>
-                  </div>
-                </div>
-                <span className="bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full text-xs font-label-mono uppercase">
-                  {post.category}
-                </span>
-              </div>
-
-              {post.title && <h4 className="text-lg font-bold text-white mb-2">{post.title}</h4>}
-              <p className="text-on-surface-variant text-sm leading-relaxed mb-4">{post.content}</p>
-
-              {post.imageUrl && (
-                <div className="rounded-xl overflow-hidden mb-4 max-h-80 bg-surface-container-lowest border border-outline-variant/30">
-                  <img src={post.imageUrl} alt="Post content" className="w-full h-full object-cover" />
-                </div>
-              )}
-
-              <div className="flex items-center gap-6 pt-4 border-t border-outline-variant/20 text-xs font-label-mono text-on-surface-variant">
-                <button
-                  onClick={() => toggleLikePost(post.id)}
-                  className={`flex items-center gap-2 hover:text-error transition-colors ${
-                    post.likedByMe ? 'text-error font-bold' : ''
-                  }`}
-                >
-                  <Heart className={`w-4 h-4 ${post.likedByMe ? 'fill-error' : ''}`} />
-                  <span>{post.likes}</span>
-                </button>
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{post.commentsCount} Comments</span>
-                </div>
-                <button className="flex items-center gap-2 ml-auto hover:text-white">
-                  <Share2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+        <div className="dc-dashboard-quick-grid">
+          {quickActions.map(({ title, meta, icon: Icon, target }) => (
+            <button key={title} onClick={() => navigateAndRemember(target)} className="dc-dashboard-quick text-left">
+              <span className="dc-dashboard-quick-icon"><Icon className="w-4 h-4" /></span>
+              <span className="dc-dashboard-quick-title">{title}</span>
+              <span className="dc-dashboard-quick-meta"><span>{meta}</span><ArrowRight className="w-3.5 h-3.5" /></span>
+            </button>
           ))}
         </div>
       </section>
