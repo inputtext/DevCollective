@@ -10,6 +10,7 @@ export function useDevCollectiveWebSocket() {
   const { getToken, isSignedIn } = useClerkAuth();
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
+  const manuallyClosedRef = useRef(false);
   const listenersRef = useRef(new Set<(event: MessagingEvent) => void>());
   const [connected, setConnected] = useState(false);
 
@@ -19,9 +20,11 @@ export function useDevCollectiveWebSocket() {
   }, []);
 
   const connect = useCallback(async () => {
-    if (!isSignedIn || socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) return;
+    if (manuallyClosedRef.current || !isSignedIn) return;
+    if (socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) return;
+
     const token = await getToken();
-    if (!token) return;
+    if (!token || manuallyClosedRef.current || !isSignedIn) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const host = window.location.hostname;
@@ -41,8 +44,14 @@ export function useDevCollectiveWebSocket() {
     };
     socket.onclose = () => {
       setConnected(false);
-      socketRef.current = null;
-      if (isSignedIn) reconnectTimerRef.current = window.setTimeout(() => void connect(), 1500);
+      if (socketRef.current === socket) socketRef.current = null;
+      if (!manuallyClosedRef.current && isSignedIn) {
+        if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = window.setTimeout(() => {
+          reconnectTimerRef.current = null;
+          void connect();
+        }, 1500);
+      }
     };
     socket.onerror = () => setConnected(false);
   }, [getToken, isSignedIn]);
@@ -55,9 +64,15 @@ export function useDevCollectiveWebSocket() {
   }, []);
 
   useEffect(() => {
+    manuallyClosedRef.current = false;
     void connect();
+
     return () => {
-      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      manuallyClosedRef.current = true;
+      if (reconnectTimerRef.current) {
+        window.clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       socketRef.current?.close();
       socketRef.current = null;
       setConnected(false);
