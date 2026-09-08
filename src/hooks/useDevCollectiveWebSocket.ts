@@ -6,10 +6,13 @@ export type MessagingEvent = {
   [key: string]: unknown;
 };
 
+const TYPING_TIMEOUT_MS = 1200;
+
 export function useDevCollectiveWebSocket() {
   const { getToken, isSignedIn } = useClerkAuth();
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
+  const typingTimerRef = useRef<number | null>(null);
   const manuallyClosedRef = useRef(false);
   const listenersRef = useRef(new Set<(event: MessagingEvent) => void>());
   const [connected, setConnected] = useState(false);
@@ -56,6 +59,10 @@ export function useDevCollectiveWebSocket() {
     socket.onclose = () => {
       setConnected(false);
       if (socketRef.current === socket) socketRef.current = null;
+      if (typingTimerRef.current) {
+        window.clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
       if (!manuallyClosedRef.current && isSignedIn) {
         if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = window.setTimeout(() => {
@@ -70,7 +77,28 @@ export function useDevCollectiveWebSocket() {
   const send = useCallback((event: MessagingEvent) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return false;
+
     socket.send(JSON.stringify(event));
+
+    if (event.type === 'typing:start') {
+      if (typingTimerRef.current) window.clearTimeout(typingTimerRef.current);
+      const conversationId = typeof event.conversationId === 'string' ? event.conversationId : '';
+      if (conversationId) {
+        typingTimerRef.current = window.setTimeout(() => {
+          typingTimerRef.current = null;
+          const currentSocket = socketRef.current;
+          if (currentSocket?.readyState === WebSocket.OPEN) {
+            currentSocket.send(JSON.stringify({ type: 'typing:stop', conversationId }));
+          }
+        }, TYPING_TIMEOUT_MS);
+      }
+    } else if (event.type === 'typing:stop') {
+      if (typingTimerRef.current) {
+        window.clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+    }
+
     return true;
   }, []);
 
@@ -83,6 +111,10 @@ export function useDevCollectiveWebSocket() {
       if (reconnectTimerRef.current) {
         window.clearTimeout(reconnectTimerRef.current);
         reconnectTimerRef.current = null;
+      }
+      if (typingTimerRef.current) {
+        window.clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
       }
       socketRef.current?.close();
       socketRef.current = null;
