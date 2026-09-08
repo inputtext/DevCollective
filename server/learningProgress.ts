@@ -37,6 +37,39 @@ async function completeSubmodule(userId: string, submoduleId: string) {
   return body;
 }
 
+const PHASE3_REACTIONS = ['👍', '❤️', '🔥', '😂', '🎉', '🚀', '👀', '💯'];
+
+async function assertMessageAccess(messageId: string, userId: string) {
+  const rows = await supabaseRequest(`devcollective_messages?id=eq.${encodeURIComponent(messageId)}&select=id,conversation_id,sender_clerk_user_id,body,created_at` ) as any[];
+  const message = Array.isArray(rows) ? rows[0] : null;
+  if (!message) throw new Error('Message not found.');
+  const members = await supabaseRequest(`devcollective_conversation_members?conversation_id=eq.${encodeURIComponent(message.conversation_id)}&clerk_user_id=eq.${encodeURIComponent(userId)}&select=conversation_id&limit=1`) as any[];
+  if (!Array.isArray(members) || !members.length) throw new Error('Conversation access denied.');
+  return message;
+}
+
+async function loadMessageEnhancements(messageIds: string[], userId: string) {
+  if (!messageIds.length) return new Map<string, any>();
+  const encoded = messageIds.map(encodeURIComponent).join(',');
+  const [reactions, stars, pins] = await Promise.all([
+    supabaseRequest(`devcollective_message_reactions?message_id=in.(${encoded})&select=message_id,clerk_user_id,reaction`) as Promise<any[]>,
+    supabaseRequest(`devcollective_message_stars?message_id=in.(${encoded})&clerk_user_id=eq.${encodeURIComponent(userId)}&select=message_id`) as Promise<any[]>,
+    supabaseRequest(`devcollective_message_pins?message_id=in.(${encoded})&select=message_id`) as Promise<any[]>,
+  ]);
+  const map = new Map<string, any>();
+  for (const id of messageIds) map.set(id, { reactions: [], starred: false, pinned: false });
+  for (const row of reactions || []) {
+    const entry = map.get(row.message_id);
+    if (!entry) continue;
+    const existing = entry.reactions.find((item: any) => item.emoji === row.reaction);
+    if (existing) existing.count += 1; else entry.reactions.push({ emoji: row.reaction, count: 1, reacted: row.clerk_user_id === userId });
+    if (row.clerk_user_id === userId && entry.reactions.find((item: any) => item.emoji === row.reaction)) entry.reactions.find((item: any) => item.emoji === row.reaction).reacted = true;
+  }
+  for (const row of stars || []) { const entry = map.get(row.message_id); if (entry) entry.starred = true; }
+  for (const row of pins || []) { const entry = map.get(row.message_id); if (entry) entry.pinned = true; }
+  return map;
+}
+
 export function registerLearningProgressRoutes(app: Express, requireAuth: (req: Request, res: Response, next: NextFunction) => void) {
   app.get('/api/learning/level-0', requireAuth, async (req, res) => {
     try {
@@ -131,5 +164,79 @@ export function registerLearningProgressRoutes(app: Express, requireAuth: (req: 
       console.error('Error loading member directory:', error);
       return res.status(500).json({ error: 'Could not load members right now.' });
     }
+  });
+
+  // Phase 3 chat APIs: every operation is authenticated and verifies conversation membership server-side.
+  app.get('/api/messages/:conversationId/features', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const conversationId = req.params.conversationId;
+      const members = await supabaseRequest(`devcollective_conversation_members?conversation_id=eq.${encodeURIComponent(conversationId)}&clerk_user_id=eq.${encodeURIComponent(userId)}&select=conversation_id&limit=1`) as any[];
+      if (!Array.isArray(members) || !members.length) return res.status(403).json({ error: 'Conversation access denied.' });
+      const messages = await supabaseRequest(`devcollective_messages?conversation_id=eq.${encodeURIComponent(conversationId)}&select=id&order=created_at.desc&limit=100`) as any[];
+      const map = await loadMessageEnhancements((messages || []).map((m: any) => m.id), userId);
+      return res.json({ reactions: Object.fromEntries(Array.from(map.entries()).map(([id, value]) => [id, value.reactions])), starred: Object.fromEntries(Array.from(map.entries()).map(([id, value]) => [id, value.starred])), pinned: Object.fromEntries(Array.from(map.entries()).map(([id, value]) => [id, value.pinned])) });
+    } catch (error: any) { console.error('Error loading chat features:', error); return res.status(500).json({ error: 'Could not load message features.' }); }
+  });
+
+  app.post('/api/messages/:messageId/reactions', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const message = await assertMessageAccess(req.params.messageId, userId);
+      const reaction = String(req.body?.reaction || '');
+      if (!PHASE3_REACTIONS.includes(reaction)) return res.status(400).json({ error: 'Unsupported reaction.' });
+      await supabaseRequest('devcollective_message_reactions', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ message_id: message.id, clerk_user_id: userId, reaction }) });
+      const rows = await supabaseRequest(`devcollective_message_reactions?message_id=eq.${encodeURIComponent(message.id)}&select=clerk_user_id,reaction`) as any[];
+      return res.json({ messageId: message.id, reactions: rows || [] });
+    } catch (error: any) { console.error('Error adding reaction:', error); return res.status(500).json({ error: error.message || 'Could not add reaction.' }); }
+  });
+
+  app.delete('/api/messages/:messageId/reactions/:reaction', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const message = await assertMessageAccess(req.params.messageId, userId);
+      const reaction = decodeURIComponent(req.params.reaction);
+      if (!PHASE3_REACTIONS.includes(reaction)) return res.status(400).json({ error: 'Unsupported reaction.' });
+      await supabaseRequest(`devcollective_message_reactions?message_id=eq.${encodeURIComponent(message.id)}&clerk_user_id=eq.${encodeURIComponent(userId)}&reaction=eq.${encodeURIComponent(reaction)}`, { method: 'DELETE' });
+      const rows = await supabaseRequest(`devcollective_message_reactions?message_id=eq.${encodeURIComponent(message.id)}&select=clerk_user_id,reaction`) as any[];
+      return res.json({ messageId: message.id, reactions: rows || [] });
+    } catch (error: any) { console.error('Error removing reaction:', error); return res.status(500).json({ error: error.message || 'Could not remove reaction.' }); }
+  });
+
+  app.post('/api/messages/:messageId/star', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const message = await assertMessageAccess(req.params.messageId, userId);
+      const starred = Boolean(req.body?.starred);
+      if (starred) await supabaseRequest('devcollective_message_stars', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ message_id: message.id, clerk_user_id: userId }) });
+      else await supabaseRequest(`devcollective_message_stars?message_id=eq.${encodeURIComponent(message.id)}&clerk_user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
+      return res.json({ messageId: message.id, starred });
+    } catch (error: any) { console.error('Error updating star:', error); return res.status(500).json({ error: error.message || 'Could not update saved message.' }); }
+  });
+
+  app.post('/api/messages/:messageId/pin', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const message = await assertMessageAccess(req.params.messageId, userId);
+      const pinned = Boolean(req.body?.pinned);
+      if (pinned) await supabaseRequest('devcollective_message_pins', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify({ message_id: message.id, conversation_id: message.conversation_id, pinned_by: userId }) });
+      else await supabaseRequest(`devcollective_message_pins?message_id=eq.${encodeURIComponent(message.id)}`, { method: 'DELETE' });
+      return res.json({ messageId: message.id, pinned });
+    } catch (error: any) { console.error('Error updating pin:', error); return res.status(500).json({ error: error.message || 'Could not update pinned message.' }); }
+  });
+
+  app.get('/api/messages/:conversationId/search', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      const conversationId = req.params.conversationId;
+      const members = await supabaseRequest(`devcollective_conversation_members?conversation_id=eq.${encodeURIComponent(conversationId)}&clerk_user_id=eq.${encodeURIComponent(userId)}&select=conversation_id&limit=1`) as any[];
+      if (!Array.isArray(members) || !members.length) return res.status(403).json({ error: 'Conversation access denied.' });
+      const query = String(req.query.q || '').trim().slice(0, 120);
+      if (!query) return res.json({ messages: [] });
+      const encoded = encodeURIComponent(query.replace(/[,*()]/g, ' '));
+      const rows = await supabaseRequest(`devcollective_messages?conversation_id=eq.${encodeURIComponent(conversationId)}&body=ilike.*${encoded}*&deleted_at=is.null&select=id,conversation_id,sender_clerk_user_id,body,created_at,read_at,delivered_at,edited_at,deleted_at,deleted_by,reply_to_message_id&order=created_at.asc&limit=100`) as any[];
+      const map = await loadMessageEnhancements((rows || []).map((m: any) => m.id), userId);
+      return res.json({ messages: (rows || []).map((m: any) => ({ ...m, ...(map.get(m.id) || { reactions: [], starred: false, pinned: false }) })) });
+    } catch (error: any) { console.error('Error searching messages:', error); return res.status(500).json({ error: 'Could not search messages.' }); }
   });
 }
