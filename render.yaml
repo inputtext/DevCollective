@@ -9,6 +9,9 @@ services:
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
 
   - type: web
     name: devcollective-ws
@@ -20,3 +23,6 @@ services:
     startCommand: npm run start:ws
     healthCheckPath: /health
     autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
