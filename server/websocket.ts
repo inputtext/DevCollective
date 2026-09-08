@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
+import { verifyToken } from '@clerk/backend';
 import { WebSocketServer, WebSocket } from 'ws';
-import { clerkClient } from '@clerk/express';
 import { supabaseAdmin } from './supabase';
 
 type Client = {
@@ -31,7 +31,16 @@ const broadcast = (type: string, payload: Record<string, unknown>, predicate: (c
 
 async function authenticate(token: string): Promise<string | null> {
   try {
-    const result = await (clerkClient as any).verifyToken(token);
+    const authorizedParties = process.env.CLERK_AUTHORIZED_PARTIES
+      ?.split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    const result = await verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+      ...(authorizedParties?.length ? { authorizedParties } : {}),
+    });
+
     return typeof result?.sub === 'string' ? result.sub : null;
   } catch (error) {
     console.error('[ws] Clerk token verification failed:', error);
@@ -153,8 +162,8 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       if (!event.recipientId) throw new Error('recipientId is required.');
       const conversationId = await ensureDirectConversation(client.userId, event.recipientId);
       client.conversationId = conversationId;
-      send(client.socket, 'conversation:started', { conversationId });
-      send(client.socket, 'conversation:history', { conversationId, messages: await loadMessages(conversationId, client.userId) });
+      const messages = await loadMessages(conversationId, client.userId);
+      send(client.socket, 'conversation:started', { conversationId, messages });
       broadcast('conversation:list:invalidate', { conversationId }, (other) => other.userId === client.userId || other.userId === event.recipientId);
       return;
     }
