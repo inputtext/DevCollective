@@ -1,5 +1,6 @@
 import React from 'react';
 import { MessageCircle } from 'lucide-react';
+import { useUser } from '@clerk/react';
 import { useSocial } from '../context/SocialContext';
 import { openMessagingForUser } from './MessagingOverlay';
 
@@ -9,9 +10,10 @@ import { openMessagingForUser } from './MessagingOverlay';
  * follow/connection behaviour while giving every viewed member a Message action.
  */
 export const SocialProfileMessagingAction: React.FC = () => {
+  const { user } = useUser();
   const { viewedProfileId, closeProfile } = useSocial();
 
-  if (!viewedProfileId) return null;
+  if (!viewedProfileId || viewedProfileId === user?.id) return null;
 
   const handleMessage = () => {
     openMessagingForUser(viewedProfileId);
