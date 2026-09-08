@@ -71,4 +71,36 @@ export function registerLearningProgressRoutes(app: Express, requireAuth: (req: 
       return res.status(500).json({ error: 'Failed to verify learning checkpoint.' });
     }
   });
+
+  app.get('/api/users/directory', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      if (!userId) return res.status(401).json({ error: 'Not authenticated.' });
+      const rawQuery = String(req.query.q || '').trim().slice(0, 80);
+      const rawLimit = Number(req.query.limit || 50);
+      const limit = Number.isFinite(rawLimit) ? Math.min(50, Math.max(1, Math.floor(rawLimit))) : 50;
+      const safeQuery = rawQuery.replace(/[,*()]/g, ' ').trim();
+      let path = `devcollective_profiles?select=clerk_user_id,name,role,college,branch,avatar,level,rep,skills&clerk_user_id=neq.${encodeURIComponent(userId)}&order=name.asc&limit=${limit}`;
+      if (safeQuery) {
+        const encodedQuery = encodeURIComponent(safeQuery);
+        path += `&or=(name.ilike.*${encodedQuery}*,college.ilike.*${encodedQuery}*,role.ilike.*${encodedQuery}*,branch.ilike.*${encodedQuery}*)`;
+      }
+      const rows = await supabaseRequest(path) as any[];
+      const members = (Array.isArray(rows) ? rows : []).map((row) => ({
+        id: row.clerk_user_id,
+        name: row.name || 'Developer',
+        role: row.role || 'student',
+        college: row.college || '',
+        branch: row.branch || '',
+        avatar: row.avatar || '',
+        level: Number(row.level) || 1,
+        rep: Number(row.rep) || 0,
+        skills: Array.isArray(row.skills) ? row.skills.slice(0, 4) : [],
+      }));
+      return res.json({ members });
+    } catch (error: any) {
+      console.error('Error loading member directory:', error);
+      return res.status(500).json({ error: 'Could not load members right now.' });
+    }
+  });
 }
