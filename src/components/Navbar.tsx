@@ -4,6 +4,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
 import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
+import { ReadingModeToggle } from './ReadingModeToggle';
 
 const timeAgo = (value: string) => {
  const seconds = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
@@ -96,6 +97,7 @@ export const Navbar: React.FC = () => {
   </div>
   <div className="flex items-center gap-2 sm:gap-3">
    <div className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW / IN BUILD</div>
+   {user && <ReadingModeToggle />}
    <ThemeToggle />
    <div className="relative" data-notification-panel>
     <button onClick={() => setPanelOpen(!panelOpen)} className={`relative p-2 border-2 hover:border-outline-variant hover:bg-surface ${unreadCount ? 'text-primary' : 'border-transparent text-on-surface-variant'}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
