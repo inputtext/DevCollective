@@ -1,22 +1,21 @@
-/* Reading mode: a clearly visible warm reading tone with a full 3-second fade in/out. */
-html::after {
+/* Reading mode: a visible warm white-balance layer with a full 3-second fade. */
+body::after {
   content: '';
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 2147483647;
   pointer-events: none;
   opacity: 0;
-  background: rgb(255 174 78 / 28%);
-  mix-blend-mode: multiply;
+  background: rgba(255, 184, 92, 0.22);
   transition: opacity 3s ease-in-out;
 }
 
-html.dc-reading-mode::after {
+html.dc-reading-mode body::after {
   opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html::after {
+  body::after {
     transition-duration: 0.01ms;
   }
 }
