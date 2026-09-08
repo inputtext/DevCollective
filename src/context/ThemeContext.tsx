@@ -30,7 +30,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     root.style.colorScheme = newTheme;
-    if (enableTransition) setTimeout(() => root.classList.remove('theme-transitioning'), 300);
+
+    if (enableTransition) {
+      window.setTimeout(() => root.classList.remove('theme-transitioning'), 760);
+    }
   };
 
   useEffect(() => {
@@ -40,7 +43,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     localStorage.setItem('devcollective_theme', newTheme);
+
+    const root = document.documentElement;
+    const startViewTransition = (document as Document & {
+      startViewTransition?: (callback: () => void) => unknown;
+    }).startViewTransition;
+
+    if (typeof startViewTransition === 'function') {
+      startViewTransition(() => applyThemeToDOM(newTheme, false));
+      return;
+    }
+
     applyThemeToDOM(newTheme, true);
+    void root;
   };
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
