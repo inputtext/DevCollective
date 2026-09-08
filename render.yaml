@@ -12,6 +12,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: VITE_WS_URL
+        value: wss://devcollective-ws.onrender.com
+      - key: APP_URL
+        value: https://devcollective-app.onrender.com
 
   - type: web
     name: devcollective-ws
