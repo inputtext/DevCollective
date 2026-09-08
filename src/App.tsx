@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
 import { SocialProvider } from './context/SocialContext';
 import { SocialProfileOverlay } from './components/SocialProfileOverlay';
+import { SocialProfileMessagingAction } from './components/SocialProfileMessagingAction';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
@@ -179,6 +180,7 @@ const MainContent: React.FC = () => {
       {user && <ChatWidget />}
       {user && <ResumeUploadPromptModal />}
       <SocialProfileOverlay />
+      <SocialProfileMessagingAction />
     </div>
   );
 };

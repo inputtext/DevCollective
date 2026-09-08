@@ -15,42 +15,20 @@ interface AuthContextType {
   authRedirectError: string | null; clearAuthRedirectError: () => void;
   oauthInfo: { googleConfigured: boolean; githubConfigured: boolean; appUrl: string; googleCallbackUrl: string; githubCallbackUrl: string } | null;
 }
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
 const PROFILE_CACHE_PREFIX = 'devcollective_profile_cache:';
-const MENTORS_CACHE_KEY = 'devcollective_mentors_cache';
+const MENTORS_CACHE_KEY = 'devcollective_mentors_cache:v2';
 const PROFILE_CACHE_TTL_MS = 60 * 1000;
 const MENTORS_CACHE_TTL_MS = 5 * 60 * 1000;
 const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: details.name || '', role: details.role || 'student', college: details.college || '', branch: details.branch || '', academicYear: details.academicYear || '' });
-
-const readStorageJson = <T,>(storage: Storage, key: string): T | null => {
-  try { const raw = storage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; }
-};
+const readStorageJson = <T,>(storage: Storage, key: string): T | null => { try { const raw = storage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; } };
 const writeStorageJson = (storage: Storage, key: string, value: unknown) => { try { storage.setItem(key, JSON.stringify(value)); } catch {} };
 const setLandingDestination = (setActiveTab: React.Dispatch<React.SetStateAction<PageTab>>, current: PageTab, profile: UserProfile, isNewRegistration = false) => { if (isNewRegistration) setActiveTab('profile-setup'); else if (current === 'landing' || current === 'login' || current === 'register') setActiveTab(profile.hasCompletedOnboarding ? 'profile' : 'profile-setup'); };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
-  const { user: clerkUser } = useUser();
-  const { signIn } = useSignIn();
-  const clerk = useClerk();
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const [repAnimation, setRepAnimation] = useState<{ amount: number; id: number } | null>(null);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => localStorage.getItem('devcollective_sidebar_collapsed') === 'true');
-  const [activeTab, setActiveTab] = useState<PageTab>('landing');
-  const [tasks, setTasks] = useState<TaskItem[]>([]);
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
-  const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({});
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [mentors, setMentors] = useState<Mentor[]>([]);
-  const [showOAuthModal, setShowOAuthModal] = useState(false);
-  const [oauthProviderToSimulate, setOauthProviderToSimulate] = useState<'google' | 'github' | null>(null);
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
-  const [authRedirectError, setAuthRedirectError] = useState<string | null>(null);
-  const [oauthInfo] = useState({ googleConfigured: true, githubConfigured: true, appUrl: window.location.origin, googleCallbackUrl: '', githubCallbackUrl: '' });
-
+  const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth(); const { user: clerkUser } = useUser(); const { signIn } = useSignIn(); const clerk = useClerk();
+  const [user, setUser] = useState<UserProfile | null>(null); const [loadingAuth, setLoadingAuth] = useState(true); const [repAnimation, setRepAnimation] = useState<{ amount: number; id: number } | null>(null); const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => localStorage.getItem('devcollective_sidebar_collapsed') === 'true'); const [activeTab, setActiveTab] = useState<PageTab>('landing'); const [tasks, setTasks] = useState<TaskItem[]>([]); const [posts, setPosts] = useState<CommunityPost[]>([]); const [commentsByPost, setCommentsByPost] = useState<Record<string, CommunityComment[]>>({}); const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]); const [mentors, setMentors] = useState<Mentor[]>([]); const [showOAuthModal, setShowOAuthModal] = useState(false); const [oauthProviderToSimulate, setOauthProviderToSimulate] = useState<'google' | 'github' | null>(null); const [showResumePrompt, setShowResumePrompt] = useState(false); const [authRedirectError, setAuthRedirectError] = useState<string | null>(null); const [oauthInfo] = useState({ googleConfigured: true, githubConfigured: true, appUrl: window.location.origin, googleCallbackUrl: '', githubCallbackUrl: '' });
   const toggleSidebar = () => setSidebarCollapsed((prev) => { const next = !prev; localStorage.setItem('devcollective_sidebar_collapsed', String(next)); return next; });
   const apiFetch = useCallback(async (url: string, init: RequestInit = {}) => { const token = await getToken(); if (!token) throw new Error('Not authenticated.'); const headers = new Headers(init.headers); headers.set('Authorization', `Bearer ${token}`); if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json'); const res = await fetch(url, { ...init, headers }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || 'Request failed.'); return data; }, [getToken]);
   const commentServiceFetch = useCallback(async (path: string, init: RequestInit = {}) => { const baseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, ''); if (!baseUrl) throw new Error('Supabase URL is not configured.'); const token = await getToken(); if (!token) throw new Error('Not authenticated.'); const headers = new Headers(init.headers); headers.set('Authorization', `Bearer ${token}`); headers.set('Content-Type', 'application/json'); const res = await fetch(`${baseUrl}/functions/v1/community-comments${path}`, { ...init, headers }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || 'Community comment request failed.'); return data; }, [getToken]);
@@ -60,28 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const syncProfile = useCallback(async () => { if (!clerkUser || !isSignedIn) return null; let pending: Record<string, unknown> = {}; const rawPending = sessionStorage.getItem(PENDING_REGISTRATION_KEY); if (rawPending) { try { pending = JSON.parse(rawPending); } catch { pending = {}; } } const data = await apiFetch('/api/auth/sync', { method: 'POST', body: JSON.stringify(pending) }); sessionStorage.removeItem(PENDING_REGISTRATION_KEY); return { user: data.user as UserProfile, hadPendingRegistration: Boolean(rawPending) }; }, [apiFetch, clerkUser, isSignedIn]);
   const loadMentors = useCallback(async () => { if (!isSignedIn) { setMentors([]); return; } const cached = readStorageJson<{ savedAt: number; mentors: Mentor[] }>(sessionStorage, MENTORS_CACHE_KEY); if (cached?.mentors && Date.now() - cached.savedAt < MENTORS_CACHE_TTL_MS) { setMentors(cached.mentors); return; } try { const data = await apiFetch('/api/mentors'); const nextMentors = Array.isArray(data.mentors) ? data.mentors : []; setMentors(nextMentors); writeStorageJson(sessionStorage, MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors }); } catch (err) { console.error('Could not load mentors from Supabase:', err); setMentors([]); } }, [apiFetch, isSignedIn]);
   const loadPosts = useCallback(async () => { if (!isSignedIn) { setPosts([]); setCommentsByPost({}); return; } try { const data = await apiFetch('/api/community/posts'); setPosts(Array.isArray(data.posts) ? data.posts : []); void loadCommentCounts(); } catch (err) { console.error('Could not load community posts from Supabase:', err); setPosts([]); setCommentsByPost({}); } }, [apiFetch, isSignedIn, loadCommentCounts]);
-
   const refreshProfile = useCallback(async () => { if (!clerkUser || !isSignedIn) return null; try { const data = await apiFetch('/api/auth/me'); const nextUser = data.user as UserProfile; if (nextUser) { setUser(nextUser); writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: nextUser }); } return nextUser || null; } catch (err) { console.error('Could not refresh DevCollective profile:', err); return null; } }, [apiFetch, clerkUser, isSignedIn]);
-
-  useEffect(() => {
-    if (!clerkLoaded) return;
-    if (!isSignedIn || !clerkUser) { setUser(null); setPosts([]); setCommentsByPost({}); setMentors([]); setLoadingAuth(false); return; }
-    let cancelled = false;
-    const cacheKey = `${PROFILE_CACHE_PREFIX}${clerkUser.id}`;
-    const cached = readStorageJson<{ savedAt: number; user: UserProfile }>(localStorage, cacheKey);
-    const cachedUser = cached?.user || null;
-    const cacheFresh = Boolean(cached && Date.now() - cached.savedAt < PROFILE_CACHE_TTL_MS);
-    if (cachedUser) { setUser(cachedUser); setLandingDestination(setActiveTab, activeTab, cachedUser); setLoadingAuth(false); } else setLoadingAuth(true);
-    void loadPosts();
-    if (cacheFresh) { void loadMentors(); return () => { cancelled = true; }; }
-    const hydrate = async () => { try { const result = await syncProfile(); if (cancelled) return; if (result?.user) { setUser(result.user); writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user }); setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration); } void loadMentors(); } catch (err: any) { console.error('Could not load DevCollective profile:', err); if (!cachedUser) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.'); } finally { if (!cancelled && !cachedUser) setLoadingAuth(false); } };
-    void hydrate();
-    return () => { cancelled = true; };
-  }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors, loadPosts]);
-
+  useEffect(() => { if (!clerkLoaded) return; if (!isSignedIn || !clerkUser) { setUser(null); setPosts([]); setCommentsByPost({}); setMentors([]); setLoadingAuth(false); return; } let cancelled = false; const cacheKey = `${PROFILE_CACHE_PREFIX}${clerkUser.id}`; const cached = readStorageJson<{ savedAt: number; user: UserProfile }>(localStorage, cacheKey); const cachedUser = cached?.user || null; const cacheFresh = Boolean(cached && Date.now() - cached.savedAt < PROFILE_CACHE_TTL_MS); if (cachedUser) { setUser(cachedUser); setLandingDestination(setActiveTab, activeTab, cachedUser); setLoadingAuth(false); } else setLoadingAuth(true); void loadPosts(); if (cacheFresh) { void loadMentors(); return () => { cancelled = true; }; } const hydrate = async () => { try { const result = await syncProfile(); if (cancelled) return; if (result?.user) { setUser(result.user); writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user }); setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration); } void loadMentors(); } catch (err: any) { console.error('Could not load DevCollective profile:', err); if (!cachedUser) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.'); } finally { if (!cancelled && !cachedUser) setLoadingAuth(false); } }; void hydrate(); return () => { cancelled = true; }; }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors, loadPosts]);
   const clearAuthRedirectError = () => setAuthRedirectError(null);
   const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => { setOauthProviderToSimulate(null); setShowOAuthModal(false); if (registrationDetails) { const pending = buildPendingRegistration(registrationDetails); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); return; } clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
-  const loginWithEmail = async (email: string, password?: string) => { if (!email.trim()) throw new Error('Please enter your email address.'); if (!password) throw new Error('Please enter your password.'); const { error } = await signIn.password({ emailAddress: email.trim(), password }); if (error) throw new Error(error.message || 'The email or password is incorrect.'); if (signIn.status === 'complete') { const result = await signIn.finalize({ navigate: ({ decorateUrl }) => { window.location.href = decorateUrl('/'); } }); if (result.error) throw new Error(result.error.message || 'Could not complete sign in.'); return; } throw new Error('Additional verification is required for this account.'); };
+  const loginWithEmail = async (email: string, password?: string) => { if (!email.trim()) throw new Error('Please enter your email address.'); if (!password) throw new Error('Please enter your password.'); const { error } = await signIn.password({ emailAddress: email.trim(), password }); if (error) throw new Error(error.message || 'The email or password is incorrect.'); if (signIn.status === 'complete') { const result = await signIn.finalize({ navigate: ({ decorateUrl }) => { window.location.href = decorateUrl('/') } }); if (result.error) throw new Error(result.error.message || 'Could not complete sign in.'); return; } throw new Error('Additional verification is required for this account.'); };
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => { if (!details.email || !details.name) throw new Error('Name and email are required for registration.'); const pending = buildPendingRegistration(details); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: { emailAddress: details.email }, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); };
   const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
@@ -93,4 +54,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const toggleLikePost = async (postId: string) => { if (!user) return; const previousPosts = posts; setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: !post.likedByMe, likes: post.likedByMe ? Math.max(0, post.likes - 1) : post.likes + 1 } : post)); try { const data = await apiFetch(`/api/community/posts/${encodeURIComponent(postId)}/like`, { method: 'POST' }); if (typeof data.likes === 'number') setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: Boolean(data.likedByMe), likes: data.likes } : post)); } catch (err) { console.error('Error updating community post like:', err); setPosts(previousPosts); } };
   return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, commentsByPost, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, refreshProfile, toggleTaskCompletion, addPost, toggleLikePost, loadPostComments, addPostComment, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
 };
-export const useAuth = () => { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used within an AuthProvider'); return context; };
+export const useAuth = () => { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used inside AuthProvider'); return context; };
