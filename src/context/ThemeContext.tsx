@@ -44,7 +44,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setThemeState(newTheme);
     localStorage.setItem('devcollective_theme', newTheme);
 
-    const root = document.documentElement;
     const startViewTransition = (document as Document & {
       startViewTransition?: (callback: () => void) => unknown;
     }).startViewTransition;
@@ -55,7 +54,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     applyThemeToDOM(newTheme, true);
-    void root;
   };
 
   const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
