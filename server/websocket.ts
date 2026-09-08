@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { supabaseAdmin } from './supabase';
 
 type Client = { socket: WebSocket; userId: string; conversationId?: string };
-type IncomingEvent = { type?: string; conversationId?: string; recipientId?: string; messageId?: string; body?: string; replyToMessageId?: string; };
+type IncomingEvent = { type?: string; conversationId?: string; recipientId?: string; messageId?: string; body?: string; replyToMessageId?: string };
 type MessageRow = { id: string; conversation_id: string; sender_clerk_user_id: string; body: string; created_at: string; read_at: string | null; edited_at: string | null; deleted_at: string | null; deleted_by: string | null; reply_to_message_id: string | null };
 
 const PORT = Number(process.env.WS_PORT || 3001);
@@ -49,7 +49,11 @@ async function ensureDirectConversation(userA: string, userB: string) {
 async function hiddenMessageIds(userId: string, conversationId?: string) {
   if (!supabaseAdmin) throw new Error('Supabase is not configured.');
   let query = supabaseAdmin.from('devcollective_message_deletions').select('message_id').eq('clerk_user_id', userId);
-  if (conversationId) query = query.in('message_id', (await supabaseAdmin.from('devcollective_messages').select('id').eq('conversation_id', conversationId)).data?.map((row) => row.id) || ['__none__']);
+  if (conversationId) {
+    const { data: ids, error: idsError } = await supabaseAdmin.from('devcollective_messages').select('id').eq('conversation_id', conversationId);
+    if (idsError) throw idsError;
+    query = query.in('message_id', (ids || []).map((row) => row.id));
+  }
   const { data, error } = await query;
   if (error) throw error;
   return new Set((data || []).map((row) => row.message_id));
@@ -103,6 +107,14 @@ async function loadConversationList(userId: string) {
   }));
 }
 
+async function refreshListsForConversation(conversationId: string) {
+  broadcast('conversation:list:invalidate', { conversationId }, (other) => other.conversationId === conversationId || other.userId === '');
+  const { data: members, error } = await supabaseAdmin!.from('devcollective_conversation_members').select('clerk_user_id').eq('conversation_id', conversationId);
+  if (error) throw error;
+  const ids = new Set((members || []).map((row) => row.clerk_user_id));
+  broadcast('conversation:list:invalidate', { conversationId }, (other) => ids.has(other.userId));
+}
+
 async function handleEvent(client: Client, event: IncomingEvent) {
   switch (event.type) {
     case 'conversation:list': send(client.socket, 'conversation:list', { conversations: await loadConversationList(client.userId) }); return;
@@ -111,8 +123,7 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       client.conversationId = event.conversationId;
       const messages = await loadMessages(event.conversationId, client.userId);
       await markConversationRead(event.conversationId, client.userId);
-      send(client.socket, 'conversation:history', { conversationId: event.conversationId, messages });
-      return;
+      send(client.socket, 'conversation:history', { conversationId: event.conversationId, messages }); return;
     }
     case 'conversation:start': {
       if (!event.recipientId) throw new Error('recipientId is required.');
@@ -121,8 +132,7 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       const messages = await loadMessages(conversationId, client.userId);
       await markConversationRead(conversationId, client.userId);
       send(client.socket, 'conversation:started', { conversationId, messages });
-      broadcast('conversation:list:invalidate', { conversationId }, (other) => other.userId === client.userId || other.userId === event.recipientId);
-      return;
+      broadcast('conversation:list:invalidate', { conversationId }, (other) => other.userId === client.userId || other.userId === event.recipientId); return;
     }
     case 'message:send': {
       const body = String(event.body || '').trim();
@@ -138,8 +148,7 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       }
       const { data, error } = await supabaseAdmin!.from('devcollective_messages').insert({ conversation_id: event.conversationId, sender_clerk_user_id: client.userId, body, reply_to_message_id: replyToMessageId }).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
       if (error) throw error;
-      broadcast('message:new', { message: data }, (other) => other.userId === client.userId || other.conversationId === event.conversationId);
-      return;
+      broadcast('message:new', { message: data }, (other) => other.userId === client.userId || other.conversationId === event.conversationId); return;
     }
     case 'message:edit': {
       const body = String(event.body || '').trim();
@@ -153,6 +162,7 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       const { data, error } = await supabaseAdmin!.from('devcollective_messages').update({ body, edited_at: editedAt }).eq('id', message.id).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
       if (error) throw error;
       broadcast('message:updated', { message: data }, (other) => other.userId === client.userId || other.conversationId === message.conversation_id);
+      broadcast('conversation:list:invalidate', { conversationId: message.conversation_id }, (other) => other.conversationId === message.conversation_id);
       return;
     }
     case 'message:delete': {
@@ -167,24 +177,26 @@ async function handleEvent(client: Client, event: IncomingEvent) {
         const deletedAt = new Date().toISOString();
         const { error } = await supabaseAdmin!.from('devcollective_messages').update({ deleted_at: deletedAt, deleted_by: client.userId }).eq('id', message.id).eq('conversation_id', message.conversation_id);
         if (error) throw error;
-        broadcast('message:deleted', { conversationId: message.conversation_id, messageId: message.id, scope: 'for_everyone', deletedAt }, (other) => other.userId === client.userId || other.conversationId === message.conversation_id);
+        broadcast('message:deleted', { conversationId: message.conversation_id, messageId: message.id, scope: 'for_everyone', deletedAt, deletedBy: client.userId }, (other) => other.userId === client.userId || other.conversationId === message.conversation_id);
+        broadcast('conversation:list:invalidate', { conversationId: message.conversation_id }, (other) => other.conversationId === message.conversation_id);
         return;
       }
       if (mode === 'for_me') {
         const { error } = await supabaseAdmin!.from('devcollective_message_deletions').upsert({ message_id: message.id, clerk_user_id: client.userId }, { onConflict: 'message_id,clerk_user_id' });
         if (error) throw error;
         send(client.socket, 'message:deleted', { conversationId: message.conversation_id, messageId: message.id, scope: 'for_me' });
-        return;
+        send(client.socket, 'conversation:list:invalidate', { conversationId: message.conversation_id }); return;
       }
       throw new Error('Choose a valid delete option.');
     }
     case 'message:read': {
       if (!event.conversationId || !event.messageId || !await isMember(event.conversationId, client.userId)) throw new Error('Conversation access denied.');
       const now = new Date().toISOString();
-      await supabaseAdmin!.from('devcollective_messages').update({ read_at: now }).eq('id', event.messageId).eq('conversation_id', event.conversationId).neq('sender_clerk_user_id', client.userId);
-      await supabaseAdmin!.from('devcollective_conversation_members').update({ last_read_at: now }).eq('conversation_id', event.conversationId).eq('clerk_user_id', client.userId);
-      broadcast('message:read', { conversationId: event.conversationId, messageId: event.messageId, userId: client.userId, readAt: now }, (other) => other.conversationId === event.conversationId);
-      return;
+      const { error: messageError } = await supabaseAdmin!.from('devcollective_messages').update({ read_at: now }).eq('id', event.messageId).eq('conversation_id', event.conversationId).neq('sender_clerk_user_id', client.userId);
+      if (messageError) throw messageError;
+      const { error: memberError } = await supabaseAdmin!.from('devcollective_conversation_members').update({ last_read_at: now }).eq('conversation_id', event.conversationId).eq('clerk_user_id', client.userId);
+      if (memberError) throw memberError;
+      broadcast('message:read', { conversationId: event.conversationId, messageId: event.messageId, userId: client.userId, readAt: now }, (other) => other.conversationId === event.conversationId); return;
     }
     case 'typing:start':
     case 'typing:stop': {
