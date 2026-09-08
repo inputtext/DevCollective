@@ -35,6 +35,17 @@ alter table public.devcollective_conversations enable row level security;
 alter table public.devcollective_conversation_members enable row level security;
 alter table public.devcollective_messages enable row level security;
 
+-- Messaging is accessed only through the authenticated Node/WebSocket server.
+-- Keep direct browser roles out of these tables and explicitly grant the
+-- server's Supabase service role the privileges required by the WebSocket layer.
+grant select, insert, update, delete, references, trigger, truncate
+  on table public.devcollective_conversations to service_role;
+grant select, insert, update, delete, references, trigger, truncate
+  on table public.devcollective_conversation_members to service_role;
+grant select, insert, update, delete, references, trigger, truncate
+  on table public.devcollective_messages to service_role;
+grant usage, select on all sequences in schema public to service_role;
+
 create or replace function public.devcollective_touch_conversation()
 returns trigger
 language plpgsql
