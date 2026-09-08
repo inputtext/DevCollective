@@ -72,6 +72,35 @@ export function registerLearningProgressRoutes(app: Express, requireAuth: (req: 
     }
   });
 
+  app.get('/api/mentors', requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).authUserId as string;
+      if (!userId) return res.status(401).json({ error: 'Not authenticated.' });
+      const rows = await supabaseRequest(`devcollective_profiles?select=clerk_user_id,name,college,branch,avatar,role,level,rep,bio,skills&role=eq.mentor&clerk_user_id=neq.${encodeURIComponent(userId)}&order=name.asc`) as any[];
+      const mentors = (Array.isArray(rows) ? rows : []).map((row) => ({
+        id: row.clerk_user_id,
+        name: row.name || 'Mentor',
+        title: 'DevCollective Mentor',
+        college: row.college || '',
+        avatar: row.avatar || '',
+        roleType: 'SENIOR',
+        company: '',
+        skills: Array.isArray(row.skills) ? row.skills.slice(0, 8) : [],
+        level: Number(row.level) || 1,
+        rep: Number(row.rep) || 0,
+        rating: 0,
+        studentsHelped: 0,
+        bio: row.bio || 'Available to help fellow developers.',
+        availability: 'Available for chat',
+        isBusy: false,
+      }));
+      return res.json({ mentors });
+    } catch (error: any) {
+      console.error('Error loading mentors:', error);
+      return res.status(500).json({ error: 'Could not load mentors right now.' });
+    }
+  });
+
   app.get('/api/users/directory', requireAuth, async (req, res) => {
     try {
       const userId = (req as any).authUserId as string;
