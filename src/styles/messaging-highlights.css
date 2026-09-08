@@ -13,22 +13,21 @@ main:has(svg.w-3.h-3[fill="currentColor"]) button[title="Saved"] {
   display: inline-flex;
 }
 
-/* Keep the messaging window bounded to the viewport. */
-section.fixed.bottom-20.right-5 {
-  height: min(700px, calc(100dvh - 110px));
-  max-height: calc(100dvh - 110px);
-}
-
-/* The main chat column must be allowed to shrink so its message pane can scroll. */
-section.fixed.bottom-20.right-5 > main.flex-1 {
-  min-height: 0;
+/* Keep the page behind the open messenger from consuming mouse-wheel/touch scroll. */
+body:has(button[title="Conversation controls"]) {
   overflow: hidden;
 }
 
-/* Only the message history scrolls; header and composer stay fixed. */
-section.fixed.bottom-20.right-5 > main.flex-1 > div.flex-1.min-h-0.overflow-y-auto {
-  min-height: 0;
-  overflow-y: auto;
+/* The message history owns vertical scrolling; wheel/touch momentum must not escape to the page. */
+main > .flex-1.min-h-0.overflow-y-auto {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Also contain scrolling inside the full-screen message sub-panels. */
+main > .absolute.inset-0.overflow-y-auto,
+main > .absolute.inset-0 .overflow-y-auto {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
