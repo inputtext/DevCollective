@@ -1,3 +1,4 @@
+process.env.NODE_ENV ||= 'production';
 process.env.WS_PORT ||= process.env.PORT || '3001';
 
 const { startWebSocketServer } = await import('./server/websocket');
@@ -12,3 +13,17 @@ httpServer.on('request', (req, res) => {
   res.writeHead(404, { 'content-type': 'text/plain' });
   res.end('Not found');
 });
+
+const shutdown = (signal: string) => {
+  console.log(`[ws] ${signal} received, shutting down`);
+  httpServer.close((error) => {
+    if (error) {
+      console.error('[ws] graceful shutdown failed:', error);
+      process.exit(1);
+    }
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
