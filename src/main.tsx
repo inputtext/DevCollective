@@ -6,7 +6,6 @@ import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { SmoothScroll } from './components/SmoothScroll';
 import { MessagingOverlay } from './components/MessagingOverlay';
-import { DevClerkIdPanel } from './components/DevClerkIdPanel';
 
 const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -27,7 +26,6 @@ createRoot(document.getElementById('root')!).render(
         <SmoothScroll>
           <App />
           <MessagingOverlay />
-          <DevClerkIdPanel />
         </SmoothScroll>
       </ThemeProvider>
     </ClerkProvider>
