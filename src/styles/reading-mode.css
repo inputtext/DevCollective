@@ -1,0 +1,22 @@
+/* Reading mode: a gentle warm reading tone with a full 3-second fade in/out. */
+html::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  background: rgba(255, 190, 110, 0.12);
+  mix-blend-mode: soft-light;
+  transition: opacity 3s ease-in-out;
+}
+
+html.dc-reading-mode::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html::after {
+    transition-duration: 0.01ms;
+  }
+}
