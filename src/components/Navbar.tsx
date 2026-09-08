@@ -1,206 +1,129 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Search, Bell, Shield, LogOut, User, Terminal, Menu, X } from 'lucide-react';
+import { useNotifications } from '../context/NotificationContext';
+import { useSocial } from '../context/SocialContext';
+import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 
+const timeAgo = (value: string) => {
+ const seconds = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+ if (seconds < 60) return `${seconds}s ago`;
+ const minutes = Math.floor(seconds / 60);
+ if (minutes < 60) return `${minutes}m ago`;
+ const hours = Math.floor(minutes / 60);
+ if (hours < 24) return `${hours}h ago`;
+ const days = Math.floor(hours / 24);
+ return `${days}d ago`;
+};
+
 export const Navbar: React.FC = () => {
-  const { user, activeTab, setActiveTab, logout, setShowOAuthModal } = useAuth();
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+ const { user, activeTab, setActiveTab, logout } = useAuth();
+ const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead, refreshNotifications } = useNotifications();
+ const { openProfile, loadSocialSummary, respondToConnection } = useSocial();
+ const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+ const [connectionActionBusy, setConnectionActionBusy] = useState<string | null>(null);
+ const [connectionActionError, setConnectionActionError] = useState<string | null>(null);
+ const isStandalone = ['landing', 'login', 'register'].includes(activeTab);
+ const go = (tab: Parameters<typeof setActiveTab>[0]) => { setActiveTab(tab); setMobileMenuOpen(false); };
 
-  const isStandalone = ['landing', 'login', 'register'].includes(activeTab);
+ useEffect(() => {
+   if (!panelOpen) return;
+   const handleOutside = (event: MouseEvent) => {
+     const target = event.target as HTMLElement;
+     if (!target.closest('[data-notification-panel]')) setPanelOpen(false);
+   };
+   document.addEventListener('mousedown', handleOutside);
+   return () => document.removeEventListener('mousedown', handleOutside);
+ }, [panelOpen, setPanelOpen]);
 
-  return (
-    <header
-      className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b-2 border-outline-variant h-20 flex items-center justify-between px-4 md:px-10 w-full"
-    >
-      {/* Search or Brand */}
-      <div className="flex items-center gap-4 flex-1">
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden text-on-surface-variant hover:text-white p-2"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+ const notificationCopy = (type: string) => {
+   if (type === 'post_like') return 'liked your post.';
+   if (type === 'comment_like') return 'liked your comment.';
+   if (type === 'comment_reply') return 'replied to your comment.';
+   if (type === 'follow') return 'started following you.';
+   if (type === 'connection_request') return 'sent you a connection request.';
+   if (type === 'connection_accepted') return 'accepted your connection request.';
+   return 'interacted with your work.';
+ };
 
-        {isStandalone ? (
-          <div
-            onClick={() => setActiveTab(user ? 'dashboard' : 'landing')}
-            className="flex items-center gap-3 cursor-pointer"
-          >
-            <div className="w-9 h-9 bg-primary-container rounded-lg flex items-center justify-center text-white">
-              <Terminal className="w-5 h-5" />
-            </div>
-            <span className="font-headline-md text-xl font-bold text-white tracking-tighter">
-              DEV_COLLECTIVE
-            </span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3 bg-surface-container-low px-4 py-2 border-2 border-outline-variant rounded-full w-full max-w-md focus-within:border-primary transition-colors">
-            <Search className="w-4 h-4 text-outline" />
-            <input
-              type="text"
-              placeholder="Search projects, mentors, roadmaps..."
-              className="bg-transparent border-none focus:outline-none text-xs md:text-sm w-full text-white placeholder:text-outline"
-            />
-          </div>
-        )}
+ const notificationIcon = (type: string) => {
+   if (type === 'follow') return <UserPlus className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />;
+   if (type === 'connection_request' || type === 'connection_accepted') return <Users className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />;
+   return <Heart className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" fill="currentColor" />;
+ };
+
+ const handleNotificationClick = (notification: typeof notifications[number]) => {
+   if (!notification.readAt) void markRead([notification.id]);
+   setPanelOpen(false);
+   if ((notification.type === 'follow' || notification.type === 'connection_request' || notification.type === 'connection_accepted') && notification.actorId) {
+     openProfile(notification.actorId);
+     return;
+   }
+   go('community');
+ };
+
+ const handleAcceptConnection = async (notification: typeof notifications[number]) => {
+   if (notification.type !== 'connection_request' || !notification.actorId || connectionActionBusy) return;
+   setConnectionActionBusy(notification.id);
+   setConnectionActionError(null);
+   try {
+     const summary = await loadSocialSummary(notification.actorId);
+     if (summary.connectionStatus !== 'incoming_pending' || !summary.connectionRequestId) {
+       await markRead([notification.id]);
+       await refreshNotifications();
+       return;
+     }
+     await respondToConnection(summary.connectionRequestId, 'accept');
+     await markRead([notification.id]);
+     await refreshNotifications();
+   } catch (error: any) {
+     setConnectionActionError(error?.message || 'Could not accept connection request.');
+   } finally {
+     setConnectionActionBusy(null);
+   }
+ };
+
+ const openExternal = (event: React.MouseEvent, url?: string | null) => {
+   event.stopPropagation();
+   if (!url) return;
+   window.open(url, '_blank', 'noopener,noreferrer');
+ };
+
+ return <header className="sticky top-0 z-40 h-[74px] border-b-2 border-outline-variant bg-background/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10">
+  <div className="flex items-center gap-3 min-w-0">
+   <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 border-2 border-outline-variant bg-surface" aria-label="Toggle menu">{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+   {isStandalone ? <button onClick={() => go(user ? 'dashboard' : 'landing')} className="flex items-center gap-3"><span className="w-9 h-9 border-2 border-outline-variant bg-primary flex items-center justify-center text-on-primary dc-hard-shadow-sm"><Terminal className="w-5 h-5" /></span><span className="dc-display text-xl sm:text-2xl font-bold tracking-tight hidden sm:block">DEV_COLLECTIVE</span></button> : <div className="flex items-center gap-3 w-full max-w-md border-2 border-outline-variant bg-surface px-4 py-2.5"><Search className="w-4 h-4 text-on-surface-variant" /><input type="text" placeholder="Search projects, mentors, roadmaps..." className="bg-transparent border-none outline-none text-xs sm:text-sm w-full text-on-surface placeholder:text-on-surface-variant" /></div>}
+  </div>
+  <div className="flex items-center gap-2 sm:gap-3">
+   <div className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW / IN BUILD</div>
+   <ThemeToggle />
+   <div className="relative" data-notification-panel>
+    <button onClick={() => setPanelOpen(!panelOpen)} className={`relative p-2 border-2 hover:border-outline-variant hover:bg-surface ${unreadCount ? 'text-primary' : 'border-transparent text-on-surface-variant'}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
+      <Bell className={`w-5 h-5 ${unreadCount ? 'animate-[dcBell_1.8s_ease-in-out_infinite]' : ''}`} />
+      {unreadCount > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-dc-pink border-2 border-outline-variant text-[9px] font-bold flex items-center justify-center text-black">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+    </button>
+    {panelOpen && <div className="absolute right-0 mt-3 w-[min(380px,calc(100vw-24px))] bg-surface border-2 border-outline-variant shadow-[7px_7px_0_#171717] z-50 overflow-hidden">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b-2 border-outline-variant">
+       <div><p className="dc-mono text-[10px] uppercase font-bold text-primary">Notifications</p><p className="text-[11px] text-on-surface-variant mt-0.5">Community activity on your work</p></div>
+       <button onClick={() => void markAllRead()} disabled={!unreadCount} className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-on-surface-variant hover:text-primary disabled:opacity-40"><CheckCheck className="w-3.5 h-3.5" /> Mark read</button>
       </div>
-
-      {/* Right Controls */}
-      <div className="flex items-center gap-2 md:gap-4">
-        {/* Theme Toggle */}
-        <ThemeToggle />
-
-        {/* OAuth Guide Modal Trigger */}
-        <button
-          onClick={() => setShowOAuthModal(true)}
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-surface-container border border-outline-variant hover:border-primary rounded-full text-xs font-label-mono text-primary transition-colors"
-          title="Configure Google and GitHub OAuth"
-        >
-          <Shield className="w-3.5 h-3.5" />
-          <span>OAuth Keys</span>
-        </button>
-
-        {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setShowNotifications(!showNotifications)}
-            className="relative text-on-surface-variant hover:text-primary transition-all p-2 rounded-full hover:bg-surface-container"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-          </button>
-
-          {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 bg-surface-container border-2 border-outline-variant rounded-2xl p-4 shadow-2xl z-50 animate-fade-in">
-              <div className="flex justify-between items-center mb-3 pb-2 border-b border-outline-variant">
-                <span className="font-label-mono text-xs uppercase font-bold text-primary">
-                  Notifications
-                </span>
-                <span className="text-[10px] text-outline">3 New</span>
-              </div>
-              <div className="space-y-3 text-xs">
-                <div className="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/30">
-                  <p className="font-bold text-white mb-0.5">Level 18 Unlocked!</p>
-                  <p className="text-on-surface-variant text-[11px]">
-                    You earned +50 REP for completing Neural Networks introduction.
-                  </p>
-                </div>
-                <div className="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/30">
-                  <p className="font-bold text-white mb-0.5">Mentor Feedback</p>
-                  <p className="text-on-surface-variant text-[11px]">
-                    Rahul Sharma reviewed your PyTorch project repository.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* User Badges or Login/Register */}
-        {user ? (
-          <div className="flex items-center gap-3">
-            <div
-              onClick={() => setActiveTab('profile')}
-              className="flex items-center gap-2.5 bg-surface-container rounded-full p-1 pl-3.5 border-2 border-outline-variant hover:border-primary cursor-pointer transition-colors"
-            >
-              <span className="text-label-mono text-xs font-bold text-secondary hidden sm:inline">
-                {user.rep.toLocaleString()} REP
-              </span>
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-full object-cover border border-primary"
-              />
-            </div>
-            <button
-              onClick={logout}
-              title="Logout"
-              className="text-on-surface-variant hover:text-error p-2 rounded-full hover:bg-surface-container transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveTab('login')}
-              className="font-label-mono text-xs uppercase text-on-surface-variant hover:text-white px-3 py-2 transition-colors"
-            >
-              LOGIN
-            </button>
-            <button
-              onClick={() => setActiveTab('register')}
-              className="bg-primary-container text-white font-label-mono text-xs uppercase px-5 py-2 rounded-full hover:bg-primary-container/80 transition-all active:scale-95"
-            >
-              REGISTER
-            </button>
-          </div>
-        )}
+      <div className="max-h-[360px] overflow-y-auto">
+       {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone interacts with your work, it will appear here.</p></div> : notifications.map((notification) => <div key={notification.id} onClick={() => handleNotificationClick(notification)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleNotificationClick(notification); } }} role="button" tabIndex={0} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors cursor-pointer ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
+         {notification.actorAvatar ? <img src={notification.actorAvatar} alt={notification.actorName} className="w-9 h-9 border-2 border-outline-variant object-cover shrink-0" /> : <div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center font-bold shrink-0">{notification.actorName.slice(0, 1)}</div>}
+         <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}
+         {notification.type === 'connection_request' && (notification.actorGithubUrl || notification.actorLinkedinUrl) && <div className="flex flex-wrap items-center gap-2 mt-3">
+           {notification.actorGithubUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorGithubUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-blue"><Github className="w-3 h-3" /> GitHub</button>}
+           {notification.actorLinkedinUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorLinkedinUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-lavender"><Linkedin className="w-3 h-3" /> LinkedIn</button>}
+           <button type="button" onClick={(event) => { event.stopPropagation(); openProfile(notification.actorId); }} className="px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-mint">View profile</button>
+         </div>}
+         <div className="flex items-center justify-between gap-3 mt-2"><p className="dc-mono text-[8px] uppercase text-on-surface-variant">{timeAgo(notification.createdAt)}</p>{notification.type === 'connection_request' && <button type="button" onClick={(event) => { event.stopPropagation(); void handleAcceptConnection(notification); }} disabled={connectionActionBusy === notification.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold shadow-[2px_2px_0_#171717] disabled:opacity-50">{connectionActionBusy === notification.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} {connectionActionBusy === notification.id ? 'Accepting' : 'Accept'}</button>}</div></div>
+       </div>)}
+       {connectionActionError && <div className="px-4 py-3 text-[10px] text-error border-t border-outline-variant/40">{connectionActionError}</div>}
       </div>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed top-20 left-0 right-0 bg-surface border-b-2 border-outline-variant p-6 space-y-4 shadow-2xl z-50">
-          <div className="grid grid-cols-2 gap-3 font-label-mono text-xs uppercase">
-            <button
-              onClick={() => {
-                setActiveTab('dashboard');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Dashboard
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('community');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Community
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('roadmap');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Roadmaps
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('leaderboard');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Leaderboard
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('mentors');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Mentors
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('admin');
-                setMobileMenuOpen(false);
-              }}
-              className="p-3 bg-surface-container rounded-xl text-left border border-outline-variant text-white"
-            >
-              Admin Terminal
-            </button>
-          </div>
-        </div>
-      )}
-    </header>
-  );
+    </div>}
+   </div>
+   {user ? <div className="flex items-center gap-2"><button onClick={() => go('profile')} className="flex items-center gap-2 bg-surface border-2 border-outline-variant p-1 pr-2 sm:pr-3 hover:border-primary"><img src={user.avatar} alt={user.name} className="w-8 h-8 object-cover border border-outline-variant" /><span className="dc-mono text-[9px] text-primary hidden sm:block">{user.rep.toLocaleString()} REP</span></button><button onClick={logout} title="Logout" className="p-2 border-2 border-transparent hover:border-error text-on-surface-variant"><LogOut className="w-4 h-4" /></button></div> : <div className="flex items-center gap-1 sm:gap-2"><button onClick={() => go('login')} className="dc-mono text-[10px] uppercase px-3 py-2 text-on-surface-variant hover:text-primary">Login</button><button onClick={() => go('register')} className="dc-mono text-[10px] uppercase px-4 py-2 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm">Register</button></div>}
+  </div>
+  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ['admin', 'Admin Terminal']].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><div className="mt-3 p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase">C·FLOW / Integration in build</div></div>}
+ </header>;
 };
