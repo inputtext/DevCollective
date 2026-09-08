@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "tsx dev.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && esbuild dev.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/dev.cjs && esbuild start.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/start.cjs",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && esbuild dev.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/dev.cjs && esbuild start.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/start.cjs && esbuild ws-start.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/ws-start.cjs",
     "start": "node dist/start.cjs",
+    "start:ws": "node dist/ws-start.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit"
   },
