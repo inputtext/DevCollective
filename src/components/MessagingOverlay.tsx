@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState}from'react';
-import{Check,CheckCheck,Clipboard,Code2,CornerUpLeft,ExternalLink,Flag,Loader2,MessageCircle,MoreHorizontal,Pin,Plus,Search,Send,SmilePlus,Star,Trash2,UserRound,VolumeX,X,WifiOff}from'lucide-react';
+import{ArrowLeft,Check,CheckCheck,Clipboard,Code2,CornerUpLeft,ExternalLink,Flag,Loader2,MessageCircle,MoreHorizontal,Pin,Plus,Search,Send,SmilePlus,Star,Trash2,UserRound,VolumeX,X,WifiOff}from'lucide-react';
 import{useAuth,useUser}from'@clerk/react';
 import{useDevCollectiveWebSocket,type MessagingEvent}from'../hooks/useDevCollectiveWebSocket';
 
