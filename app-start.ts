@@ -12,4 +12,7 @@ Server.prototype.listen = function (...args: any[]) {
   return originalListen.apply(this, args as any);
 };
 
-await import('./server');
+void import('./server').catch((error) => {
+  console.error('[app] failed to start:', error);
+  process.exit(1);
+});
