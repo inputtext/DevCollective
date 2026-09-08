@@ -9,7 +9,7 @@ type Reaction={emoji:string;count:number;reacted:boolean};
 type Message={id:string;conversation_id:string;sender_clerk_user_id:string;body:string;created_at:string;read_at:string|null;delivered_at:string|null;edited_at:string|null;deleted_at:string|null;deleted_by:string|null;reply_to_message_id:string|null;forwarded_from_message_id?:string|null;reactions?:Reaction[];starred?:boolean;pinned?:boolean};
 type Member={id:string;name:string;role:string;college:string;branch:string;avatar:string;level:number;rep:number;skills:string[]};
 type Controls={otherUserId:string|null;blockedByMe:boolean;blockedByThem:boolean;mutedUntil:string|null;archived:boolean;readOnly:boolean};
-const OPEN='devcollective:open-message',REACTIONS=['👍','❤️','🔥','😂','🎉','🚀','👀','💯'];
+const OPEN='devcollective:open-message',REACTIONS=['👍','❤️','🔥','😂','🎉','🚀','👀','💯','🫡','😎','😁','🫩','✅'];
 export const openMessagingForUser=(userId:string)=>{const id=userId.trim();if(id)window.dispatchEvent(new CustomEvent(OPEN,{detail:{userId:id}}));};
 const role=(v='member')=>v.replace(/[_-]/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 const fmt=(v:string)=>{const d=new Date(v),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):`${d.toLocaleDateString([],{month:'short',day:'numeric'})}, ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`};
