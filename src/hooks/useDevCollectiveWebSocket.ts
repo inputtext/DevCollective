@@ -1,5 +1,5 @@
+import { useAuth as useClerkAuth } from '@clerk/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 
 export type MessagingEvent = {
   type: string;
@@ -7,7 +7,7 @@ export type MessagingEvent = {
 };
 
 export function useDevCollectiveWebSocket() {
-  const { getAuthToken, user } = useAuth();
+  const { getToken, isSignedIn } = useClerkAuth();
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const listenersRef = useRef(new Set<(event: MessagingEvent) => void>());
@@ -19,8 +19,8 @@ export function useDevCollectiveWebSocket() {
   }, []);
 
   const connect = useCallback(async () => {
-    if (!user || socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) return;
-    const token = await getAuthToken();
+    if (!isSignedIn || socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) return;
+    const token = await getToken();
     if (!token) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
@@ -29,10 +29,7 @@ export function useDevCollectiveWebSocket() {
     const socket = new WebSocket(`${protocol}://${host}:${port}/ws`);
     socketRef.current = socket;
 
-    socket.onopen = () => {
-      setConnected(false);
-      socket.send(JSON.stringify({ type: 'auth', token }));
-    };
+    socket.onopen = () => socket.send(JSON.stringify({ type: 'auth', token }));
     socket.onmessage = (message) => {
       try {
         const event = JSON.parse(message.data) as MessagingEvent;
@@ -45,10 +42,10 @@ export function useDevCollectiveWebSocket() {
     socket.onclose = () => {
       setConnected(false);
       socketRef.current = null;
-      if (user) reconnectTimerRef.current = window.setTimeout(() => void connect(), 1500);
+      if (isSignedIn) reconnectTimerRef.current = window.setTimeout(() => void connect(), 1500);
     };
     socket.onerror = () => setConnected(false);
-  }, [getAuthToken, user]);
+  }, [getToken, isSignedIn]);
 
   const send = useCallback((event: MessagingEvent) => {
     const socket = socketRef.current;
