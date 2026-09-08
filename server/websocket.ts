@@ -4,8 +4,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { supabaseAdmin } from './supabase';
 
 type Client = { socket: WebSocket; userId: string; conversationId?: string };
-type IncomingEvent = { type?: string; conversationId?: string; recipientId?: string; messageId?: string; body?: string; replyToMessageId?: string };
-type MessageRow = { id: string; conversation_id: string; sender_clerk_user_id: string; body: string; created_at: string; read_at: string | null; edited_at: string | null; deleted_at: string | null; deleted_by: string | null; reply_to_message_id: string | null };
+type IncomingEvent = { type?: string; conversationId?: string; recipientId?: string; messageId?: string; body?: string; replyToMessageId?: string; userIds?: string[] };
+type MessageRow = { id: string; conversation_id: string; sender_clerk_user_id: string; body: string; created_at: string; read_at: string | null; delivered_at: string | null; edited_at: string | null; deleted_at: string | null; deleted_by: string | null; reply_to_message_id: string | null };
 
 const PORT = Number(process.env.WS_PORT || 3001);
 const clients = new Set<Client>();
@@ -21,11 +21,30 @@ async function authenticate(token: string): Promise<string | null> {
   } catch (error) { console.error('[ws] Clerk token verification failed:', error); return null; }
 }
 
+async function touchPresence(userId: string, lastSeenAt: string | null) {
+  if (!supabaseAdmin) return;
+  const { error } = await supabaseAdmin.from('devcollective_user_presence').upsert({ clerk_user_id: userId, last_seen_at: lastSeenAt, updated_at: new Date().toISOString() }, { onConflict: 'clerk_user_id' });
+  if (error) console.error('[ws] presence persistence failed:', error);
+}
+
+async function getPresence(userIds: string[]) {
+  if (!supabaseAdmin || !userIds.length) return new Map<string, string | null>();
+  const { data, error } = await supabaseAdmin.from('devcollective_user_presence').select('clerk_user_id,last_seen_at').in('clerk_user_id', userIds);
+  if (error) throw error;
+  return new Map((data || []).map((row: any) => [row.clerk_user_id, row.last_seen_at as string | null]));
+}
+
 async function isMember(conversationId: string, userId: string) {
   if (!supabaseAdmin) return false;
   const { data, error } = await supabaseAdmin.from('devcollective_conversation_members').select('conversation_id').eq('conversation_id', conversationId).eq('clerk_user_id', userId).maybeSingle();
   if (error) throw error;
   return Boolean(data);
+}
+
+async function conversationMemberIds(conversationId: string) {
+  const { data, error } = await supabaseAdmin!.from('devcollective_conversation_members').select('clerk_user_id').eq('conversation_id', conversationId);
+  if (error) throw error;
+  return (data || []).map((row) => row.clerk_user_id as string);
 }
 
 async function ensureDirectConversation(userA: string, userB: string) {
@@ -63,7 +82,7 @@ async function hiddenMessageIds(userId: string, conversationId?: string) {
 
 async function loadMessages(conversationId: string, userId: string) {
   if (!await isMember(conversationId, userId)) throw new Error('You are not a member of this conversation.');
-  const { data, error } = await supabaseAdmin!.from('devcollective_messages').select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,edited_at,deleted_at,deleted_by,reply_to_message_id').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(100);
+  const { data, error } = await supabaseAdmin!.from('devcollective_messages').select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,delivered_at,edited_at,deleted_at,deleted_by,reply_to_message_id').eq('conversation_id', conversationId).order('created_at', { ascending: true }).limit(100);
   if (error) throw error;
   const hidden = await hiddenMessageIds(userId, conversationId);
   return (data || []).filter((message: MessageRow) => !hidden.has(message.id));
@@ -73,9 +92,24 @@ async function markConversationRead(conversationId: string, userId: string) {
   const now = new Date().toISOString();
   const { error: memberError } = await supabaseAdmin!.from('devcollective_conversation_members').update({ last_read_at: now }).eq('conversation_id', conversationId).eq('clerk_user_id', userId);
   if (memberError) throw memberError;
-  const { error: messageError } = await supabaseAdmin!.from('devcollective_messages').update({ read_at: now }).eq('conversation_id', conversationId).neq('sender_clerk_user_id', userId).is('read_at', null);
+  const { error: messageError } = await supabaseAdmin!.from('devcollective_messages').update({ delivered_at: now, read_at: now }).eq('conversation_id', conversationId).neq('sender_clerk_user_id', userId).is('read_at', null);
   if (messageError) throw messageError;
   broadcast('conversation:read', { conversationId, userId, readAt: now }, (other) => other.conversationId === conversationId);
+}
+
+async function markPendingMessagesDelivered(userId: string) {
+  if (!supabaseAdmin) return;
+  const { data: memberships, error: membershipError } = await supabaseAdmin.from('devcollective_conversation_members').select('conversation_id').eq('clerk_user_id', userId);
+  if (membershipError) throw membershipError;
+  const ids = (memberships || []).map((row) => row.conversation_id as string);
+  if (!ids.length) return;
+  const deliveredAt = new Date().toISOString();
+  const { data, error } = await supabaseAdmin.from('devcollective_messages').update({ delivered_at: deliveredAt }).in('conversation_id', ids).neq('sender_clerk_user_id', userId).is('delivered_at', null).select('id,conversation_id');
+  if (error) throw error;
+  for (const message of data || []) {
+    broadcast('message:delivered', { conversationId: message.conversation_id, messageId: message.id, deliveredAt }, (other) => other.userId !== userId && other.conversationId === message.conversation_id || other.userId !== userId && other.userId === (message as any).sender_clerk_user_id);
+  }
+  for (const conversationId of ids) broadcast('conversation:list:invalidate', { conversationId }, (other) => other.userId === userId || other.conversationId === conversationId);
 }
 
 async function latestVisibleMessage(conversationId: string, userId: string) {
@@ -105,7 +139,9 @@ async function loadConversationList(userId: string) {
     const preview = await latestVisibleMessage(row.conversation_id, userId);
     const { count, error: countError } = await supabaseAdmin!.from('devcollective_messages').select('id', { count: 'exact', head: true }).eq('conversation_id', row.conversation_id).neq('sender_clerk_user_id', userId).gt('created_at', row.last_read_at || '1970-01-01T00:00:00.000Z').is('deleted_at', null);
     if (countError) throw countError;
-    return { id: row.conversation_id, kind: row.devcollective_conversations?.kind || 'direct', lastMessageAt: row.devcollective_conversations?.last_message_at || null, lastReadAt: row.last_read_at || null, unreadCount: count || 0, lastMessage: preview, participant: profile ? { id: profile.clerk_user_id, name: profile.name, avatar: profile.avatar, role: profile.role, level: profile.level, rep: profile.rep } : null };
+    const online = profile ? (presence.get(profile.clerk_user_id) || 0) > 0 : false;
+    const seenMap = await getPresence(profile ? [profile.clerk_user_id] : []);
+    return { id: row.conversation_id, kind: row.devcollective_conversations?.kind || 'direct', lastMessageAt: row.devcollective_conversations?.last_message_at || null, lastReadAt: row.last_read_at || null, unreadCount: count || 0, lastMessage: preview, participant: profile ? { id: profile.clerk_user_id, name: profile.name, avatar: profile.avatar, role: profile.role, level: profile.level, rep: profile.rep, online, lastSeenAt: seenMap.get(profile.clerk_user_id) || null } : null };
   }));
   return list.sort((a: any, b: any) => new Date(b.lastMessageAt || 0).getTime() - new Date(a.lastMessageAt || 0).getTime());
 }
@@ -141,9 +177,19 @@ async function handleEvent(client: Client, event: IncomingEvent) {
         if (!reply) throw new Error('The message you are replying to no longer exists.');
         replyToMessageId = reply.id;
       }
-      const { data, error } = await supabaseAdmin!.from('devcollective_messages').insert({ conversation_id: event.conversationId, sender_clerk_user_id: client.userId, body, reply_to_message_id: replyToMessageId }).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
+      const { data, error } = await supabaseAdmin!.from('devcollective_messages').insert({ conversation_id: event.conversationId, sender_clerk_user_id: client.userId, body, reply_to_message_id: replyToMessageId }).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,delivered_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
       if (error) throw error;
-      broadcast('message:new', { message: data }, (other) => other.userId === client.userId || other.conversationId === event.conversationId); return;
+      const memberIds = await conversationMemberIds(event.conversationId);
+      const recipientId = memberIds.find((id) => id !== client.userId);
+      let deliveredAt: string | null = null;
+      if (recipientId && (presence.get(recipientId) || 0) > 0) {
+        deliveredAt = new Date().toISOString();
+        const { error: deliveryError } = await supabaseAdmin!.from('devcollective_messages').update({ delivered_at: deliveredAt }).eq('id', data.id);
+        if (deliveryError) throw deliveryError;
+        data.delivered_at = deliveredAt;
+      }
+      broadcast('message:new', { message: data }, (other) => other.userId === client.userId || other.userId === recipientId || other.conversationId === event.conversationId);
+      broadcast('conversation:list:invalidate', { conversationId: event.conversationId }, (other) => other.userId === client.userId || other.userId === recipientId || other.conversationId === event.conversationId); return;
     }
     case 'message:edit': {
       const body = String(event.body || '').trim();
@@ -154,7 +200,7 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       if (!message || message.sender_clerk_user_id !== client.userId || !await isMember(message.conversation_id, client.userId)) throw new Error('You can only edit your own messages.');
       if (message.deleted_at) throw new Error('Deleted messages cannot be edited.');
       const editedAt = new Date().toISOString();
-      const { data, error } = await supabaseAdmin!.from('devcollective_messages').update({ body, edited_at: editedAt }).eq('id', message.id).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
+      const { data, error } = await supabaseAdmin!.from('devcollective_messages').update({ body, edited_at: editedAt }).eq('id', message.id).select('id,conversation_id,sender_clerk_user_id,body,created_at,read_at,delivered_at,edited_at,deleted_at,deleted_by,reply_to_message_id').single();
       if (error) throw error;
       broadcast('message:updated', { message: data }, (other) => other.userId === client.userId || other.conversationId === message.conversation_id);
       broadcast('conversation:list:invalidate', { conversationId: message.conversation_id }, (other) => other.conversationId === message.conversation_id); return;
@@ -185,11 +231,11 @@ async function handleEvent(client: Client, event: IncomingEvent) {
     case 'message:read': {
       if (!event.conversationId || !event.messageId || !await isMember(event.conversationId, client.userId)) throw new Error('Conversation access denied.');
       const now = new Date().toISOString();
-      const { error: messageError } = await supabaseAdmin!.from('devcollective_messages').update({ read_at: now }).eq('id', event.messageId).eq('conversation_id', event.conversationId).neq('sender_clerk_user_id', client.userId);
+      const { error: messageError } = await supabaseAdmin!.from('devcollective_messages').update({ delivered_at: now, read_at: now }).eq('id', event.messageId).eq('conversation_id', event.conversationId).neq('sender_clerk_user_id', client.userId);
       if (messageError) throw messageError;
       const { error: memberError } = await supabaseAdmin!.from('devcollective_conversation_members').update({ last_read_at: now }).eq('conversation_id', event.conversationId).eq('clerk_user_id', client.userId);
       if (memberError) throw memberError;
-      broadcast('message:read', { conversationId: event.conversationId, messageId: event.messageId, userId: client.userId, readAt: now }, (other) => other.conversationId === event.conversationId); return;
+      broadcast('message:read', { conversationId: event.conversationId, messageId: event.messageId, userId: client.userId, readAt: now }, (other) => other.conversationId === event.conversationId || other.userId === client.userId); return;
     }
     case 'typing:start':
     case 'typing:stop': {
@@ -197,8 +243,9 @@ async function handleEvent(client: Client, event: IncomingEvent) {
       broadcast(event.type, { conversationId: event.conversationId, userId: client.userId }, (other) => other !== client && other.conversationId === event.conversationId); return;
     }
     case 'presence:subscribe': {
-      const ids = Array.isArray((event as any).userIds) ? (event as any).userIds as string[] : [];
-      send(client.socket, 'presence:update', { users: ids.map((id) => ({ userId: id, online: (presence.get(id) || 0) > 0 })) }); return;
+      const ids = Array.from(new Set((event.userIds || []).filter((id): id is string => typeof id === 'string' && id.trim()).slice(0, 50)));
+      const seenMap = await getPresence(ids);
+      send(client.socket, 'presence:update', { users: ids.map((id) => ({ userId: id, online: (presence.get(id) || 0) > 0, lastSeenAt: (presence.get(id) || 0) > 0 ? null : seenMap.get(id) || null })) }); return;
     }
     default: throw new Error('Unknown WebSocket event.');
   }
@@ -217,9 +264,13 @@ export function startWebSocketServer() {
           if (event.type !== 'auth' || !event.token) throw new Error('First event must be auth.');
           const userId = await authenticate(event.token); if (!userId) throw new Error('Invalid Clerk session token.');
           client = { socket, userId }; authenticated = true; clearTimeout(authTimeout); clients.add(client);
+          const wasOffline = (presence.get(userId) || 0) === 0;
           presence.set(userId, (presence.get(userId) || 0) + 1);
-          broadcast('presence:update', { users: [{ userId, online: true }] }, (other) => other !== client);
-          send(socket, 'auth:ok', { userId }); send(socket, 'presence:update', { users: [{ userId, online: true }] }); return;
+          await touchPresence(userId, null);
+          broadcast('presence:update', { users: [{ userId, online: true, lastSeenAt: null }] }, (other) => other !== client);
+          send(socket, 'auth:ok', { userId }); send(socket, 'presence:update', { users: [{ userId, online: true, lastSeenAt: null }] });
+          if (wasOffline) await markPendingMessagesDelivered(userId);
+          return;
         }
         if (!client) throw new Error('Not authenticated.'); await handleEvent(client, event);
       } catch (error: any) { send(socket, 'error', { message: error?.message || 'WebSocket request failed.' }); }
@@ -227,8 +278,12 @@ export function startWebSocketServer() {
     socket.on('close', () => {
       clearTimeout(authTimeout); if (!client) return; clients.delete(client);
       const count = Math.max(0, (presence.get(client.userId) || 1) - 1);
-      if (count === 0) presence.delete(client.userId); else presence.set(client.userId, count);
-      if (count === 0) broadcast('presence:update', { users: [{ userId: client.userId, online: false }] }, (other) => other.userId !== client!.userId);
+      if (count === 0) {
+        presence.delete(client.userId);
+        const lastSeenAt = new Date().toISOString();
+        void touchPresence(client.userId, lastSeenAt);
+        broadcast('presence:update', { users: [{ userId: client.userId, online: false, lastSeenAt }] }, (other) => other.userId !== client!.userId);
+      } else presence.set(client.userId, count);
     });
   });
   httpServer.listen(PORT, '0.0.0.0', () => console.log(`[ws] DevCollective WebSocket server running on ws://0.0.0.0:${PORT}/ws`));
