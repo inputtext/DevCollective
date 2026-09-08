@@ -1,4 +1,4 @@
-/* Reading mode: a gentle warm reading tone with a full 3-second fade in/out. */
+/* Reading mode: a clearly visible warm reading tone with a full 3-second fade in/out. */
 html::after {
   content: '';
   position: fixed;
@@ -6,8 +6,8 @@ html::after {
   z-index: 9998;
   pointer-events: none;
   opacity: 0;
-  background: rgba(255, 190, 110, 0.12);
-  mix-blend-mode: soft-light;
+  background: rgb(255 174 78 / 28%);
+  mix-blend-mode: multiply;
   transition: opacity 3s ease-in-out;
 }
 
