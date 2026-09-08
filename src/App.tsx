@@ -24,6 +24,8 @@ import './styles/workspace-controls.css';
 import './styles/dashboard-ux.css';
 import './styles/rep-reward.css';
 import './styles/social-profile.css';
+import './styles/level0-theme.css';
+import './styles/level0-heading.css';
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then((module) => ({ default: module.LandingPage })));
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
@@ -37,6 +39,7 @@ const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage').then((modul
 const MentorDirectoryPage = lazy(() => import('./pages/MentorDirectoryPage').then((module) => ({ default: module.MentorDirectoryPage })));
 const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage').then((module) => ({ default: module.StudentProfilePage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
+const Level0Page = lazy(() => import('./pages/Level0Page').then((module) => ({ default: module.Level0Page })));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
@@ -104,7 +107,7 @@ const MainContent: React.FC = () => {
   }, [user, loadingAuth, activeTab, setActiveTab]);
 
   const publicTabs = ['landing', 'login', 'register'];
-  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin'];
+  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin', 'level-0'];
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
 
@@ -168,6 +171,7 @@ const MainContent: React.FC = () => {
             {activeTab === 'mentors' && <MentorDirectoryPage />}
             {activeTab === 'profile' && <StudentProfilePage />}
             {activeTab === 'admin' && <AdminPage />}
+            {activeTab === ('level-0' as typeof activeTab) && <Level0Page />}
           </Suspense>
         </main>
       </div>

@@ -2,14 +2,14 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/react';
 import { UserProfile, TaskItem, CommunityPost, CommunityComment, LeaderboardEntry, Mentor } from '../types';
 
-export type PageTab = 'landing' | 'login' | 'register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'profile' | 'admin';
+export type PageTab = 'landing' | 'login' | 'register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'profile' | 'admin' | 'level-0';
 interface AuthContextType {
   user: UserProfile | null; loadingAuth: boolean; sidebarCollapsed: boolean; toggleSidebar: () => void; activeTab: PageTab; setActiveTab: (tab: PageTab) => void;
   tasks: TaskItem[]; posts: CommunityPost[]; commentsByPost: Record<string, CommunityComment[]>; leaderboard: LeaderboardEntry[]; mentors: Mentor[];
   showOAuthModal: boolean; oauthProviderToSimulate: 'google' | 'github' | null; setShowOAuthModal: (show: boolean) => void; triggerOAuthLogin: (provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => void;
   showResumePrompt: boolean; dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>; registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>; logout: () => Promise<void>;
-  updateProfile: (updated: Partial<UserProfile>) => Promise<void>; toggleTaskCompletion: (taskId: string) => Promise<void>;
+  updateProfile: (updated: Partial<UserProfile>) => Promise<void>; refreshProfile: () => Promise<UserProfile | null>; toggleTaskCompletion: (taskId: string) => Promise<void>;
   addPost: (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => Promise<void>; toggleLikePost: (postId: string) => Promise<void>; loadPostComments: (postId: string) => Promise<void>; addPostComment: (postId: string, content: string) => Promise<void>; completeOnboarding: () => Promise<void>;
   repAnimation: { amount: number; id: number } | null; requestPasswordReset: (email: string) => Promise<void>; resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
   authRedirectError: string | null; clearAuthRedirectError: () => void;
@@ -25,29 +25,10 @@ const MENTORS_CACHE_TTL_MS = 5 * 60 * 1000;
 const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: details.name || '', role: details.role || 'student', college: details.college || '', branch: details.branch || '', academicYear: details.academicYear || '' });
 
 const readStorageJson = <T,>(storage: Storage, key: string): T | null => {
-  try {
-    const raw = storage.getItem(key);
-    return raw ? JSON.parse(raw) as T : null;
-  } catch {
-    return null;
-  }
+  try { const raw = storage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; }
 };
-
-const writeStorageJson = (storage: Storage, key: string, value: unknown) => {
-  try {
-    storage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Cache is an optimization only; auth must continue to work without it.
-  }
-};
-
-const setLandingDestination = (setActiveTab: React.Dispatch<React.SetStateAction<PageTab>>, current: PageTab, profile: UserProfile, isNewRegistration = false) => {
-  if (isNewRegistration) {
-    setActiveTab('profile-setup');
-  } else if (current === 'landing' || current === 'login' || current === 'register') {
-    setActiveTab(profile.hasCompletedOnboarding ? 'profile' : 'profile-setup');
-  }
-};
+const writeStorageJson = (storage: Storage, key: string, value: unknown) => { try { storage.setItem(key, JSON.stringify(value)); } catch {} };
+const setLandingDestination = (setActiveTab: React.Dispatch<React.SetStateAction<PageTab>>, current: PageTab, profile: UserProfile, isNewRegistration = false) => { if (isNewRegistration) setActiveTab('profile-setup'); else if (current === 'landing' || current === 'login' || current === 'register') setActiveTab(profile.hasCompletedOnboarding ? 'profile' : 'profile-setup'); };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded: clerkLoaded, isSignedIn, getToken } = useClerkAuth();
@@ -72,215 +53,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleSidebar = () => setSidebarCollapsed((prev) => { const next = !prev; localStorage.setItem('devcollective_sidebar_collapsed', String(next)); return next; });
   const apiFetch = useCallback(async (url: string, init: RequestInit = {}) => { const token = await getToken(); if (!token) throw new Error('Not authenticated.'); const headers = new Headers(init.headers); headers.set('Authorization', `Bearer ${token}`); if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json'); const res = await fetch(url, { ...init, headers }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || 'Request failed.'); return data; }, [getToken]);
+  const commentServiceFetch = useCallback(async (path: string, init: RequestInit = {}) => { const baseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, ''); if (!baseUrl) throw new Error('Supabase URL is not configured.'); const token = await getToken(); if (!token) throw new Error('Not authenticated.'); const headers = new Headers(init.headers); headers.set('Authorization', `Bearer ${token}`); headers.set('Content-Type', 'application/json'); const res = await fetch(`${baseUrl}/functions/v1/community-comments${path}`, { ...init, headers }); const data = await res.json().catch(() => ({})); if (!res.ok) throw new Error(data.error || 'Community comment request failed.'); return data; }, [getToken]);
+  const loadCommentCounts = useCallback(async () => { if (!isSignedIn) return; try { const data = await commentServiceFetch('?mode=counts'); const countMap = new Map<string, number>((Array.isArray(data.counts) ? data.counts : []).map((item: { postId: string; count: number }) => [item.postId, Number(item.count) || 0])); setPosts((prev) => prev.map((post) => ({ ...post, commentsCount: countMap.get(post.id) || 0 }))); } catch (err) { console.error('Could not load community comment counts:', err); } }, [commentServiceFetch, isSignedIn]);
+  const loadPostComments = useCallback(async (postId: string) => { const data = await commentServiceFetch(`?postId=${encodeURIComponent(postId)}`); setCommentsByPost((prev) => ({ ...prev, [postId]: Array.isArray(data.comments) ? data.comments as CommunityComment[] : [] })); }, [commentServiceFetch]);
+  const addPostComment = useCallback(async (postId: string, content: string) => { const trimmed = content.trim(); if (!trimmed) throw new Error('Comment cannot be empty.'); const data = await commentServiceFetch('', { method: 'POST', body: JSON.stringify({ postId, content: trimmed }) }); if (data.comment) { setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment as CommunityComment] })); setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, commentsCount: Number(data.count) || post.commentsCount + 1 } : post)); } }, [commentServiceFetch]);
+  const syncProfile = useCallback(async () => { if (!clerkUser || !isSignedIn) return null; let pending: Record<string, unknown> = {}; const rawPending = sessionStorage.getItem(PENDING_REGISTRATION_KEY); if (rawPending) { try { pending = JSON.parse(rawPending); } catch { pending = {}; } } const data = await apiFetch('/api/auth/sync', { method: 'POST', body: JSON.stringify(pending) }); sessionStorage.removeItem(PENDING_REGISTRATION_KEY); return { user: data.user as UserProfile, hadPendingRegistration: Boolean(rawPending) }; }, [apiFetch, clerkUser, isSignedIn]);
+  const loadMentors = useCallback(async () => { if (!isSignedIn) { setMentors([]); return; } const cached = readStorageJson<{ savedAt: number; mentors: Mentor[] }>(sessionStorage, MENTORS_CACHE_KEY); if (cached?.mentors && Date.now() - cached.savedAt < MENTORS_CACHE_TTL_MS) { setMentors(cached.mentors); return; } try { const data = await apiFetch('/api/mentors'); const nextMentors = Array.isArray(data.mentors) ? data.mentors : []; setMentors(nextMentors); writeStorageJson(sessionStorage, MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors }); } catch (err) { console.error('Could not load mentors from Supabase:', err); setMentors([]); } }, [apiFetch, isSignedIn]);
+  const loadPosts = useCallback(async () => { if (!isSignedIn) { setPosts([]); setCommentsByPost({}); return; } try { const data = await apiFetch('/api/community/posts'); setPosts(Array.isArray(data.posts) ? data.posts : []); void loadCommentCounts(); } catch (err) { console.error('Could not load community posts from Supabase:', err); setPosts([]); setCommentsByPost({}); } }, [apiFetch, isSignedIn, loadCommentCounts]);
 
-  const commentServiceFetch = useCallback(async (path: string, init: RequestInit = {}) => {
-    const baseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
-    if (!baseUrl) throw new Error('Supabase URL is not configured.');
-    const token = await getToken();
-    if (!token) throw new Error('Not authenticated.');
-    const headers = new Headers(init.headers);
-    headers.set('Authorization', `Bearer ${token}`);
-    headers.set('Content-Type', 'application/json');
-    const res = await fetch(`${baseUrl}/functions/v1/community-comments${path}`, { ...init, headers });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Community comment request failed.');
-    return data;
-  }, [getToken]);
-
-  const loadCommentCounts = useCallback(async () => {
-    if (!isSignedIn) return;
-    try {
-      const data = await commentServiceFetch('?mode=counts');
-      const countMap = new Map<string, number>((Array.isArray(data.counts) ? data.counts : []).map((item: { postId: string; count: number }) => [item.postId, Number(item.count) || 0]));
-      setPosts((prev) => prev.map((post) => ({ ...post, commentsCount: countMap.get(post.id) || 0 })));
-    } catch (err) {
-      console.error('Could not load community comment counts:', err);
-    }
-  }, [commentServiceFetch, isSignedIn]);
-
-  const loadPostComments = useCallback(async (postId: string) => {
-    const data = await commentServiceFetch(`?postId=${encodeURIComponent(postId)}`);
-    setCommentsByPost((prev) => ({ ...prev, [postId]: Array.isArray(data.comments) ? data.comments as CommunityComment[] : [] }));
-  }, [commentServiceFetch]);
-
-  const addPostComment = useCallback(async (postId: string, content: string) => {
-    const trimmed = content.trim();
-    if (!trimmed) throw new Error('Comment cannot be empty.');
-    const data = await commentServiceFetch('', { method: 'POST', body: JSON.stringify({ postId, content: trimmed }) });
-    if (data.comment) {
-      setCommentsByPost((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), data.comment as CommunityComment] }));
-      setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, commentsCount: Number(data.count) || post.commentsCount + 1 } : post));
-    }
-  }, [commentServiceFetch]);
-
-  const syncProfile = useCallback(async () => {
-    if (!clerkUser || !isSignedIn) return null;
-    let pending: Record<string, unknown> = {};
-    const rawPending = sessionStorage.getItem(PENDING_REGISTRATION_KEY);
-    if (rawPending) { try { pending = JSON.parse(rawPending); } catch { pending = {}; } }
-    const data = await apiFetch('/api/auth/sync', { method: 'POST', body: JSON.stringify(pending) });
-    sessionStorage.removeItem(PENDING_REGISTRATION_KEY);
-    return { user: data.user as UserProfile, hadPendingRegistration: Boolean(rawPending) };
-  }, [apiFetch, clerkUser, isSignedIn]);
-
-  const loadMentors = useCallback(async () => {
-    if (!isSignedIn) { setMentors([]); return; }
-    const cached = readStorageJson<{ savedAt: number; mentors: Mentor[] }>(sessionStorage, MENTORS_CACHE_KEY);
-    if (cached?.mentors && Date.now() - cached.savedAt < MENTORS_CACHE_TTL_MS) {
-      setMentors(cached.mentors);
-      return;
-    }
-    try {
-      const data = await apiFetch('/api/mentors');
-      const nextMentors = Array.isArray(data.mentors) ? data.mentors : [];
-      setMentors(nextMentors);
-      writeStorageJson(sessionStorage, MENTORS_CACHE_KEY, { savedAt: Date.now(), mentors: nextMentors });
-    } catch (err) {
-      console.error('Could not load mentors from Supabase:', err);
-      setMentors([]);
-    }
-  }, [apiFetch, isSignedIn]);
-
-  const loadPosts = useCallback(async () => {
-    if (!isSignedIn) { setPosts([]); setCommentsByPost({}); return; }
-    try {
-      const data = await apiFetch('/api/community/posts');
-      setPosts(Array.isArray(data.posts) ? data.posts : []);
-      void loadCommentCounts();
-    } catch (err) {
-      console.error('Could not load community posts from Supabase:', err);
-      setPosts([]);
-      setCommentsByPost({});
-    }
-  }, [apiFetch, isSignedIn, loadCommentCounts]);
+  const refreshProfile = useCallback(async () => { if (!clerkUser || !isSignedIn) return null; try { const data = await apiFetch('/api/auth/me'); const nextUser = data.user as UserProfile; if (nextUser) { setUser(nextUser); writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: nextUser }); } return nextUser || null; } catch (err) { console.error('Could not refresh DevCollective profile:', err); return null; } }, [apiFetch, clerkUser, isSignedIn]);
 
   useEffect(() => {
     if (!clerkLoaded) return;
-    if (!isSignedIn || !clerkUser) {
-      setUser(null);
-      setPosts([]);
-      setCommentsByPost({});
-      setMentors([]);
-      setLoadingAuth(false);
-      return;
-    }
-
+    if (!isSignedIn || !clerkUser) { setUser(null); setPosts([]); setCommentsByPost({}); setMentors([]); setLoadingAuth(false); return; }
     let cancelled = false;
     const cacheKey = `${PROFILE_CACHE_PREFIX}${clerkUser.id}`;
     const cached = readStorageJson<{ savedAt: number; user: UserProfile }>(localStorage, cacheKey);
     const cachedUser = cached?.user || null;
     const cacheFresh = Boolean(cached && Date.now() - cached.savedAt < PROFILE_CACHE_TTL_MS);
-
-    if (cachedUser) {
-      setUser(cachedUser);
-      setLandingDestination(setActiveTab, activeTab, cachedUser);
-      setLoadingAuth(false);
-    } else {
-      setLoadingAuth(true);
-    }
-
+    if (cachedUser) { setUser(cachedUser); setLandingDestination(setActiveTab, activeTab, cachedUser); setLoadingAuth(false); } else setLoadingAuth(true);
     void loadPosts();
-
-    if (cacheFresh) {
-      void loadMentors();
-      return () => { cancelled = true; };
-    }
-
-    const hydrate = async () => {
-      try {
-        const result = await syncProfile();
-        if (cancelled) return;
-        if (result?.user) {
-          setUser(result.user);
-          writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user });
-          setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration);
-        }
-        void loadMentors();
-      } catch (err: any) {
-        console.error('Could not load DevCollective profile:', err);
-        if (!cachedUser) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.');
-      } finally {
-        if (!cancelled && !cachedUser) setLoadingAuth(false);
-      }
-    };
-
+    if (cacheFresh) { void loadMentors(); return () => { cancelled = true; }; }
+    const hydrate = async () => { try { const result = await syncProfile(); if (cancelled) return; if (result?.user) { setUser(result.user); writeStorageJson(localStorage, cacheKey, { savedAt: Date.now(), user: result.user }); setLandingDestination(setActiveTab, activeTab, result.user, result.hadPendingRegistration); } void loadMentors(); } catch (err: any) { console.error('Could not load DevCollective profile:', err); if (!cachedUser) setAuthRedirectError(err.message || 'Could not load your DevCollective profile.'); } finally { if (!cancelled && !cachedUser) setLoadingAuth(false); } };
     void hydrate();
     return () => { cancelled = true; };
   }, [clerkLoaded, isSignedIn, clerkUser, syncProfile, loadMentors, loadPosts]);
 
   const clearAuthRedirectError = () => setAuthRedirectError(null);
-  const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => {
-    setOauthProviderToSimulate(null); setShowOAuthModal(false);
-    if (registrationDetails) { const pending = buildPendingRegistration(registrationDetails); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); return; }
-    clerk.openSignIn({ signUpFallbackRedirectUrl: '/' });
-  };
-  const loginWithEmail = async (email: string, password?: string) => {
-    if (!email.trim()) throw new Error('Please enter your email address.');
-    if (!password) throw new Error('Please enter your password.');
-    const { error } = await signIn.password({ emailAddress: email.trim(), password });
-    if (error) throw new Error(error.message || 'The email or password is incorrect.');
-    if (signIn.status === 'complete') {
-      const result = await signIn.finalize({ navigate: ({ decorateUrl }) => { window.location.href = decorateUrl('/'); } });
-      if (result.error) throw new Error(result.error.message || 'Could not complete sign in.');
-      return;
-    }
-    throw new Error('Additional verification is required for this account.');
-  };
+  const triggerOAuthLogin = (_provider: 'google' | 'github', registrationDetails?: Partial<UserProfile>) => { setOauthProviderToSimulate(null); setShowOAuthModal(false); if (registrationDetails) { const pending = buildPendingRegistration(registrationDetails); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: registrationDetails.email ? { emailAddress: registrationDetails.email } : undefined, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); return; } clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
+  const loginWithEmail = async (email: string, password?: string) => { if (!email.trim()) throw new Error('Please enter your email address.'); if (!password) throw new Error('Please enter your password.'); const { error } = await signIn.password({ emailAddress: email.trim(), password }); if (error) throw new Error(error.message || 'The email or password is incorrect.'); if (signIn.status === 'complete') { const result = await signIn.finalize({ navigate: ({ decorateUrl }) => { window.location.href = decorateUrl('/'); } }); if (result.error) throw new Error(result.error.message || 'Could not complete sign in.'); return; } throw new Error('Additional verification is required for this account.'); };
   const registerUser = async (details: Partial<UserProfile> & { password?: string }) => { if (!details.email || !details.name) throw new Error('Name and email are required for registration.'); const pending = buildPendingRegistration(details); sessionStorage.setItem(PENDING_REGISTRATION_KEY, JSON.stringify(pending)); clerk.openSignUp({ initialValues: { emailAddress: details.email }, unsafeMetadata: pending, signInFallbackRedirectUrl: '/' }); };
   const requestPasswordReset = async (_email: string) => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const resetPassword = async () => { clerk.openSignIn({ signUpFallbackRedirectUrl: '/' }); };
   const logout = async () => { await clerk.signOut({ redirectUrl: '/' }); setUser(null); setPosts([]); setCommentsByPost({}); setMentors([]); setActiveTab('landing'); };
-
-  const updateProfile = async (updated: Partial<UserProfile>) => {
-    if (!user) return;
-    const optimisticUser = { ...user, ...updated };
-    setUser(optimisticUser);
-    if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: optimisticUser });
-    try {
-      const data = await apiFetch('/api/users/profile', { method: 'PATCH', body: JSON.stringify(updated) });
-      if (data.user) {
-        setUser(data.user);
-        if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: data.user });
-      }
-    } catch (err) { console.error('Error saving profile to Supabase:', err); }
-  };
+  const updateProfile = async (updated: Partial<UserProfile>) => { if (!user) return; const optimisticUser = { ...user, ...updated }; setUser(optimisticUser); if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: optimisticUser }); try { const data = await apiFetch('/api/users/profile', { method: 'PATCH', body: JSON.stringify(updated) }); if (data.user) { setUser(data.user); if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: data.user }); } } catch (err) { console.error('Error saving profile to Supabase:', err); } };
   const completeOnboarding = async () => { if (user) await updateProfile({ hasCompletedOnboarding: true }); };
   const toggleTaskCompletion = async (taskId: string) => { const task = tasks.find((t) => t.id === taskId); if (!task) return; const isNowCompleted = !task.completed; setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, completed: isNowCompleted } : t)); if (user) { const repChange = task.repReward || 50; const newRep = isNowCompleted ? user.rep + repChange : Math.max(0, user.rep - repChange); if (isNowCompleted) setRepAnimation({ amount: repChange, id: Date.now() }); await updateProfile({ rep: newRep }); } };
-
-  const addPost = async (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => {
-    if (!user) return;
-    const data = await apiFetch('/api/community/posts', {
-      method: 'POST',
-      body: JSON.stringify({
-        category: post.category,
-        title: post.title,
-        content: post.content,
-        imageUrl: post.imageUrl,
-      }),
-    });
-    if (data.post) {
-      setPosts((prev) => [data.post as CommunityPost, ...prev.filter((existing) => existing.id !== data.post.id)]);
-      const awardedRep = Number(data.post.authorRep);
-      if (Number.isFinite(awardedRep) && awardedRep > user.rep) {
-        setUser((current) => current ? { ...current, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } : current);
-        if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: { ...user, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } });
-      }
-    }
-  };
-
-  const toggleLikePost = async (postId: string) => {
-    if (!user) return;
-    const previousPosts = posts;
-    setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: !post.likedByMe, likes: post.likedByMe ? Math.max(0, post.likes - 1) : post.likes + 1 } : post));
-    try {
-      const data = await apiFetch(`/api/community/posts/${encodeURIComponent(postId)}/like`, { method: 'POST' });
-      if (typeof data.likes === 'number') setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: Boolean(data.likedByMe), likes: data.likes } : post));
-    } catch (err) {
-      console.error('Error updating community post like:', err);
-      setPosts(previousPosts);
-    }
-  };
-
-  return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, commentsByPost, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, toggleTaskCompletion, addPost, toggleLikePost, loadPostComments, addPostComment, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
+  const addPost = async (post: Omit<CommunityPost, 'id' | 'authorId' | 'likes' | 'commentsCount' | 'createdAt'>) => { if (!user) return; const data = await apiFetch('/api/community/posts', { method: 'POST', body: JSON.stringify({ category: post.category, title: post.title, content: post.content, imageUrl: post.imageUrl }) }); if (data.post) { setPosts((prev) => [data.post as CommunityPost, ...prev.filter((existing) => existing.id !== data.post.id)]); const awardedRep = Number(data.post.authorRep); if (Number.isFinite(awardedRep) && awardedRep > user.rep) { setUser((current) => current ? { ...current, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } : current); if (clerkUser?.id) writeStorageJson(localStorage, `${PROFILE_CACHE_PREFIX}${clerkUser.id}`, { savedAt: Date.now(), user: { ...user, rep: awardedRep, level: Math.max(1, Math.floor(awardedRep / 150) + 1) } }); } } };
+  const toggleLikePost = async (postId: string) => { if (!user) return; const previousPosts = posts; setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: !post.likedByMe, likes: post.likedByMe ? Math.max(0, post.likes - 1) : post.likes + 1 } : post)); try { const data = await apiFetch(`/api/community/posts/${encodeURIComponent(postId)}/like`, { method: 'POST' }); if (typeof data.likes === 'number') setPosts((prev) => prev.map((post) => post.id === postId ? { ...post, likedByMe: Boolean(data.likedByMe), likes: data.likes } : post)); } catch (err) { console.error('Error updating community post like:', err); setPosts(previousPosts); } };
+  return <AuthContext.Provider value={{ user, loadingAuth, sidebarCollapsed, toggleSidebar, activeTab, setActiveTab, tasks, posts, commentsByPost, leaderboard, mentors, showOAuthModal, oauthProviderToSimulate, setShowOAuthModal, triggerOAuthLogin, showResumePrompt, dismissResumePrompt: () => setShowResumePrompt(false), loginWithEmail, registerUser, logout, updateProfile, refreshProfile, toggleTaskCompletion, addPost, toggleLikePost, loadPostComments, addPostComment, completeOnboarding, repAnimation, requestPasswordReset, resetPassword, authRedirectError, clearAuthRedirectError, oauthInfo }}>{children}</AuthContext.Provider>;
 };
 export const useAuth = () => { const context = useContext(AuthContext); if (!context) throw new Error('useAuth must be used within an AuthProvider'); return context; };
