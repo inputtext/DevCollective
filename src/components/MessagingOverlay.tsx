@@ -18,6 +18,16 @@ type Message = {
   read_at: string | null;
 };
 
+const OPEN_MESSAGE_EVENT = 'devcollective:open-message';
+
+type OpenMessageDetail = { userId: string };
+
+export const openMessagingForUser = (userId: string) => {
+  const id = userId.trim();
+  if (!id) return;
+  window.dispatchEvent(new CustomEvent<OpenMessageDetail>(OPEN_MESSAGE_EVENT, { detail: { userId: id } }));
+};
+
 export const MessagingOverlay: React.FC = () => {
   const { isSignedIn, user: clerkUser } = useUser();
   const { connected, send, subscribe } = useDevCollectiveWebSocket();
@@ -26,6 +36,7 @@ export const MessagingOverlay: React.FC = () => {
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [recipientId, setRecipientId] = useState('');
+  const [pendingRecipientId, setPendingRecipientId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -52,6 +63,29 @@ export const MessagingOverlay: React.FC = () => {
     if (event.type === 'typing:start' && String(event.conversationId) === activeConversation && event.userId !== clerkUser?.id) setTyping(true);
     if (event.type === 'typing:stop' && String(event.conversationId) === activeConversation) setTyping(false);
   }), [activeConversation, clerkUser?.id, send]);
+
+  useEffect(() => {
+    const handleOpenMessage = (event: Event) => {
+      const detail = (event as CustomEvent<OpenMessageDetail>).detail;
+      const id = detail?.userId?.trim();
+      if (!id || id === clerkUser?.id) return;
+      setOpen(true);
+      setRecipientId(id);
+      setPendingRecipientId(id);
+    };
+    window.addEventListener(OPEN_MESSAGE_EVENT, handleOpenMessage);
+    return () => window.removeEventListener(OPEN_MESSAGE_EVENT, handleOpenMessage);
+  }, [clerkUser?.id]);
+
+  useEffect(() => {
+    if (!pendingRecipientId || !connected) return;
+    if (pendingRecipientId === clerkUser?.id) {
+      setPendingRecipientId(null);
+      return;
+    }
+    send({ type: 'conversation:start', recipientId: pendingRecipientId });
+    setPendingRecipientId(null);
+  }, [pendingRecipientId, connected, clerkUser?.id, send]);
 
   useEffect(() => {
     if (open && connected) send({ type: 'conversation:list' });
@@ -97,7 +131,7 @@ export const MessagingOverlay: React.FC = () => {
     {open && <section className="fixed bottom-20 right-5 z-[59] w-[min(900px,calc(100vw-24px))] h-[min(650px,calc(100vh-110px))] bg-background border-2 border-outline-variant shadow-[8px_8px_0_#171717] flex overflow-hidden">
       <aside className="w-[280px] shrink-0 border-r-2 border-outline-variant bg-surface flex flex-col">
         <div className="p-4 border-b-2 border-outline-variant flex items-center justify-between"><div><p className="font-label-mono text-[10px] uppercase font-bold text-primary">Direct Messages</p><p className="text-[10px] text-on-surface-variant mt-1">Beta · all authenticated users</p></div><button onClick={() => setOpen(false)} className="p-1.5 border-2 border-transparent hover:border-outline-variant"><X className="w-4 h-4" /></button></div>
-        <div className="p-3 border-b border-outline-variant/50 space-y-2"><input value={recipientId} onChange={(event) => setRecipientId(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') startConversation(); }} placeholder="Recipient Clerk user ID" className="w-full bg-background border-2 border-outline-variant px-3 py-2 text-[10px] outline-none focus:border-primary" /><button onClick={startConversation} disabled={!recipientId.trim() || !connected} className="w-full px-3 py-2 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold disabled:opacity-40">Start conversation</button></div>
+        <div className="p-3 border-b border-outline-variant/50 space-y-2"><input value={recipientId} onChange={(event) => { setRecipientId(event.target.value); setPendingRecipientId(null); }} onKeyDown={(event) => { if (event.key === 'Enter') startConversation(); }} placeholder="Recipient Clerk user ID (dev fallback)" className="w-full bg-background border-2 border-outline-variant px-3 py-2 text-[10px] outline-none focus:border-primary" /><button onClick={startConversation} disabled={!recipientId.trim() || !connected} className="w-full px-3 py-2 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold disabled:opacity-40">Start conversation</button></div>
         <div className="flex-1 overflow-y-auto">
           {conversations.length === 0 ? <div className="p-6 text-center text-on-surface-variant"><UserRound className="w-7 h-7 mx-auto mb-2" /><p className="font-label-mono text-[9px] uppercase">No conversations yet</p></div> : conversations.map((conversation) => <button key={conversation.id} onClick={() => setActiveConversation(conversation.id)} className={`w-full p-3 text-left flex gap-3 border-b border-outline-variant/40 hover:bg-dc-blue/20 ${conversation.id === activeConversation ? 'bg-dc-blue/20 border-l-4 border-l-primary' : ''}`}>
             {conversation.participant?.avatar ? <img src={conversation.participant.avatar} alt="" className="w-9 h-9 object-cover border-2 border-outline-variant" /> : <div className="w-9 h-9 bg-dc-yellow border-2 border-outline-variant flex items-center justify-center font-bold">{conversation.participant?.name?.slice(0, 1) || '?'}</div>}
@@ -112,7 +146,7 @@ export const MessagingOverlay: React.FC = () => {
           <div className="flex items-center gap-2 font-label-mono text-[8px] uppercase">{connected ? <><Wifi className="w-3.5 h-3.5 text-primary" /> Connected</> : <><WifiOff className="w-3.5 h-3.5" /> Offline</>}</div>
         </header>
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {!activeConversation ? <div className="h-full flex items-center justify-center text-center text-on-surface-variant"><div><MessageCircle className="w-10 h-10 mx-auto mb-3" /><p className="font-label-mono text-[10px] uppercase font-bold">Start a conversation</p><p className="text-xs mt-2 max-w-sm">Enter another authenticated user's Clerk ID to start the beta messaging flow.</p></div></div> : loading ? <div className="h-full flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div> : <>{messages.map((message) => { const mine = message.sender_clerk_user_id === clerkUser?.id; return <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[75%] px-3 py-2 border-2 border-outline-variant ${mine ? 'bg-dc-blue' : 'bg-surface'}`}><p className="text-sm whitespace-pre-wrap break-words">{message.body}</p><p className="font-label-mono text-[7px] uppercase text-on-surface-variant mt-1">{new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div></div>; })}{typing && <p className="font-label-mono text-[8px] uppercase text-on-surface-variant">Typing…</p>}</>}
+          {!activeConversation ? <div className="h-full flex items-center justify-center text-center text-on-surface-variant"><div><MessageCircle className="w-10 h-10 mx-auto mb-3" /><p className="font-label-mono text-[10px] uppercase font-bold">Start a conversation</p><p className="text-xs mt-2 max-w-sm">Open a member profile and use Message, or enter a Clerk ID below for beta testing.</p></div></div> : loading ? <div className="h-full flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div> : <>{messages.map((message) => { const mine = message.sender_clerk_user_id === clerkUser?.id; return <div key={message.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[75%] px-3 py-2 border-2 border-outline-variant ${mine ? 'bg-dc-blue' : 'bg-surface'}`}><p className="text-sm whitespace-pre-wrap break-words">{message.body}</p><p className="font-label-mono text-[7px] uppercase text-on-surface-variant mt-1">{new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p></div></div>; })}{typing && <p className="font-label-mono text-[8px] uppercase text-on-surface-variant">Typing…</p>}</>}
         </div>
         {activeConversation && <form onSubmit={(event) => { event.preventDefault(); sendMessage(); }} className="p-3 border-t-2 border-outline-variant flex gap-2"><input value={draft} onChange={(event) => handleDraftChange(event.target.value)} placeholder={connected ? 'Write a message…' : 'Connecting…'} disabled={!connected} className="flex-1 bg-surface border-2 border-outline-variant px-3 py-3 text-sm outline-none focus:border-primary disabled:opacity-50" /><button type="submit" disabled={!draft.trim() || !connected} className="px-4 bg-primary text-on-primary border-2 border-outline-variant font-bold disabled:opacity-40"><Send className="w-4 h-4" /></button></form>}
       </main>
