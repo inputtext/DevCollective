@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Check, Link2, Loader2, UserPlus, Users, X } from 'lucide-react';
+import { ArrowLeft, Check, Link2, Loader2, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocial, type SocialSummary } from '../context/SocialContext';
 
@@ -144,6 +144,7 @@ export const SocialProfileOverlay: React.FC = () => {
                     <div className="min-w-0 pb-1">
                       <p className="font-label-mono text-[10px] uppercase text-on-surface-variant">MEMBER / {profile.role}</p>
                       <h1 className="dc-display text-4xl sm:text-5xl truncate">{profile.name}</h1>
+                      {profile.role === 'mentor' && <span className="mt-2 inline-flex items-center gap-1.5 border-2 border-outline-variant bg-dc-mint px-2 py-1 font-label-mono text-[9px] uppercase font-bold text-[#171717]"><ShieldCheck className="w-3.5 h-3.5" /> Verified Mentor</span>}
                       <p className="font-label-mono text-[10px] uppercase text-primary font-bold mt-2">{profile.college} · {profile.branch}</p>
                     </div>
                   </div>
