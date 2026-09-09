@@ -80,6 +80,7 @@ export const StudentProfilePage: React.FC = () => {
             <div className="space-y-2">
               <p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">PROFILE / {user.role.toUpperCase()}</p>
               <h2 className="dc-display text-4xl sm:text-5xl">{display(user.name)}</h2>
+              {user.role === 'mentor' && <span className="inline-flex items-center gap-1.5 border-2 border-outline-variant bg-dc-mint px-2.5 py-1.5 font-label-mono text-[10px] uppercase font-bold text-[#171717]"><ShieldCheck className="w-4 h-4" /> Verified Mentor</span>}
               <p className="font-label-mono text-xs uppercase text-primary font-bold">{display(user.college)} · {display(user.branch)} · {display(user.academicYear)}</p>
               <p className="text-sm text-on-surface-variant max-w-2xl leading-relaxed">{display(user.bio, 'Your bio will appear here once you add it.')}</p>
             </div>
