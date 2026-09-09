@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useClerk, useAuth as useClerkAuth, useUser } from '@clerk/react';
+import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Mail, Send, ShieldCheck, Sparkles, Upload, X } from 'lucide-react';
 
@@ -11,7 +11,6 @@ const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
 export const MentorAccessModal: React.FC<MentorAccessModalProps> = ({ open, onClose }) => {
   const { setActiveTab } = useAuth();
-  const { openSignIn } = useClerk();
   const { getToken, isSignedIn } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const [view, setView] = useState<'gate' | 'application' | 'sent'>('gate');
@@ -55,7 +54,6 @@ export const MentorAccessModal: React.FC<MentorAccessModalProps> = ({ open, onCl
 
   const handleSignIn = () => {
     onClose();
-    openSignIn({ forceRedirectUrl: window.location.href });
     setActiveTab('login');
   };
 
@@ -128,13 +126,10 @@ export const MentorAccessModal: React.FC<MentorAccessModalProps> = ({ open, onCl
           <div className="p-6 sm:p-8 space-y-7">
             {!isSignedIn ? (
               <>
-                <div className="flex gap-4 p-5 bg-dc-yellow border-2 border-outline-variant text-[#171717]">
-                  <ShieldCheck className="w-6 h-6 shrink-0 mt-0.5" />
-                  <div><p className="dc-mono text-[10px] uppercase tracking-[0.16em] font-bold">SIGN IN BEFORE APPLYING</p><p className="mt-2 text-sm leading-relaxed">Mentor applications are available only after you sign in with your official college account. Your college identity verifies that you belong to the DevCollective community.</p></div>
-                </div>
+                <div className="flex gap-4 p-5 bg-dc-yellow border-2 border-outline-variant text-[#171717]"><ShieldCheck className="w-6 h-6 shrink-0 mt-0.5" /><div><p className="dc-mono text-[10px] uppercase tracking-[0.16em] font-bold">SIGN IN BEFORE APPLYING</p><p className="mt-2 text-sm leading-relaxed">Mentor applications are available only after you sign in with your official college account. Your college identity verifies that you belong to the DevCollective community.</p></div></div>
                 {notice && <div className="p-4 bg-dc-pink border-2 border-outline-variant text-xs dc-mono" role="alert">{notice}</div>}
                 <button type="button" onClick={handleSignIn} className="w-full inline-flex items-center justify-center gap-3 bg-primary text-on-primary border-2 border-outline-variant px-6 py-4 font-bold uppercase dc-hard-shadow-sm"><Mail className="w-5 h-5" /> SIGN IN TO APPLY <ArrowRight className="w-5 h-5" /></button>
-                <div className="border-t-2 border-outline-variant pt-5 flex items-center gap-3 text-xs text-on-surface-variant"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>Already registered with your college account? Sign in first, then open your Profile to apply for mentor access.</span></div>
+                <div className="border-t-2 border-outline-variant pt-5 flex items-center gap-3 text-xs text-on-surface-variant"><CheckCircle2 className="w-4 h-4 shrink-0" /><span>After signing in, open your Profile and use the Mentor Access card to continue the application.</span></div>
               </>
             ) : (
               <>
