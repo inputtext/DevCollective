@@ -19,7 +19,11 @@ export const MentorAccessModal: React.FC<MentorAccessModalProps> = ({ open, onCl
 
   useEffect(() => {
     if (!open) return;
-    const email = String(clerkUser?.primaryEmailAddress?.emailAddress || '').trim();
+    const email = String(
+      clerkUser?.primaryEmailAddress?.emailAddress ||
+      clerkUser?.emailAddresses?.[0]?.emailAddress ||
+      ''
+    ).trim();
     const name = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(' ');
     setView('gate'); setNotice(null); setResume(null); setDraft({ ...INITIAL_DRAFT, name, email });
   }, [clerkUser, open]);
