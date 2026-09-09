@@ -4,6 +4,7 @@ import { clerkClient } from '@clerk/express';
 import { supabaseAdmin } from './supabase';
 
 const COLLEGE_EMAIL_DOMAIN = (process.env.COLLEGE_EMAIL_DOMAIN || 'ghrietn.raisoni.net').toLowerCase();
+const COLLEGE_EMAIL_PATTERN = new RegExp(`^[a-z0-9]+(?:[._-][a-z0-9]+)+\\.cse@${COLLEGE_EMAIL_DOMAIN.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}$`, 'i');
 const ADMIN_EMAILS = new Set(
   (process.env.ADMIN_EMAILS || 'raat131221@gmail.com,kanojiyapk524@gmail.com')
     .split(',')
@@ -25,7 +26,7 @@ const emailFromClerkUser = (user: any) =>
   '';
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
-export const isCollegeEmail = (email: string) => normalizeEmail(email).endsWith(`@${COLLEGE_EMAIL_DOMAIN}`);
+export const isCollegeEmail = (email: string) => COLLEGE_EMAIL_PATTERN.test(normalizeEmail(email));
 export const isAdminEmail = (email: string) => ADMIN_EMAILS.has(normalizeEmail(email));
 export const isAllowedPlatformEmail = (email: string) => isCollegeEmail(email) || isAdminEmail(email);
 
@@ -43,7 +44,7 @@ export const requirePlatformAuth = async (req: Request, res: Response, next: Nex
   try {
     const identity = await getPlatformIdentity(authUserId);
     if (!isAllowedPlatformEmail(identity.email)) {
-      return res.status(403).json({ error: `DevCollective requires an official college email ending in @${COLLEGE_EMAIL_DOMAIN}.` });
+      return res.status(403).json({ error: `Use your official college email in the format firstname.surname.cse@${COLLEGE_EMAIL_DOMAIN}.` });
     }
     (req as any).platformIdentity = identity;
     return next();
