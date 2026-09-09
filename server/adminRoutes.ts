@@ -101,8 +101,8 @@ export function registerAdminRoutes(app: Express, requireAuth: (req: Request, re
       if (!req.file) return res.status(400).json({ error: 'A PDF resume is required.' });
 
       const userId = (req as any).authUserId as string;
-      const contactEmail = normalizeEmail(String(req.body?.email || ''));
-      if (!contactEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return res.status(400).json({ error: 'Please provide a valid contact email.' });
+      const contactEmail = normalizeEmail(String(req.body?.email || identity.email));
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return res.status(400).json({ error: 'Please provide a valid contact email.' });
 
       const fields = {
         applicant_clerk_user_id: userId,
@@ -223,13 +223,13 @@ export function registerAdminRoutes(app: Express, requireAuth: (req: Request, re
       const safeName = String(application.applicant_name || 'Developer');
       const safeNote = note ? note.replaceAll('<', '&lt;').replaceAll('>', '&gt;') : '';
       const html = action === 'approved'
-        ? `<div style="font-family:Arial,sans-serif"><h1>Mentor access approved.</h1><p>Hi ${safeName},</p><p>Your DevCollective mentor application has been approved. Your account now has mentor access.</p><p>— DevCollective</p></div>`
-        : `<div style="font-family:Arial,sans-serif"><h1>Mentor application update.</h1><p>Hi ${safeName},</p><p>We reviewed your application and cannot grant mentor access at this time.</p>${safeNote ? `<p><strong>Admin note:</strong> ${safeNote}</p>` : ''}<p>You may strengthen your profile and reapply later.</p><p>— DevCollective</p></div>`;
-      await sendBrevoEmail({ to: [{ email: normalizeEmail(String(application.applicant_email || '')) }], subject, htmlContent: html });
+        ? `<div style="font-family:Arial,sans-serif"><h1>Mentor access approved.</h1><p>Hi ${safeName},</p><p>Your DevCollective mentor application has been approved. Your account now has mentor access.</p><p>${safeNote}</p><p>— DevCollective</p></div>`
+        : `<div style="font-family:Arial,sans-serif"><h1>Mentor application update.</h1><p>Hi ${safeName},</p><p>Your DevCollective mentor application was not approved at this time.</p><p>${safeNote}</p><p>You can continue using your student account and apply again when eligible.</p><p>— DevCollective</p></div>`;
+      await sendBrevoEmail({ to: [{ email: application.applicant_email }], subject, htmlContent: html });
       return res.json({ success: true, status: action });
     } catch (error: any) {
-      console.error('[admin] review failed:', error);
-      return res.status(500).json({ error: 'Could not update mentor application review.' });
+      console.error('[admin] application review failed:', error);
+      return res.status(500).json({ error: 'Could not review mentor application.' });
     }
   });
 }
