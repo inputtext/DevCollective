@@ -55,7 +55,7 @@ export const MentorAccessModal: React.FC<MentorAccessModalProps> = ({ open, onCl
     event.preventDefault(); setNotice(null);
     if (!isSignedIn || !clerkUser) { setNotice('Please sign in with your official college account before applying.'); return; }
     if (!resume) { setNotice('Please attach your resume PDF before submitting.'); return; }
-    const values = { ...draft, name: draft.name.trim(), email: draft.email.trim(), college: draft.college.trim(), branch: draft.branch.trim(), skills: draft.skills.trim(), experience: draft.experience.trim(), message: draft.message.trim() };
+    const values: ApplicationDraft = { ...draft, name: draft.name.trim(), email: draft.email.trim(), college: draft.college.trim(), branch: draft.branch.trim(), skills: draft.skills.trim(), experience: draft.experience.trim(), message: draft.message.trim() };
     if (Object.values(values).some((value) => !value)) { setNotice('Please complete every application field before submitting.'); return; }
     const token = await getToken();
     if (!token) { setNotice('Your session could not be verified. Please sign in again.'); return; }
