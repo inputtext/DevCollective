@@ -63,18 +63,29 @@ const fileToBase64 = async (file: File) => {
   return btoa(binary);
 };
 
-const sendResendEmail = async (apiKey: string, payload: Record<string, unknown>) => {
-  const response = await fetch('https://api.resend.com/emails', {
+type BrevoEmailPayload = {
+  sender: { email: string; name?: string };
+  to: Array<{ email: string; name?: string }>;
+  replyTo?: { email: string };
+  subject: string;
+  htmlContent: string;
+  attachment?: Array<{ name: string; content: string }>;
+};
+
+const sendBrevoEmail = async (apiKey: string, payload: BrevoEmailPayload) => {
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      'api-key': apiKey,
       'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
     body: JSON.stringify(payload),
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(typeof body?.message === 'string' ? body.message : `Email provider returned ${response.status}.`);
+    const message = typeof body?.message === 'string' ? body.message : `Email provider returned ${response.status}.`;
+    throw new Error(message);
   }
   return body;
 };
@@ -124,11 +135,12 @@ Deno.serve(async (request) => {
   const isPdf = resume.type === 'application/pdf' || resume.name.toLowerCase().endsWith('.pdf');
   if (!isPdf) return json(400, { error: 'Resume must be a PDF file.' }, origin);
 
-  const resendApiKey = Deno.env.get('RESEND_API_KEY');
+  const brevoApiKey = Deno.env.get('BREVO_API_KEY');
   const recipient = Deno.env.get('MENTOR_APPLICATION_EMAIL');
-  const sender = Deno.env.get('RESEND_FROM_EMAIL');
-  if (!resendApiKey || !recipient || !sender) {
-    console.error('[mentor-application] Email service is not configured.');
+  const senderEmail = Deno.env.get('BREVO_SENDER_EMAIL');
+  const senderName = Deno.env.get('BREVO_SENDER_NAME') || 'DevCollective';
+  if (!brevoApiKey || !recipient || !senderEmail) {
+    console.error('[mentor-application] Brevo email service is not configured.');
     return json(503, { error: 'Mentor applications are temporarily unavailable. Please try again later.' }, origin);
   }
 
@@ -156,21 +168,21 @@ Deno.serve(async (request) => {
       </div>
     `;
 
-    await sendResendEmail(resendApiKey, {
-      from: sender,
-      to: [recipient],
-      reply_to: email,
+    await sendBrevoEmail(brevoApiKey, {
+      sender: { email: senderEmail, name: senderName },
+      to: [{ email: recipient }],
+      replyTo: { email },
       subject,
-      html,
-      attachments: [{ filename: resume.name, content: resumeBase64 }],
+      htmlContent: html,
+      attachment: [{ name: resume.name, content: resumeBase64 }],
     });
 
     try {
-      await sendResendEmail(resendApiKey, {
-        from: sender,
-        to: [email],
+      await sendBrevoEmail(brevoApiKey, {
+        sender: { email: senderEmail, name: senderName },
+        to: [{ email }],
         subject: 'DevCollective Mentor Application Received',
-        html: `<div style="font-family:Arial,sans-serif;line-height:1.55;color:#171717"><h1>Application received.</h1><p>Hi ${escapeHtml(name)},</p><p>Your DevCollective mentor application was received successfully. The developer team will review your profile and contact you about the next step.</p><p>Thank you for your interest in helping other developers grow.</p><p>— DevCollective</p></div>`,
+        htmlContent: `<div style="font-family:Arial,sans-serif;line-height:1.55;color:#171717"><h1>Application received.</h1><p>Hi ${escapeHtml(name)},</p><p>Your DevCollective mentor application was received successfully. The developer team will review your profile and contact you about the next step.</p><p>Thank you for your interest in helping other developers grow.</p><p>— DevCollective</p></div>`,
       });
     } catch (confirmationError) {
       console.error('[mentor-application] Applicant confirmation email failed:', confirmationError);
