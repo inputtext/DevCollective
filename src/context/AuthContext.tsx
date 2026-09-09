@@ -21,7 +21,7 @@ const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
 const PROFILE_CACHE_PREFIX = 'devcollective_profile_cache:';
 const MENTORS_CACHE_KEY = 'devcollective_mentors_cache:v2';
 const PROFILE_CACHE_TTL_MS = 60 * 1000;
-const MENTORS_CACHE_TTL_MS = 5 * 60 * 1000;
+const MENTORS_CACHE_TTL_MS = 0;
 const buildPendingRegistration = (details: Partial<UserProfile>) => ({ name: details.name || '', role: details.role || 'student', college: details.college || '', branch: details.branch || '', academicYear: details.academicYear || '' });
 const readStorageJson = <T,>(storage: Storage, key: string): T | null => { try { const raw = storage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; } };
 const writeStorageJson = (storage: Storage, key: string, value: unknown) => { try { storage.setItem(key, JSON.stringify(value)); } catch {} };
