@@ -101,13 +101,12 @@ export function registerAdminRoutes(app: Express, requireAuth: (req: Request, re
       if (!req.file) return res.status(400).json({ error: 'A PDF resume is required.' });
 
       const userId = (req as any).authUserId as string;
-      const email = identity.email;
-      const suppliedEmail = normalizeEmail(String(req.body?.email || ''));
-      if (suppliedEmail && suppliedEmail !== email) return res.status(400).json({ error: 'Use the same verified college email as your DevCollective account.' });
+      const contactEmail = normalizeEmail(String(req.body?.email || ''));
+      if (!contactEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return res.status(400).json({ error: 'Please provide a valid contact email.' });
 
       const fields = {
         applicant_clerk_user_id: userId,
-        applicant_email: email,
+        applicant_email: contactEmail,
         applicant_name: String(req.body?.name || '').trim().slice(0, 150),
         college: String(req.body?.college || '').trim().slice(0, 250),
         branch: String(req.body?.branch || '').trim().slice(0, 150),
@@ -130,10 +129,10 @@ export function registerAdminRoutes(app: Express, requireAuth: (req: Request, re
       const { data: application, error } = await supabaseAdmin.from('devcollective_mentor_applications').insert({ ...fields, resume_storage_path: storagePath }).select('id,applicant_email,applicant_name,college,branch,skills,experience,motivation,resume_file_name,status,created_at').single();
       if (error) throw error;
 
-      const html = `<div style="font-family:Arial,sans-serif;line-height:1.55;color:#171717"><h1>New DevCollective Mentor Application</h1><p><strong>Name:</strong> ${fields.applicant_name}</p><p><strong>Email:</strong> ${fields.applicant_email}</p><p><strong>College:</strong> ${fields.college}</p><p><strong>Branch:</strong> ${fields.branch}</p><h2>Skills</h2><p>${fields.skills}</p><h2>Experience</h2><p>${fields.experience}</p><h2>Motivation</h2><p>${fields.motivation}</p><p><strong>Resume:</strong> ${fields.resume_file_name}</p></div>`;
+      const html = `<div style="font-family:Arial,sans-serif;line-height:1.55;color:#171717"><h1>New DevCollective Mentor Application</h1><p><strong>Name:</strong> ${fields.applicant_name}</p><p><strong>Contact Email:</strong> ${fields.applicant_email}</p><p><strong>Verified College Account:</strong> ${identity.email}</p><p><strong>College:</strong> ${fields.college}</p><p><strong>Branch:</strong> ${fields.branch}</p><h2>Skills</h2><p>${fields.skills}</p><h2>Experience</h2><p>${fields.experience}</p><h2>Motivation</h2><p>${fields.motivation}</p><p><strong>Resume:</strong> ${fields.resume_file_name}</p></div>`;
       const bytes = req.file.buffer.toString('base64');
-      await sendBrevoEmail({ to: [{ email: process.env.MENTOR_APPLICATION_EMAIL || 'devcollective0@gmail.com' }], replyTo: { email }, subject: `Mentor Application — ${fields.applicant_name}`, htmlContent: html, attachment: [{ name: fields.resume_file_name, content: bytes }] });
-      await sendBrevoEmail({ to: [{ email }], subject: 'DevCollective Mentor Application Received', htmlContent: `<div style="font-family:Arial,sans-serif"><h1>Application received.</h1><p>Hi ${fields.applicant_name},</p><p>Your DevCollective mentor application is now under review. The developer/admin team will contact you after verification.</p><p>— DevCollective</p></div>` });
+      await sendBrevoEmail({ to: [{ email: process.env.MENTOR_APPLICATION_EMAIL || 'devcollective0@gmail.com' }], replyTo: { email: contactEmail }, subject: `Mentor Application — ${fields.applicant_name}`, htmlContent: html, attachment: [{ name: fields.resume_file_name, content: bytes }] });
+      await sendBrevoEmail({ to: [{ email: contactEmail }], subject: 'DevCollective Mentor Application Received', htmlContent: `<div style="font-family:Arial,sans-serif"><h1>Application received.</h1><p>Hi ${fields.applicant_name},</p><p>Your DevCollective mentor application is now under review. The developer/admin team will contact you after verification.</p><p>— DevCollective</p></div>` });
       return res.status(201).json({ success: true, application });
     } catch (error: any) {
       console.error('[mentor] application submission failed:', error);
@@ -211,23 +210,26 @@ export function registerAdminRoutes(app: Express, requireAuth: (req: Request, re
       if (applicationError || !application) return res.status(404).json({ error: 'Mentor application not found.' });
       if (application.status !== 'pending') return res.status(409).json({ error: 'This application has already been reviewed.' });
 
-      const { error: updateError } = await supabaseAdmin.from('devcollective_mentor_applications').update({ status: action, review_note: note, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() }).eq('id', application.id);
+      const reviewedAt = new Date().toISOString();
+      const { error: updateError } = await supabaseAdmin.from('devcollective_mentor_applications').update({ status: action, review_note: note, reviewed_by: reviewerId, reviewed_at: reviewedAt }).eq('id', application.id);
       if (updateError) throw updateError;
 
       if (action === 'approved') {
-        const { error: profileError } = await supabaseAdmin.from('devcollective_profiles').update({ role: 'mentor', mentor_verified_at: new Date().toISOString() }).eq('clerk_user_id', application.applicant_clerk_user_id);
+        const { error: profileError } = await supabaseAdmin.from('devcollective_profiles').update({ role: 'mentor', mentor_verified_at: reviewedAt }).eq('clerk_user_id', application.applicant_clerk_user_id);
         if (profileError) throw profileError;
       }
 
       const subject = action === 'approved' ? 'DevCollective Mentor Application Approved' : 'DevCollective Mentor Application Update';
+      const safeName = String(application.applicant_name || 'Developer');
+      const safeNote = note ? note.replaceAll('<', '&lt;').replaceAll('>', '&gt;') : '';
       const html = action === 'approved'
-        ? `<div style="font-family:Arial,sans-serif"><h1>Mentor access approved.</h1><p>Hi ${application.applicant_name},</p><p>Your DevCollective mentor application has been approved. Your account now has mentor access.</p><p>— DevCollective</p></div>`
-        : `<div style="font-family:Arial,sans-serif"><h1>Mentor application update.</h1><p>Hi ${application.applicant_name},</p><p>We reviewed your application and cannot grant mentor access at this time.</p>${note ? `<p><strong>Admin note:</strong> ${note.replaceAll('<','&lt;').replaceAll('>','&gt;')}</p>` : ''}<p>You may strengthen your profile and reapply later.</p><p>— DevCollective</p></div>`;
-      await sendBrevoEmail({ to: [{ email: application.applicant_email }], subject, htmlContent: html });
+        ? `<div style="font-family:Arial,sans-serif"><h1>Mentor access approved.</h1><p>Hi ${safeName},</p><p>Your DevCollective mentor application has been approved. Your account now has mentor access.</p><p>— DevCollective</p></div>`
+        : `<div style="font-family:Arial,sans-serif"><h1>Mentor application update.</h1><p>Hi ${safeName},</p><p>We reviewed your application and cannot grant mentor access at this time.</p>${safeNote ? `<p><strong>Admin note:</strong> ${safeNote}</p>` : ''}<p>You may strengthen your profile and reapply later.</p><p>— DevCollective</p></div>`;
+      await sendBrevoEmail({ to: [{ email: normalizeEmail(String(application.applicant_email || '')) }], subject, htmlContent: html });
       return res.json({ success: true, status: action });
     } catch (error: any) {
-      console.error('[admin] application review failed:', error);
-      return res.status(500).json({ error: 'Could not review this mentor application.' });
+      console.error('[admin] review failed:', error);
+      return res.status(500).json({ error: 'Could not update mentor application review.' });
     }
   });
 }
