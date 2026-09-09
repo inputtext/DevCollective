@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/react';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Mail, Send, ShieldCheck, Sparkles, Upload, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Mail, Send, ShieldCheck, Upload, X } from 'lucide-react';
 
 type MentorAccessModalProps = { open: boolean; onClose: () => void };
 type ApplicationDraft = { name: string; email: string; college: string; branch: string; skills: string; experience: string; message: string };
