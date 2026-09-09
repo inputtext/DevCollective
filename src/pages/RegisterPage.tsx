@@ -3,6 +3,7 @@ import { useSignUp } from '@clerk/react';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
 import { MentorAccessModal } from '../components/MentorAccessModal';
+import { getPlatformEmailError, isAllowedPlatformEmail } from '../lib/accessControl';
 import { ArrowLeft, ArrowRight, School, Brain, Building2, Eye, EyeOff, AlertCircle, UserRound, Mail, LockKeyhole, GraduationCap, CheckCircle2 } from 'lucide-react';
 
 const PENDING_REGISTRATION_KEY = 'devcollective_pending_registration';
@@ -46,6 +47,7 @@ export const RegisterPage: React.FC = () => {
     event.preventDefault(); setError(null); setSuccess(null);
     const normalizedName = fullName.trim(), normalizedEmail = email.trim(), normalizedCollege = collegeName.trim(), normalizedBranch = branch.trim();
     if (!normalizedName || !normalizedEmail || !password || !normalizedCollege || !normalizedBranch) { setError('Please complete all required fields before creating your account.'); return; }
+    if (!isAllowedPlatformEmail(normalizedEmail)) { setError(getPlatformEmailError()); return; }
     if (password.length < 8) { setError('Please choose a password with at least 8 characters.'); return; }
     savePendingRegistration();
     const { firstName, lastName } = splitName(normalizedName);
@@ -130,7 +132,7 @@ export const RegisterPage: React.FC = () => {
                 </div>
                 <div><p className={`${labelClass} mb-4`}>02 / Identity</p><div className="grid sm:grid-cols-2 gap-5">
                   <div className="space-y-2"><label className={labelClass}>Full Name</label><div className="relative"><UserRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" /><input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" className={`${inputClass} pl-10`} required /></div></div>
-                  <div className="space-y-2"><label className={labelClass}>Email Address</label><div className="relative"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@example.com" className={`${inputClass} pl-10`} required /></div></div>
+                  <div className="space-y-2"><label className={labelClass}>Email Address</label><div className="relative"><Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" /><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="john@ghrietn.raisoni.net" className={`${inputClass} pl-10`} required /></div></div>
                   <div className="space-y-2"><label className={labelClass}>Password</label><div className="relative"><LockKeyhole className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" /><input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" className={`${inputClass} pl-10 pr-11`} required /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button></div></div>
                   <div className="space-y-2"><label className={labelClass}>College Name</label><div className="relative"><GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-on-surface-variant" /><input type="text" value={collegeName} onChange={(e) => setCollegeName(e.target.value)} placeholder="Institute of Technology" className={`${inputClass} pl-10`} required /></div></div>
                   <div className="space-y-2"><label className={labelClass}>Branch</label><input type="text" value={branch} onChange={(e) => setBranch(e.target.value)} placeholder="Computer Science" className={inputClass} required /></div>

@@ -19,6 +19,7 @@ export interface UserProfile {
   selectedDomains: string[];
   authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
+  mentorVerifiedAt?: string | null;
   createdAt: string;
 }
 
@@ -97,6 +98,7 @@ export interface Mentor {
   bio: string;
   availability: string;
   isBusy?: boolean;
+  verified?: boolean;
 }
 
 export interface RoadmapLevel {

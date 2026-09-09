@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
+import { useAdminAccess } from '../hooks/useAdminAccess';
 import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ReadingModeToggle } from './ReadingModeToggle';
@@ -19,6 +20,7 @@ const timeAgo = (value: string) => {
 
 export const Navbar: React.FC = () => {
  const { user, activeTab, setActiveTab, logout } = useAuth();
+ const { isAdmin } = useAdminAccess();
  const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead, refreshNotifications } = useNotifications();
  const { openProfile, loadSocialSummary, respondToConnection } = useSocial();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -126,6 +128,6 @@ export const Navbar: React.FC = () => {
    </div>
    {user ? <div className="flex items-center gap-2"><button onClick={() => go('profile')} className="flex items-center gap-2 bg-surface border-2 border-outline-variant p-1 pr-2 sm:pr-3 hover:border-primary"><img src={user.avatar} alt={user.name} className="w-8 h-8 object-cover border border-outline-variant" /><span className="dc-mono text-[9px] text-primary hidden sm:block">{user.rep.toLocaleString()} REP</span></button><button onClick={logout} title="Logout" className="p-2 border-2 border-transparent hover:border-error text-on-surface-variant"><LogOut className="w-4 h-4" /></button></div> : <div className="flex items-center gap-1 sm:gap-2"><button onClick={() => go('login')} className="dc-mono text-[10px] uppercase px-3 py-2 text-on-surface-variant hover:text-primary">Login</button><button onClick={() => go('register')} className="dc-mono text-[10px] uppercase px-4 py-2 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm">Register</button></div>}
   </div>
-  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ['admin', 'Admin Terminal']].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><div className="mt-3 p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase">C·FLOW / Integration in build</div></div>}
+  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ...(isAdmin ? [['admin', 'Admin Terminal']] : [])].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><div className="mt-3 p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase">C·FLOW / Integration in build</div></div>}
  </header>;
 };
