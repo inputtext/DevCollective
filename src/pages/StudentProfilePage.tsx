@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DeleteAccountSection } from '../components/DeleteAccountSection';
+import { MentorAccessModal } from '../components/MentorAccessModal';
 import { SocialNetworkPanel } from '../components/SocialNetworkPanel';
-import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity, X, Loader2, Save } from 'lucide-react';
+import { Flame, Github, Linkedin, Pencil, Compass, ArrowRight, Code2, Link2, Activity, X, Loader2, Save, ShieldCheck } from 'lucide-react';
 
 export const StudentProfilePage: React.FC = () => {
   const { user, setActiveTab, updateProfile } = useAuth();
   const [showIdentityEditor, setShowIdentityEditor] = useState(false);
+  const [mentorAccessOpen, setMentorAccessOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editCollege, setEditCollege] = useState('');
   const [identitySaving, setIdentitySaving] = useState(false);
@@ -91,6 +93,23 @@ export const StudentProfilePage: React.FC = () => {
         </div>
       </section>
 
+      {user.role === 'student' && (
+        <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+          <div className="absolute inset-x-0 top-0 h-2 bg-dc-yellow" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div className="w-11 h-11 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center shrink-0"><ShieldCheck className="w-5 h-5" /></div>
+              <div>
+                <p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">MENTOR PATH / VERIFIED ACCESS</p>
+                <h3 className="dc-display text-3xl mt-1">WANT TO HELP OTHERS BUILD?</h3>
+                <p className="text-sm text-on-surface-variant mt-2 max-w-2xl leading-relaxed">Apply for verified mentor access. Your application and resume are reviewed by the DevCollective developer/admin team before your role is upgraded.</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => setMentorAccessOpen(true)} className="shrink-0 inline-flex items-center justify-center gap-2 bg-primary text-on-primary border-2 border-outline-variant px-5 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[4px_4px_0_#171717] hover:-translate-y-0.5 transition-transform">Apply to become a mentor <ArrowRight className="w-4 h-4" /></button>
+          </div>
+        </section>
+      )}
+
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(({ label, value, tone }) => (
           <div key={label} className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-5 shadow-[4px_4px_0_#171717]">
@@ -155,6 +174,7 @@ export const StudentProfilePage: React.FC = () => {
       <DeleteAccountSection />
 
       {showIdentityEditor && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 sm:p-7 max-w-lg w-full shadow-[7px_7px_0_#171717] relative"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="absolute top-3 right-3 p-1 disabled:opacity-40" aria-label="Close editor"><X className="w-5 h-5" /></button><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">PROFILE / IDENTITY</p><h3 className="dc-display text-4xl mt-2">UPDATE SIGNAL.</h3><p className="text-sm text-on-surface-variant mt-2 mb-6">Keep the public identity on your DevCollective profile current.</p><form onSubmit={saveIdentity} className="space-y-4"><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">Full name</span><input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={100} autoFocus disabled={identitySaving} className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">College / Institution</span><input value={editCollege} onChange={(e) => setEditCollege(e.target.value)} maxLength={160} disabled={identitySaving} placeholder="Your college or institution" className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label>{identityError && <p className="text-xs text-error">{identityError}</p>}<div className="flex gap-3 pt-2"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="flex-1 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase">Cancel</button><button type="submit" disabled={identitySaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] flex items-center justify-center gap-2">{identitySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {identitySaving ? 'Saving...' : 'Save changes'}</button></div></form></div></div>}
+      <MentorAccessModal open={mentorAccessOpen} onClose={() => setMentorAccessOpen(false)} />
     </div>
   );
 };
