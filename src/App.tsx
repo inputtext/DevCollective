@@ -16,6 +16,7 @@ import { ChatWidget } from './components/ChatWidget';
 import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 import { MotionSystem } from './components/MotionSystem';
 import { usePlatformAccess } from './hooks/usePlatformAccess';
+import { useAdminAccess } from './hooks/useAdminAccess';
 import './styles/profile-setup.css';
 import './styles/login.css';
 import './styles/login-modern.css';
@@ -81,6 +82,7 @@ const MainContent: React.FC = () => {
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
   const platformAccess = usePlatformAccess(isProtected);
+  const adminAccess = useAdminAccess();
   const wasAuthenticatedRef = React.useRef(false);
 
   useEffect(() => {
@@ -98,7 +100,9 @@ const MainContent: React.FC = () => {
 
   if (isProtected && !platformAccess.allowed) return <div className="dc-app-shell min-h-screen bg-background text-on-background"><Navbar /><div className="max-w-xl mx-auto mt-12 p-8 bg-surface border-2 border-outline-variant dc-hard-shadow text-center space-y-5"><div className="inline-flex px-3 py-1 bg-dc-pink border-2 border-outline-variant font-label-mono text-[9px] uppercase">ACCESS / RESTRICTED</div><h2 className="dc-display text-4xl">COLLEGE IDENTITY REQUIRED.</h2><p className="text-sm leading-relaxed text-on-surface-variant">{platformAccess.error || 'DevCollective is limited to official college accounts.'}</p><p className="text-xs text-on-surface-variant break-all">Detected account: <strong>{platformAccess.email || 'unknown'}</strong></p><button onClick={() => void platformAccess.rejectAndSignOut()} className="w-full py-3 bg-primary text-on-primary font-bold border-2 border-outline-variant dc-hard-shadow-sm">SIGN OUT</button></div></div>;
 
-  if (activeTab === 'admin' && user?.role !== 'admin') return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><Sidebar /><div className="flex-1 flex flex-col min-w-0"><Navbar /><main className="flex-1 p-6 md:p-10 min-w-0"><div className="max-w-xl mx-auto p-8 bg-surface-container border-2 border-outline-variant rounded-xl text-center space-y-4 dc-hard-shadow-sm"><div className="w-16 h-16 bg-dc-pink border-2 border-outline-variant flex items-center justify-center mx-auto font-bold text-xl">403</div><h2 className="font-headline-md text-2xl font-bold">Access Denied</h2><p className="text-sm text-on-surface-variant">The Admin portal is restricted to users with the <span className="font-bold uppercase">Admin</span> role.</p><button onClick={() => setActiveTab('dashboard')} className="px-6 py-3 bg-surface border-2 border-outline-variant font-bold dc-hard-shadow-sm">Return to Dashboard</button></div></main></div></div>;
+  if (activeTab === 'admin' && !adminAccess.isAdmin) {
+    return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><Sidebar /><div className="flex-1 flex flex-col min-w-0"><Navbar /><main className="flex-1 p-6 md:p-10 min-w-0"><div className="max-w-xl mx-auto p-8 bg-surface-container border-2 border-outline-variant rounded-xl text-center space-y-4 dc-hard-shadow-sm"><div className="w-16 h-16 bg-dc-pink border-2 border-outline-variant flex items-center justify-center mx-auto font-bold text-xl">403</div><h2 className="font-headline-md text-2xl font-bold">Access Denied</h2><p className="text-sm text-on-surface-variant">The Admin portal is restricted to users with verified DevCollective administrator access.</p><button onClick={() => setActiveTab('dashboard')} className="px-6 py-3 bg-surface border-2 border-outline-variant font-bold dc-hard-shadow-sm">Return to Dashboard</button></div></main></div></div>;
+  }
 
   const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(activeTab);
   return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}>{activeTab === 'landing' && <LandingPage />}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === ('level-0' as typeof activeTab) && <Level0Page />}</Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
