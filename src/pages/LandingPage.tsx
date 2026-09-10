@@ -24,6 +24,8 @@ const modules = [
 
 const marqueeItems = ['LEARN BY SHIPPING', 'BUILD IN PUBLIC', 'FIND YOUR PEOPLE', 'MENTORSHIP', 'ROADMAPS', 'PROOF OF WORK', 'SHIP IT', 'C·FLOW READY'];
 
+const CFLOW_LANDING_URL = 'https://cflow-landing-web.onrender.com';
+
 export const LandingPage: React.FC = () => {
   const { setActiveTab } = useAuth();
 
@@ -160,14 +162,27 @@ export const LandingPage: React.FC = () => {
           <ScrollReveal>
             <div className="grid lg:grid-cols-[1fr_auto] gap-10 items-center">
               <div>
-                <div className="flex items-center gap-3 dc-mono text-xs uppercase tracking-[0.2em] mb-5"><Terminal className="w-4 h-4" />04 / NEXT MODULE — C·FLOW</div>
-                <h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl text-[#171717] max-w-5xl">See what you build.</h2>
-                <p className="mt-6 max-w-2xl text-base sm:text-lg leading-relaxed text-[#171717]/70">DevCollective is being shaped to become the home for C·FLOW — connecting the developer collective with a visual environment for understanding C and C++ execution.</p>
+                <div className="flex items-center gap-3 dc-mono text-xs uppercase tracking-[0.2em] mb-5"><Terminal className="w-4 h-4" />04 / C·FLOW — VISUAL EXECUTION</div>
+                <h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl text-[#171717] max-w-5xl">Understand the flow.<br /><span className="text-primary">See the execution.</span></h2>
+                <p className="mt-6 max-w-3xl text-base sm:text-lg leading-relaxed text-[#171717]/75">C·FLOW turns C and C++ code into a visual execution experience. Parse the program, follow control flow, inspect state changes, and understand what happens step by step instead of reading a wall of code and guessing.</p>
+                <div className="mt-8 grid sm:grid-cols-3 gap-3">
+                  {[{ n: '01', title: 'PARSE', text: 'Read the structure of your C/C++ program.' }, { n: '02', title: 'EXECUTE', text: 'Follow statements and state changes step by step.' }, { n: '03', title: 'VISUALIZE', text: 'See control flow, loops, branches, and execution state.' }].map((item) => (
+                    <div key={item.n} className="border-2 border-[#171717] bg-[#FFF9F0] p-5 sm:p-6">
+                      <span className="dc-mono text-[10px]">{item.n}</span>
+                      <h3 className="dc-display text-2xl sm:text-3xl mt-8 mb-2">{item.title}</h3>
+                      <p className="text-sm leading-relaxed text-[#171717]/70">{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <a href={CFLOW_LANDING_URL} target="_blank" rel="noreferrer" className="dc-hard-shadow-sm inline-flex items-center gap-3 px-6 py-4 bg-[#171717] text-[#FFF9F0] border-2 border-[#171717] font-bold uppercase tracking-wide">Open C·FLOW <ArrowRight className="w-4 h-4" /></a>
+                  <span className="dc-mono text-[9px] uppercase tracking-[0.14em] text-[#171717]/60">Dedicated visual execution environment</span>
+                </div>
               </div>
               <div className="border-2 border-[#171717] bg-[#FFF9F0] p-6 sm:p-8 dc-hard-shadow-sm min-w-[250px]">
                 <div className="flex items-start justify-between gap-4"><SystemSignal /><Activity className="w-5 h-5" /></div>
                 <div className="dc-mono text-[10px] uppercase tracking-[0.16em] mt-7">Integration status</div>
-                <div className="dc-display text-4xl mt-2">IN BUILD</div>
+                <div className="dc-display text-4xl mt-2">LIVE / READY</div>
                 <div className="mt-5 border-t-2 border-[#171717] pt-4 dc-mono text-[9px] uppercase leading-relaxed">C·FLOW / VISUAL EXECUTION<br />DEVCO / COMMUNITY LAYER</div>
               </div>
             </div>
