@@ -1,13 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
 import { useAdminAccess } from '../hooks/useAdminAccess';
-import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin } from 'lucide-react';
+import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin, ChevronDown, Command, ArrowUpRight } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ReadingModeToggle } from './ReadingModeToggle';
 
 const CFLOW_LANDING_URL = 'https://cflow-landing-web.onrender.com';
+
+const tabLabels: Record<string, string> = {
+ dashboard: 'Dashboard',
+ community: 'Community',
+ roadmap: 'Roadmaps',
+ leaderboard: 'Leaderboard',
+ mentors: 'Mentors',
+ profile: 'Profile',
+ admin: 'Admin Terminal',
+ 'level-0': 'Level 0',
+};
 
 const timeAgo = (value: string) => {
  const seconds = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
@@ -26,20 +37,35 @@ export const Navbar: React.FC = () => {
  const { notifications, unreadCount, panelOpen, setPanelOpen, markAllRead, markRead, refreshNotifications } = useNotifications();
  const { openProfile, loadSocialSummary, respondToConnection } = useSocial();
  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+ const [userMenuOpen, setUserMenuOpen] = useState(false);
  const [connectionActionBusy, setConnectionActionBusy] = useState<string | null>(null);
  const [connectionActionError, setConnectionActionError] = useState<string | null>(null);
+ const searchRef = useRef<HTMLInputElement>(null);
  const isStandalone = ['landing', 'login', 'register'].includes(activeTab);
- const go = (tab: Parameters<typeof setActiveTab>[0]) => { setActiveTab(tab); setMobileMenuOpen(false); };
+ const pageLabel = tabLabels[activeTab] || 'Workspace';
+ const go = (tab: Parameters<typeof setActiveTab>[0]) => { setActiveTab(tab); setMobileMenuOpen(false); setUserMenuOpen(false); };
 
  useEffect(() => {
-   if (!panelOpen) return;
+   if (!panelOpen && !userMenuOpen) return;
    const handleOutside = (event: MouseEvent) => {
      const target = event.target as HTMLElement;
-     if (!target.closest('[data-notification-panel]')) setPanelOpen(false);
+     if (panelOpen && !target.closest('[data-notification-panel]')) setPanelOpen(false);
+     if (userMenuOpen && !target.closest('[data-user-menu]')) setUserMenuOpen(false);
    };
    document.addEventListener('mousedown', handleOutside);
    return () => document.removeEventListener('mousedown', handleOutside);
- }, [panelOpen, setPanelOpen]);
+ }, [panelOpen, setPanelOpen, userMenuOpen]);
+
+ useEffect(() => {
+   const handleShortcut = (event: KeyboardEvent) => {
+     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+       event.preventDefault();
+       searchRef.current?.focus();
+     }
+   };
+   document.addEventListener('keydown', handleShortcut);
+   return () => document.removeEventListener('keydown', handleShortcut);
+ }, []);
 
  const notificationCopy = (type: string) => {
    if (type === 'post_like') return 'liked your post.';
@@ -94,42 +120,83 @@ export const Navbar: React.FC = () => {
    window.open(url, '_blank', 'noopener,noreferrer');
  };
 
- return <header className="sticky top-0 z-40 h-[74px] border-b-2 border-outline-variant bg-background/90 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 lg:px-10">
-  <div className="flex items-center gap-3 min-w-0">
-   <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden p-2 border-2 border-outline-variant bg-surface" aria-label="Toggle menu">{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
-   {isStandalone ? <button onClick={() => go(user ? 'dashboard' : 'landing')} className="flex items-center gap-3"><span className="w-9 h-9 border-2 border-outline-variant bg-primary flex items-center justify-center text-on-primary dc-hard-shadow-sm"><Terminal className="w-5 h-5" /></span><span className="dc-display text-xl sm:text-2xl font-bold tracking-tight hidden sm:block">DEV_COLLECTIVE</span></button> : <div className="flex items-center gap-3 w-full max-w-md border-2 border-outline-variant bg-surface px-4 py-2.5"><Search className="w-4 h-4 text-on-surface-variant" /><input type="text" placeholder="Search projects, mentors, roadmaps..." className="bg-transparent border-none outline-none text-xs sm:text-sm w-full text-on-surface placeholder:text-on-surface-variant" /></div>}
-  </div>
-  <div className="flex items-center gap-2 sm:gap-3">
-   <a href={CFLOW_LANDING_URL} aria-label="Open C·FLOW" className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary hover:-translate-y-0.5 transition-transform"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW</a>
-   {user && <ReadingModeToggle />}
-   <ThemeToggle />
-   <div className="relative" data-notification-panel>
-    <button onClick={() => setPanelOpen(!panelOpen)} className={`relative p-2 border-2 hover:border-outline-variant hover:bg-surface ${unreadCount ? 'text-primary' : 'border-transparent text-on-surface-variant'}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
-      <Bell className={`w-5 h-5 ${unreadCount ? 'animate-[dcBell_1.8s_ease-in-out_infinite]' : ''}`} />
-      {unreadCount > 0 && <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-dc-pink border-2 border-outline-variant text-[9px] font-bold flex items-center justify-center text-black">{unreadCount > 9 ? '9+' : unreadCount}</span>}
-    </button>
-    {panelOpen && <div className="absolute right-0 mt-3 w-[min(380px,calc(100vw-24px))] bg-surface border-2 border-outline-variant shadow-[7px_7px_0_#171717] z-50 overflow-hidden">
-      <div className="flex items-center justify-between gap-4 px-4 py-3 border-b-2 border-outline-variant">
-       <div><p className="dc-mono text-[10px] uppercase font-bold text-primary">Notifications</p><p className="text-[11px] text-on-surface-variant mt-0.5">Community activity on your work</p></div>
-       <button onClick={() => void markAllRead()} disabled={!unreadCount} className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-on-surface-variant hover:text-primary disabled:opacity-40"><CheckCheck className="w-3.5 h-3.5" /> Mark read</button>
+ return <header className="sticky top-0 z-40 border-b-2 border-outline-variant bg-background/92 backdrop-blur-xl">
+  <div className="h-[74px] flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+   <div className="flex items-center gap-3 min-w-0 flex-1">
+    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden w-10 h-10 shrink-0 border-2 border-outline-variant bg-surface flex items-center justify-center hover:border-primary transition-colors" aria-label="Toggle menu">{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</button>
+
+    {isStandalone ? <button onClick={() => go(user ? 'dashboard' : 'landing')} className="flex items-center gap-3 shrink-0"><span className="w-9 h-9 border-2 border-outline-variant bg-primary flex items-center justify-center text-on-primary dc-hard-shadow-sm"><Terminal className="w-5 h-5" /></span><span className="dc-display text-xl sm:text-2xl font-bold tracking-tight hidden sm:block">DEV_COLLECTIVE</span></button> : <>
+      <div className="hidden xl:flex flex-col min-w-[165px] pr-5 border-r-2 border-outline-variant/60">
+       <span className="dc-mono text-[8px] uppercase tracking-[0.18em] text-on-surface-variant">Workspace / 00</span>
+       <span className="dc-display text-sm font-bold uppercase tracking-tight mt-0.5 truncate">{pageLabel}</span>
       </div>
-      <div className="max-h-[360px] overflow-y-auto">
-       {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone interacts with your work, it will appear here.</p></div> : notifications.map((notification) => <div key={notification.id} onClick={() => handleNotificationClick(notification)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleNotificationClick(notification); } }} role="button" tabIndex={0} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors cursor-pointer ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
-         {notification.actorAvatar ? <img src={notification.actorAvatar} alt={notification.actorName} className="w-9 h-9 border-2 border-outline-variant object-cover shrink-0" /> : <div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center font-bold shrink-0">{notification.actorName.slice(0, 1)}</div>}
-         <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}
-         {notification.type === 'connection_request' && (notification.actorGithubUrl || notification.actorLinkedinUrl) && <div className="flex flex-wrap items-center gap-2 mt-3">
-           {notification.actorGithubUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorGithubUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-blue"><Github className="w-3 h-3" /> GitHub</button>}
-           {notification.actorLinkedinUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorLinkedinUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-lavender"><Linkedin className="w-3 h-3" /> LinkedIn</button>}
-           <button type="button" onClick={(event) => { event.stopPropagation(); openProfile(notification.actorId); }} className="px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-mint">View profile</button>
-         </div>}
-         <div className="flex items-center justify-between gap-3 mt-2"><p className="dc-mono text-[8px] uppercase text-on-surface-variant">{timeAgo(notification.createdAt)}</p>{notification.type === 'connection_request' && <button type="button" onClick={(event) => { event.stopPropagation(); void handleAcceptConnection(notification); }} disabled={connectionActionBusy === notification.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold shadow-[2px_2px_0_#171717] disabled:opacity-50">{connectionActionBusy === notification.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} {connectionActionBusy === notification.id ? 'Accepting' : 'Accept'}</button>}</div></div>
-       </div>)}
-       {connectionActionError && <div className="px-4 py-3 text-[10px] text-error border-t border-outline-variant/40">{connectionActionError}</div>}
-      </div>
-    </div>}
+      <label className="relative flex items-center gap-3 w-full max-w-xl border-2 border-outline-variant bg-surface px-3.5 py-2.5 transition-colors focus-within:border-primary focus-within:shadow-[3px_3px_0_var(--outline-variant)]">
+       <Search className="w-4 h-4 text-on-surface-variant shrink-0" />
+       <input ref={searchRef} type="text" placeholder="Search projects, mentors, roadmaps..." className="bg-transparent border-none outline-none text-xs sm:text-sm w-full text-on-surface placeholder:text-on-surface-variant" />
+       <span className="hidden sm:flex items-center gap-1 px-1.5 py-1 border border-outline-variant/60 text-[8px] dc-mono text-on-surface-variant shrink-0"><Command className="w-2.5 h-2.5" />K</span>
+      </label>
+    </>}
    </div>
-   {user ? <div className="flex items-center gap-2"><button onClick={() => go('profile')} className="flex items-center gap-2 bg-surface border-2 border-outline-variant p-1 pr-2 sm:pr-3 hover:border-primary"><img src={user.avatar} alt={user.name} className="w-8 h-8 object-cover border border-outline-variant" /><span className="dc-mono text-[9px] text-primary hidden sm:block">{user.rep.toLocaleString()} REP</span></button><button onClick={logout} title="Logout" className="p-2 border-2 border-transparent hover:border-error text-on-surface-variant"><LogOut className="w-4 h-4" /></button></div> : <div className="flex items-center gap-1 sm:gap-2"><button onClick={() => go('login')} className="dc-mono text-[10px] uppercase px-3 py-2 text-on-surface-variant hover:text-primary">Login</button><button onClick={() => go('register')} className="dc-mono text-[10px] uppercase px-4 py-2 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm">Register</button></div>}
+
+   <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+    <a href={CFLOW_LANDING_URL} target="_blank" rel="noreferrer" aria-label="Open C·FLOW" className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--outline-variant)] transition-all"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW <ArrowUpRight className="w-3 h-3" /></a>
+    {user && <ReadingModeToggle />}
+    <ThemeToggle />
+
+    <div className="relative" data-notification-panel>
+     <button onClick={() => { setPanelOpen(!panelOpen); setUserMenuOpen(false); }} className={`relative w-10 h-10 border-2 flex items-center justify-center transition-all ${unreadCount ? 'border-outline-variant bg-primary text-on-primary shadow-[2px_2px_0_var(--outline-variant)]' : 'border-transparent text-on-surface-variant hover:border-outline-variant hover:bg-surface'}`} aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ''}`}>
+       <Bell className={`w-5 h-5 ${unreadCount ? 'animate-[dcBell_1.8s_ease-in-out_infinite]' : ''}`} />
+       {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 rounded-full bg-dc-pink border-2 border-outline-variant text-[9px] font-bold flex items-center justify-center text-black">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+     </button>
+     {panelOpen && <div className="absolute right-0 mt-3 w-[min(380px,calc(100vw-24px))] bg-surface border-2 border-outline-variant shadow-[7px_7px_0_#171717] z-50 overflow-hidden">
+       <div className="flex items-center justify-between gap-4 px-4 py-3 border-b-2 border-outline-variant">
+        <div><p className="dc-mono text-[10px] uppercase font-bold text-primary">Notifications</p><p className="text-[11px] text-on-surface-variant mt-0.5">Community activity on your work</p></div>
+        <button onClick={() => void markAllRead()} disabled={!unreadCount} className="flex items-center gap-1.5 text-[9px] uppercase font-bold text-on-surface-variant hover:text-primary disabled:opacity-40"><CheckCheck className="w-3.5 h-3.5" /> Mark read</button>
+       </div>
+       <div className="max-h-[360px] overflow-y-auto">
+        {notifications.length === 0 ? <div className="p-8 text-center"><Bell className="w-6 h-6 mx-auto mb-2 text-on-surface-variant" /><p className="dc-mono text-[10px] uppercase font-bold">No notifications yet</p><p className="text-[11px] text-on-surface-variant mt-2">When someone interacts with your work, it will appear here.</p></div> : notifications.map((notification) => <div key={notification.id} onClick={() => handleNotificationClick(notification)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); handleNotificationClick(notification); } }} role="button" tabIndex={0} className={`w-full text-left p-4 border-b border-outline-variant/40 flex gap-3 transition-colors cursor-pointer ${notification.readAt ? 'bg-surface' : 'bg-dc-blue/20'}`}>
+          {notification.actorAvatar ? <img src={notification.actorAvatar} alt={notification.actorName} className="w-9 h-9 border-2 border-outline-variant object-cover shrink-0" /> : <div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center font-bold shrink-0">{notification.actorName.slice(0, 1)}</div>}
+          <div className="min-w-0 flex-1"><div className="flex items-start gap-2">{notificationIcon(notification.type)}<p className="text-xs leading-relaxed"><strong>{notification.actorName}</strong> {notificationCopy(notification.type)}</p>{!notification.readAt && <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1" />}</div>{(notification.postTitle !== 'your post' && notification.postTitle) || (notification.commentPreview !== 'your comment' && notification.commentPreview) ? <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{notification.type === 'post_like' ? notification.postTitle : `“${notification.commentPreview}”`}</p> : null}
+          {notification.type === 'connection_request' && (notification.actorGithubUrl || notification.actorLinkedinUrl) && <div className="flex flex-wrap items-center gap-2 mt-3">
+            {notification.actorGithubUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorGithubUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-blue"><Github className="w-3 h-3" /> GitHub</button>}
+            {notification.actorLinkedinUrl && <button type="button" onClick={(event) => openExternal(event, notification.actorLinkedinUrl)} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-lavender"><Linkedin className="w-3 h-3" /> LinkedIn</button>}
+            <button type="button" onClick={(event) => { event.stopPropagation(); openProfile(notification.actorId); }} className="px-2.5 py-1.5 border-2 border-outline-variant bg-surface font-label-mono text-[8px] uppercase font-bold hover:bg-dc-mint">View profile</button>
+          </div>}
+          <div className="flex items-center justify-between gap-3 mt-2"><p className="dc-mono text-[8px] uppercase text-on-surface-variant">{timeAgo(notification.createdAt)}</p>{notification.type === 'connection_request' && <button type="button" onClick={(event) => { event.stopPropagation(); void handleAcceptConnection(notification); }} disabled={connectionActionBusy === notification.id} className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dc-mint border-2 border-outline-variant font-label-mono text-[9px] uppercase font-bold shadow-[2px_2px_0_#171717] disabled:opacity-50">{connectionActionBusy === notification.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} {connectionActionBusy === notification.id ? 'Accepting' : 'Accept'}</button>}</div></div>
+        </div>)}
+        {connectionActionError && <div className="px-4 py-3 text-[10px] text-error border-t border-outline-variant/40">{connectionActionError}</div>}
+       </div>
+     </div>}
+    </div>
+
+    {user ? <div className="relative" data-user-menu>
+      <button onClick={() => { setUserMenuOpen(!userMenuOpen); setPanelOpen(false); }} className="flex items-center gap-2 bg-surface border-2 border-outline-variant p-1 pr-2 sm:pr-2.5 hover:border-primary transition-colors" aria-expanded={userMenuOpen} aria-label="Open account menu">
+       <img src={user.avatar} alt={user.name} className="w-8 h-8 object-cover border border-outline-variant" />
+       <span className="dc-mono text-[9px] text-primary hidden sm:block">{user.rep.toLocaleString()} REP</span>
+       <ChevronDown className={`w-3.5 h-3.5 text-on-surface-variant transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {userMenuOpen && <div className="absolute right-0 mt-3 w-56 bg-surface border-2 border-outline-variant shadow-[6px_6px_0_#171717] overflow-hidden z-50">
+       <div className="px-4 py-3 border-b-2 border-outline-variant bg-background">
+        <p className="text-xs font-bold truncate">{user.name}</p>
+        <p className="dc-mono text-[8px] uppercase text-primary mt-1">{user.rep.toLocaleString()} REP / Active</p>
+       </div>
+       <div className="p-1.5">
+        <button onClick={() => go('profile')} className="w-full px-3 py-2.5 text-left dc-mono text-[9px] uppercase hover:bg-dc-blue transition-colors">Profile</button>
+        <button onClick={() => go('profile-setup')} className="w-full px-3 py-2.5 text-left dc-mono text-[9px] uppercase hover:bg-dc-lavender transition-colors">Profile Settings</button>
+        <button onClick={() => go('choose-path')} className="w-full px-3 py-2.5 text-left dc-mono text-[9px] uppercase hover:bg-dc-mint transition-colors">Learning Paths</button>
+       </div>
+       <div className="border-t-2 border-outline-variant p-1.5">
+        <button onClick={() => void logout()} className="w-full px-3 py-2.5 text-left dc-mono text-[9px] uppercase text-error hover:bg-dc-pink transition-colors flex items-center gap-2"><LogOut className="w-3.5 h-3.5" /> Logout</button>
+       </div>
+      </div>}
+     </div> : <div className="flex items-center gap-1 sm:gap-2"><button onClick={() => go('login')} className="dc-mono text-[10px] uppercase px-3 py-2 text-on-surface-variant hover:text-primary">Login</button><button onClick={() => go('register')} className="dc-mono text-[10px] uppercase px-4 py-2 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm">Register</button></div>}
+   </div>
   </div>
-  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ...(isAdmin ? [['admin', 'Admin Terminal']] : [])].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><a href={CFLOW_LANDING_URL} className="mt-3 block p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase hover:border-primary">C·FLOW / OPEN LANDING</a></div>}
+
+  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50">
+   <div className="flex items-center justify-between mb-3"><div><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant">Navigation / 00</div><div className="dc-display text-sm font-bold uppercase mt-1">{pageLabel}</div></div><button onClick={() => setMobileMenuOpen(false)} className="p-2 border-2 border-outline-variant bg-surface"><X className="w-4 h-4" /></button></div>
+   <div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ...(isAdmin ? [['admin', 'Admin Terminal']] : [])].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className={`p-3 text-left bg-surface border-2 font-label-mono text-[9px] uppercase transition-colors ${activeTab === id ? 'border-primary bg-dc-blue/20' : 'border-outline-variant hover:border-primary'}`}>{label}</button>)}</div>
+   <a href={CFLOW_LANDING_URL} target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-between p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase hover:border-primary">C·FLOW / Open landing <ArrowUpRight className="w-3.5 h-3.5" /></a>
+  </div>}
  </header>;
 };
