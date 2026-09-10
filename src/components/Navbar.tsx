@@ -7,6 +7,8 @@ import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, U
 import { ThemeToggle } from './ThemeToggle';
 import { ReadingModeToggle } from './ReadingModeToggle';
 
+const CFLOW_LANDING_URL = 'https://cflow-landing-web.onrender.com';
+
 const timeAgo = (value: string) => {
  const seconds = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
  if (seconds < 60) return `${seconds}s ago`;
@@ -98,7 +100,7 @@ export const Navbar: React.FC = () => {
    {isStandalone ? <button onClick={() => go(user ? 'dashboard' : 'landing')} className="flex items-center gap-3"><span className="w-9 h-9 border-2 border-outline-variant bg-primary flex items-center justify-center text-on-primary dc-hard-shadow-sm"><Terminal className="w-5 h-5" /></span><span className="dc-display text-xl sm:text-2xl font-bold tracking-tight hidden sm:block">DEV_COLLECTIVE</span></button> : <div className="flex items-center gap-3 w-full max-w-md border-2 border-outline-variant bg-surface px-4 py-2.5"><Search className="w-4 h-4 text-on-surface-variant" /><input type="text" placeholder="Search projects, mentors, roadmaps..." className="bg-transparent border-none outline-none text-xs sm:text-sm w-full text-on-surface placeholder:text-on-surface-variant" /></div>}
   </div>
   <div className="flex items-center gap-2 sm:gap-3">
-   <div className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW / IN BUILD</div>
+   <a href={CFLOW_LANDING_URL} aria-label="Open C·FLOW" className="hidden lg:flex items-center gap-2 border-2 border-outline-variant bg-secondary-container px-3 py-2 dc-mono text-[9px] uppercase tracking-[0.12em] text-on-secondary hover:-translate-y-0.5 transition-transform"><span className="w-1.5 h-1.5 rounded-full bg-on-secondary" /> C·FLOW</a>
    {user && <ReadingModeToggle />}
    <ThemeToggle />
    <div className="relative" data-notification-panel>
@@ -128,6 +130,6 @@ export const Navbar: React.FC = () => {
    </div>
    {user ? <div className="flex items-center gap-2"><button onClick={() => go('profile')} className="flex items-center gap-2 bg-surface border-2 border-outline-variant p-1 pr-2 sm:pr-3 hover:border-primary"><img src={user.avatar} alt={user.name} className="w-8 h-8 object-cover border border-outline-variant" /><span className="dc-mono text-[9px] text-primary hidden sm:block">{user.rep.toLocaleString()} REP</span></button><button onClick={logout} title="Logout" className="p-2 border-2 border-transparent hover:border-error text-on-surface-variant"><LogOut className="w-4 h-4" /></button></div> : <div className="flex items-center gap-1 sm:gap-2"><button onClick={() => go('login')} className="dc-mono text-[10px] uppercase px-3 py-2 text-on-surface-variant hover:text-primary">Login</button><button onClick={() => go('register')} className="dc-mono text-[10px] uppercase px-4 py-2 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm">Register</button></div>}
   </div>
-  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ...(isAdmin ? [['admin', 'Admin Terminal']] : [])].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><div className="mt-3 p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase">C·FLOW / Integration in build</div></div>}
+  {mobileMenuOpen && <div className="md:hidden fixed top-[74px] left-0 right-0 bg-background border-b-2 border-outline-variant p-4 shadow-[0_6px_0_var(--outline-variant)] z-50"><div className="dc-mono text-[9px] uppercase tracking-[0.16em] text-on-surface-variant mb-3">Navigation / 00</div><div className="grid grid-cols-2 gap-2">{[['dashboard', 'Dashboard'], ['community', 'Community'], ['roadmap', 'Roadmaps'], ['leaderboard', 'Leaderboard'], ['mentors', 'Mentors'], ['profile', 'Profile'], ...(isAdmin ? [['admin', 'Admin Terminal']] : [])].map(([id, label]) => <button key={id} onClick={() => go(id as Parameters<typeof setActiveTab>[0])} className="p-3 text-left bg-surface border-2 border-outline-variant dc-mono text-[10px] uppercase hover:border-primary">{label}</button>)}</div><a href={CFLOW_LANDING_URL} className="mt-3 block p-3 border-2 border-outline-variant bg-secondary-container text-on-secondary dc-mono text-[9px] uppercase hover:border-primary">C·FLOW / OPEN LANDING</a></div>}
  </header>;
 };
