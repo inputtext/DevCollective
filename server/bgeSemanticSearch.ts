@@ -1,5 +1,6 @@
 import type { Express, Request, Response } from 'express';
 import { supabaseAdmin } from './supabase';
+import { registerMentorMatchingRoutes } from './mentorMatching';
 
 const DEFAULT_BGE_SERVICE_URL = 'http://127.0.0.1:8000';
 
@@ -69,4 +70,6 @@ export function registerBgeSemanticSearchRoutes(app: Express, requireAuth: (req:
       return res.status(503).json({ error: 'Semantic search is temporarily unavailable.' });
     }
   });
+
+  registerMentorMatchingRoutes(app, requireAuth);
 }
