@@ -37,7 +37,10 @@ as $$
     coalesce(p.college, '')::text,
     coalesce(p.avatar, '')::text,
     case when p.role = 'faculty' then 'FACULTY' else 'SENIOR' end::text as role_type,
-    coalesce(p.skills, array[]::text[])::text[] as skills,
+    case
+      when jsonb_typeof(p.skills) = 'array' then array(select jsonb_array_elements_text(p.skills))
+      else array[]::text[]
+    end as skills,
     coalesce(p.level, 1)::integer,
     coalesce(p.rep, 0)::integer,
     coalesce(p.bio, '')::text,
