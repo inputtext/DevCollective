@@ -3,9 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
 import { useAdminAccess } from '../hooks/useAdminAccess';
-import { Search, Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin, ChevronDown, Command, ArrowUpRight } from 'lucide-react';
+import { Bell, LogOut, Terminal, Menu, X, Heart, CheckCheck, UserPlus, Users, Check, Loader2, Github, Linkedin, ChevronDown, ArrowUpRight } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { ReadingModeToggle } from './ReadingModeToggle';
+import { SemanticSearch } from './SemanticSearch';
 
 const CFLOW_LANDING_URL = 'https://cflow-landing-web.onrender.com';
 
@@ -130,11 +131,7 @@ export const Navbar: React.FC = () => {
        <span className="dc-mono text-[8px] uppercase tracking-[0.18em] text-on-surface-variant">Workspace / 00</span>
        <span className="dc-display text-sm font-bold uppercase tracking-tight mt-0.5 truncate">{pageLabel}</span>
       </div>
-      <label className="relative flex items-center gap-3 w-full max-w-xl border-2 border-outline-variant bg-surface px-3.5 py-2.5 transition-colors focus-within:border-primary focus-within:shadow-[3px_3px_0_var(--outline-variant)]">
-       <Search className="w-4 h-4 text-on-surface-variant shrink-0" />
-       <input ref={searchRef} type="text" placeholder="Search projects, mentors, roadmaps..." className="bg-transparent border-none outline-none text-xs sm:text-sm w-full text-on-surface placeholder:text-on-surface-variant" />
-       <span className="hidden sm:flex items-center gap-1 px-1.5 py-1 border border-outline-variant/60 text-[8px] dc-mono text-on-surface-variant shrink-0"><Command className="w-2.5 h-2.5" />K</span>
-      </label>
+      <SemanticSearch ref={searchRef} onOpenCommunity={() => go('community')} />
     </>}
    </div>
 
