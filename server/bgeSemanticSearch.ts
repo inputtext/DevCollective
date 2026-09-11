@@ -27,10 +27,15 @@ async function embedText(text: string): Promise<number[]> {
 }
 
 export async function createPostEmbedding(title: string | null, content: string) {
-  if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+  if (!supabaseAdmin) return null;
   const sourceText = [title, content].filter(Boolean).join('\n\n').trim();
   if (!sourceText) return null;
-  return embedText(sourceText);
+  try {
+    return await embedText(sourceText);
+  } catch (error) {
+    console.warn('BGE embedding skipped for community post:', error);
+    return null;
+  }
 }
 
 export function registerBgeSemanticSearchRoutes(app: Express, requireAuth: (req: Request, res: Response, next: () => void) => void) {
