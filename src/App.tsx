@@ -9,6 +9,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import { SocialProvider } from './context/SocialContext';
 import { SocialProfileOverlay } from './components/SocialProfileOverlay';
 import { SocialProfileMessagingAction } from './components/SocialProfileMessagingAction';
+import { DuplicateQuestionBridge } from './components/DuplicateQuestionBridge';
 import { Navbar } from './components/Navbar';
 import { Sidebar } from './components/Sidebar';
 import { OAuthGuideModal } from './components/OAuthGuideModal';
@@ -105,7 +106,7 @@ const MainContent: React.FC = () => {
   }
 
   const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(activeTab);
-  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}>{activeTab === 'landing' && <LandingPage />}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === ('level-0' as typeof activeTab) && <Level0Page />}</Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
+  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast /><DuplicateQuestionBridge />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}>{activeTab === 'landing' && <LandingPage />}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === ('level-0' as typeof activeTab) && <Level0Page />}</Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
 };
 
 export default function App() { return <AuthProvider><NotificationProvider><SocialProvider><MainContent /></SocialProvider></NotificationProvider></AuthProvider>; }
