@@ -17,8 +17,14 @@ type Props = {
 
 export const DuplicateQuestionMatch: React.FC<Props> = ({ match, onDismiss }) => {
   const openExistingQuestion = () => {
-    window.dispatchEvent(new CustomEvent('devcollective:open-community-post', { detail: { postId: match.id } }));
-    window.history.replaceState({}, '', `${window.location.pathname}?post=${encodeURIComponent(match.id)}`);
+    window.dispatchEvent(
+      new CustomEvent('devcollective:open-community-post', {
+        detail: { postId: match.id, match },
+      })
+    );
+    const url = new URL(window.location.href);
+    url.searchParams.set('post', match.id);
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
     onDismiss?.();
   };
