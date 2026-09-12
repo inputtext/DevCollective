@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Loader2, MessageSquare, X } from 'lucide-react';
-import { useClerk } from '@clerk/clerk-react';
+import { useAuth as useClerkAuth } from '@clerk/react';
 import type { DuplicateQuestionMatchData } from './DuplicateQuestionMatch';
 import type { CommunityComment } from '../types';
 
@@ -10,7 +10,7 @@ type Props = {
 };
 
 export const DuplicateQuestionDiscussion: React.FC<Props> = ({ match, onClose }) => {
-  const { getToken } = useClerk();
+  const { getToken } = useClerkAuth();
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
