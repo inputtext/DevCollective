@@ -2,16 +2,15 @@ import React, { useState } from 'react';
 import { Check, ChevronDown, Type } from 'lucide-react';
 import { useTypography } from '../context/TypographyContext';
 
-export const FontSelector: React.FC = () => {
+export const FontSelector: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { preset, presets, changing, setTypography } = useTypography();
   const [open, setOpen] = useState(false);
 
-  return <div className="relative" data-font-selector>
+  return <div className={`relative w-full ${compact ? 'dc-font-selector-compact' : ''}`} data-font-selector>
     <button type="button" onClick={() => setOpen((value) => !value)} disabled={changing} aria-haspopup="menu" aria-expanded={open} aria-label="Choose platform font" className="dc-font-selector-trigger">
-      <Type className="w-3.5 h-3.5" />
-      <span className="hidden xl:inline">FONT</span>
-      <span className="dc-font-selector-current">{preset.name}</span>
-      <ChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      <Type className="w-3.5 h-3.5 shrink-0" />
+      {!compact && <><span>FONT</span><span className="dc-font-selector-current">{preset.name}</span></>}
+      <ChevronDown className={`w-3 h-3 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div className="dc-font-selector-panel" role="menu">
       <div className="dc-font-selector-heading"><div><p className="dc-mono text-[9px] uppercase tracking-[0.18em] text-primary">Type System</p><p className="text-[11px] text-on-surface-variant mt-1">Interior platform typography</p></div><span className="dc-font-selector-aa">Aa</span></div>
