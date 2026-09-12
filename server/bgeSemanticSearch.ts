@@ -71,4 +71,19 @@ export function registerBgeSemanticSearchRoutes(app: Express, requireAuth: (req:
       return res.json({ mode: 'weighted-semantic', model: 'BAAI/bge-m3', weights: { semantic: 0.55, skills: 0.20, domains: 0.15, level: 0.05, reputation: 0.05 }, results: (data || []).map((mentor: any) => ({ id: mentor.id, name: mentor.name, title: mentor.title, college: mentor.college, avatar: mentor.avatar, roleType: mentor.role_type, skills: mentor.skills || [], selectedDomains: mentor.selected_domains || [], level: Number(mentor.level) || 1, rep: Number(mentor.rep) || 0, bio: mentor.bio || '', match: Math.round(Number(mentor.match_score || 0) * 100), signals: { semantic: Math.round(Number(mentor.semantic_score || 0) * 100), skills: Math.round(Number(mentor.skill_score || 0) * 100), domains: Math.round(Number(mentor.domain_score || 0) * 100), level: Math.round(Number(mentor.level_score || 0) * 100), reputation: Math.round(Number(mentor.reputation_score || 0) * 100) } })) });
     } catch (error) { console.error('Mentor matching failed:', error); return res.status(503).json({ error: 'Mentor matching is temporarily unavailable.' }); }
   });
+
+  app.post('/api/questions/check-duplicates', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const title = typeof req.body?.title === 'string' ? req.body.title.trim().slice(0, 160) : '';
+      const content = typeof req.body?.content === 'string' ? req.body.content.trim().slice(0, 5000) : '';
+      const source = [title, content].filter(Boolean).join('\n\n').trim();
+      if (!source) return res.status(400).json({ error: 'Question title or content is required.' });
+      const embedding = await embedText(source);
+      const { data, error } = await supabaseAdmin.rpc('find_duplicate_questions', { query_embedding: embedding, match_threshold: 0.84, match_count: 5 });
+      if (error) throw error;
+      const duplicates = (data || []).map((post: any) => ({ id: post.id, title: post.title || 'Community question', content: post.content || '', category: post.category, createdAt: post.created_at, similarity: Math.round(Number(post.similarity || 0) * 100) }));
+      return res.json({ isDuplicate: duplicates.length > 0, threshold: 84, duplicates });
+    } catch (error) { console.error('Duplicate question lookup failed:', error); return res.status(503).json({ error: 'Duplicate question detection is temporarily unavailable.' }); }
+  });
 }
