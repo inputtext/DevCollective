@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    branch: main
+    branch: feature/bge-production
     buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -16,13 +16,25 @@ services:
         value: wss://devcollective-ws.onrender.com
       - key: APP_URL
         value: https://devcollective-app.onrender.com
+      - key: BGE_SERVICE_URL
+        fromService:
+          name: devcollective-bge
+          type: pserv
+          property: hostport
+      - key: BGE_SERVICE_API_KEY
+        fromService:
+          name: devcollective-bge
+          type: pserv
+          envVarKey: BGE_API_KEY
+      - key: BGE_REQUEST_TIMEOUT_MS
+        value: "15000"
 
   - type: web
     name: devcollective-ws
     runtime: node
     plan: free
     region: singapore
-    branch: main
+    branch: feature/bge-production
     buildCommand: npm ci && npm run build
     startCommand: npm run start:ws
     healthCheckPath: /health
@@ -30,3 +42,21 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+
+  - type: pserv
+    name: devcollective-bge
+    runtime: python
+    plan: 2c-4g
+    region: singapore
+    branch: feature/bge-production
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    autoDeployTrigger: commit
+    envVars:
+      - key: BGE_MODEL
+        value: BAAI/bge-m3
+      - key: BGE_BATCH_SIZE
+        value: "16"
+      - key: BGE_API_KEY
+        generateValue: true
