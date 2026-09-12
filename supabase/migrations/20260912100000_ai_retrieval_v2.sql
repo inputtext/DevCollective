@@ -2,13 +2,35 @@
 -- Pass 1: hybrid community search + weighted mentor matching.
 
 alter table public.devcollective_posts
-  add column if not exists search_vector tsvector
-  generated always as (
-    to_tsvector(
-      'english',
-      concat_ws(' ', coalesce(title, ''), coalesce(content, ''), coalesce(category, ''))
-    )
-  ) stored;
+  add column if not exists search_vector tsvector;
+
+create or replace function public.devcollective_posts_set_search_vector()
+returns trigger
+language plpgsql
+set search_path = public, extensions
+as $$
+begin
+  new.search_vector := to_tsvector(
+    'english',
+    concat_ws(' ', coalesce(new.title, ''), coalesce(new.content, ''), coalesce(new.category, ''))
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists devcollective_posts_search_vector_trigger on public.devcollective_posts;
+create trigger devcollective_posts_search_vector_trigger
+before insert or update of title, content, category
+on public.devcollective_posts
+for each row
+execute function public.devcollective_posts_set_search_vector();
+
+update public.devcollective_posts
+set search_vector = to_tsvector(
+  'english',
+  concat_ws(' ', coalesce(title, ''), coalesce(content, ''), coalesce(category, ''))
+)
+where search_vector is null;
 
 create index if not exists devcollective_posts_search_vector_gin_idx
   on public.devcollective_posts using gin (search_vector);
@@ -55,7 +77,7 @@ as $$
       row_number() over (order by ts_rank_cd(p.search_vector, params.tsq) desc, p.created_at desc) as rank_ix
     from public.devcollective_posts p
     cross join params
-    where params.tsq <> to_tsquery('english', '')
+    where coalesce(query_text, '') <> ''
       and p.search_vector @@ params.tsq
     order by rank_ix
     limit (select requested_count * 2 from params)
@@ -76,7 +98,7 @@ as $$
       p.content,
       p.category,
       p.created_at,
-      (1 - (p.embedding <=> query_embedding))::real as semantic_similarity,
+      case when p.embedding is null then null else (1 - (p.embedding <=> query_embedding))::real end as semantic_similarity,
       ft.rank_ix as keyword_rank,
       sem.rank_ix as semantic_rank,
       (
