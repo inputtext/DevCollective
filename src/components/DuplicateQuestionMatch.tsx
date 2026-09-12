@@ -20,6 +20,7 @@ export const DuplicateQuestionMatch: React.FC<Props> = ({ match, onDismiss }) =>
     window.dispatchEvent(new CustomEvent('devcollective:open-community-post', { detail: { postId: match.id } }));
     window.history.replaceState({}, '', `${window.location.pathname}?post=${encodeURIComponent(match.id)}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
+    onDismiss?.();
   };
 
   return (
