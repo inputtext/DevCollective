@@ -2,28 +2,50 @@ import type { Express, Request, Response } from 'express';
 import { supabaseAdmin } from './supabase';
 
 const DEFAULT_BGE_SERVICE_URL = 'http://127.0.0.1:8000';
+const DEFAULT_BGE_TIMEOUT_MS = 15_000;
 
 function getBgeServiceUrl() {
   return (process.env.BGE_SERVICE_URL || DEFAULT_BGE_SERVICE_URL).replace(/\/$/, '');
 }
 
+function getBgeTimeoutMs() {
+  const configured = Number(process.env.BGE_REQUEST_TIMEOUT_MS || DEFAULT_BGE_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured >= 1_000 ? configured : DEFAULT_BGE_TIMEOUT_MS;
+}
+
+function getBgeHeaders() {
+  const apiKey = process.env.BGE_SERVICE_API_KEY?.trim();
+  return {
+    'Content-Type': 'application/json',
+    ...(apiKey ? { 'x-bge-api-key': apiKey } : {}),
+  };
+}
+
 async function embedText(text: string): Promise<number[]> {
-  const response = await fetch(`${getBgeServiceUrl()}/embed`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), getBgeTimeoutMs());
 
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    throw new Error(`BGE service returned ${response.status}${body ? `: ${body}` : ''}`);
-  }
+  try {
+    const response = await fetch(`${getBgeServiceUrl()}/embed`, {
+      method: 'POST',
+      headers: getBgeHeaders(),
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
+    });
 
-  const data = await response.json() as { embedding?: number[]; dimensions?: number };
-  if (!Array.isArray(data.embedding) || data.embedding.length !== 1024) {
-    throw new Error('BGE service returned an invalid 1024-dimensional embedding.');
+    if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      throw new Error(`BGE service returned ${response.status}${body ? `: ${body}` : ''}`);
+    }
+
+    const data = await response.json() as { embedding?: number[]; dimensions?: number };
+    if (!Array.isArray(data.embedding) || data.embedding.length !== 1024) {
+      throw new Error('BGE service returned an invalid 1024-dimensional embedding.');
+    }
+    return data.embedding;
+  } finally {
+    clearTimeout(timeout);
   }
-  return data.embedding;
 }
 
 export async function createPostEmbedding(title: string | null, content: string) {
