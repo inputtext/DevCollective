@@ -66,6 +66,22 @@ export const CommunityPage: React.FC = () => {
       .finally(() => setCommentsLoading(false));
   }, [openCommentsFor, loadPostComments]);
 
+  useEffect(() => {
+    const handleOpenCommunityPost = (event: Event) => {
+      const postId = (event as CustomEvent<{ postId?: string }>).detail?.postId;
+      if (!postId) return;
+
+      // Close the publish flow first, then open the exact existing post's
+      // discussion using the CommunityPage's existing comments modal.
+      setPublishError(null);
+      setShowNewPostModal(false);
+      setOpenCommentsFor(postId);
+    };
+
+    window.addEventListener('devcollective:open-community-post', handleOpenCommunityPost);
+    return () => window.removeEventListener('devcollective:open-community-post', handleOpenCommunityPost);
+  }, []);
+
   const serviceFetch = async (basePath: string, path: string, init: RequestInit = {}) => {
     const baseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
     if (!baseUrl) throw new Error('Supabase URL is not configured.');
