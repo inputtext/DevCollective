@@ -18,6 +18,7 @@ import {
   BookOpen,
   ChevronRight,
 } from 'lucide-react';
+import { FontSelector } from './FontSelector';
 
 /**
  * Premium sidebar shell inspired by shadcn/ui's composable sidebar pattern.
@@ -97,13 +98,12 @@ export const Sidebar: React.FC = () => {
     <aside
       data-lenis-prevent-wheel
       className={[
-        'sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-hidden md:flex',
+        'sticky top-0 z-30 hidden h-screen shrink-0 flex-col overflow-visible md:flex',
         'bg-surface/95 backdrop-blur-sm border-r border-outline-variant/70',
         'transition-[width] duration-300 ease-out',
         sidebarCollapsed ? 'w-[76px]' : 'w-[264px]',
       ].join(' ')}
     >
-      {/* SidebarHeader */}
       <div className="shrink-0 px-3 pb-4 pt-4">
         <div className={['flex items-center', sidebarCollapsed ? 'justify-center' : 'gap-2'].join(' ')}>
           <button
@@ -154,7 +154,6 @@ export const Sidebar: React.FC = () => {
         )}
       </div>
 
-      {/* SidebarContent */}
       <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-4" aria-label="Main navigation">
         <div className="space-y-1">
           {renderGroup('Workspace', primary)}
@@ -163,7 +162,6 @@ export const Sidebar: React.FC = () => {
         </div>
       </nav>
 
-      {/* SidebarFooter */}
       <div className="shrink-0 border-t border-outline-variant/70 bg-surface/95 px-3 pb-3 pt-3">
         <button
           onClick={() => setActiveTab('community')}
@@ -205,6 +203,10 @@ export const Sidebar: React.FC = () => {
             <HelpCircle className="h-4 w-4 shrink-0" />
             {!sidebarCollapsed && <span className="truncate">Learning Paths</span>}
           </button>
+        </div>
+
+        <div className={['mt-2.5 flex items-center rounded-lg border border-outline-variant/50 bg-surface-container-low p-2', sidebarCollapsed ? 'justify-center' : 'gap-2.5'].join(' ')}>
+          <FontSelector compact={sidebarCollapsed} />
         </div>
 
         {user && (
