@@ -73,7 +73,7 @@ export function registerAiPass2Routes(app: Express, requireAuth: (req: Request, 
         { order: 3, title: 'Build and ship a portfolio project', type: 'project', status: 'next', estimatedHours: 8, reason: 'Turn concepts into demonstrable engineering ability.' },
         { order: 4, title: 'Review weak areas and iterate', type: 'reinforcement', status: 'next', estimatedHours: 3, reason: 'Use new progress and questions to adapt the next cycle.' }
       ];
-      return res.json({ success: true, adaptive: true, model: 'BAAI/bge-m3', user: { level, rep: Number(profile.rep) || 0, skills, domains }, target: { role, goal }, progress: { completedSubmodules: completed, moduleProgress: Array.isArray(context?.module_progress) ? context.module_progress : [] }, plan, relatedCommunity: (related || []).map((p: any) => ({ id: p.id, title: p.title || 'Community resource', category: p.category, similarity: Number(p.similarity || 0) })) });
+      return res.json({ success: true, adaptive: true, model: 'BAAI/bge-m3', user: { level, rep: Number(profile.rep) || 0, skills, domains }, target: { role, goal }, progress: { completedSubmodules: completed, moduleProgress: Array.isArray(context?.module_progress) ? context.module_progress : [] }, plan, relatedCommunity: (related || []).map((p: any) => ({ id: p.id, title: p.title || 'Community resource', similarity: Number(p.similarity || 0) })) });
     } catch (error) { console.error('Adaptive learning path failed:', error); return res.status(503).json({ error: 'Adaptive learning path is temporarily unavailable.' }); }
   });
 }
