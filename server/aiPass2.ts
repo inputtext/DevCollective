@@ -33,6 +33,22 @@ export function registerAiPass2Routes(app: Express, requireAuth: (req: Request, 
     } catch (error) { console.error('Duplicate question check failed:', error); return res.status(503).json({ error: 'Duplicate question detection is temporarily unavailable.' }); }
   });
 
+  app.get('/api/questions/duplicate/:postId', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const postId = String(req.params.postId || '').trim();
+      if (!postId) return res.status(400).json({ error: 'Post ID is required.' });
+      const { data: post, error: postError } = await supabaseAdmin.from('devcollective_posts').select('id,title,content,category,created_at,embedding').eq('id', postId).maybeSingle();
+      if (postError) throw postError;
+      if (!post || post.category !== 'Questions' || !post.embedding) return res.status(404).json({ error: 'Question not found.' });
+      const { data, error } = await supabaseAdmin.rpc('find_duplicate_questions', { query_embedding: post.embedding, exclude_post_id: post.id, match_threshold: 0.84, match_count: 1 });
+      if (error) throw error;
+      const duplicate = data?.[0] || null;
+      if (!duplicate) return res.status(404).json({ error: 'No matching question found.' });
+      return res.json({ duplicate: { id: duplicate.id, title: duplicate.title || 'Community question', content: duplicate.content || '', category: duplicate.category, createdAt: duplicate.created_at, similarity: Math.round(Number(duplicate.similarity || 0) * 100) } });
+    } catch (error) { console.error('Duplicate question lookup failed:', error); return res.status(503).json({ error: 'Could not load the matching question.' }); }
+  });
+
   app.get('/api/learning/adaptive-path', requireAuth, async (req: any, res) => {
     try {
       if (!supabaseAdmin) throw new Error('Supabase is not configured.');
