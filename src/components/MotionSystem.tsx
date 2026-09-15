@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { EventsExperience } from './EventsExperience';
+import { AdminEventsManager } from './AdminEventsManager';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
-
 gsap.registerPlugin(ScrollTrigger);
 
 export const MotionSystem = () => {
@@ -21,5 +21,5 @@ export const MotionSystem = () => {
     ScrollTrigger.refresh();
     return () => { animations.forEach((animation) => animation.kill()); gsap.ticker.remove(ticker); lenis.destroy(); };
   }, [activeTab]);
-  return <EventsExperience />;
+  return <><EventsExperience /><AdminEventsManager /></>;
 };
