@@ -57,7 +57,7 @@ export const LandingEventsSection: React.FC = () => {
       <div className="max-w-[1500px] mx-auto py-20 sm:py-28">
         <div className="px-5 sm:px-8 lg:px-12">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-            <div><p className="dc-mono text-[9px] uppercase tracking-[0.22em] text-[#171717]/55">[ 04 / CAMPUS EVENTS ]</p><h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl text-[#171717] mt-3">WHAT'S<br /><span className="text-primary">HAPPENING.</span></h2><p className="mt-5 max-w-xl text-sm sm:text-base leading-relaxed text-[#171717]/65">Real college events, talks, hackathons and community gatherings — discovered, organised and kept alive inside DevCollective.</p></div>
+            <div><p className="dc-mono text-[9px] uppercase tracking-[0.22em] text-[#171717]/55">[ 05 / CAMPUS EVENTS ]</p><h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl text-[#171717] mt-3">WHAT'S<br /><span className="text-primary">HAPPENING.</span></h2><p className="mt-5 max-w-xl text-sm sm:text-base leading-relaxed text-[#171717]/65">Real college events, talks, hackathons and community gatherings — discovered, organised and kept alive inside DevCollective.</p></div>
             <button type="button" onClick={openEvents} className="inline-flex items-center gap-3 self-start lg:self-auto px-5 py-3 border-2 border-[#171717] bg-[#FFF9F0] text-[#171717] dc-mono text-[9px] uppercase font-bold shadow-[4px_4px_0_#171717] hover:-translate-y-0.5 transition-transform">Explore all events <ArrowRight className="w-4 h-4" /></button>
           </div>
         </div>
