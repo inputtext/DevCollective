@@ -7,7 +7,7 @@ import type { CommunityComment, CommunityPost } from '../types';
 import {
   Search, Plus, Heart, MessageSquare, Send, X, Users, GitBranch,
   Rocket, HelpCircle, Sparkles, Trophy, UserPlus, UserCheck,
-  ArrowUpRight, ChevronRight, Loader2
+  ArrowUpRight, ChevronRight, Loader2, Reply
 } from 'lucide-react';
 
 type View = 'all' | 'discussions' | 'projects' | 'questions' | 'showcase' | 'building';
@@ -40,6 +40,9 @@ export const CommunityRefinedPage: React.FC = () => {
   const [commentPost, setCommentPost] = useState<CommunityPost | null>(null);
   const [commentText, setCommentText] = useState('');
   const [commentBusy, setCommentBusy] = useState(false);
+  const [replyTargetId, setReplyTargetId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [replyBusy, setReplyBusy] = useState(false);
   const [socialBusy, setSocialBusy] = useState<string | null>(null);
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const [connected, setConnected] = useState<Record<string, boolean>>({});
@@ -48,6 +51,8 @@ export const CommunityRefinedPage: React.FC = () => {
     if (!commentPost) return;
     void loadPostComments(commentPost.id);
     setCommentText('');
+    setReplyTargetId(null);
+    setReplyText('');
   }, [commentPost, loadPostComments]);
 
   const filtered = useMemo(() => {
@@ -106,7 +111,7 @@ export const CommunityRefinedPage: React.FC = () => {
 
   const commentSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!commentPost || !commentText.trim() || commentBusy) return;
+    if (!commentPost || !commentText.trim() || commentBusy || replyBusy) return;
     setCommentBusy(true);
     try {
       const token = await getToken();
@@ -122,7 +127,58 @@ export const CommunityRefinedPage: React.FC = () => {
     finally { setCommentBusy(false); }
   };
 
+  const replySubmit = async (parentCommentId: string) => {
+    if (!commentPost || !replyText.trim() || replyBusy || commentBusy) return;
+    setReplyBusy(true);
+    try {
+      const token = await getToken();
+      const base = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+      const response = await fetch(`${base}/functions/v1/community-comments`, {
+        method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: commentPost.id, parentCommentId, content: replyText.trim() })
+      });
+      if (!response.ok) throw new Error('Could not add reply.');
+      await loadPostComments(commentPost.id);
+      setReplyTargetId(null);
+      setReplyText('');
+    } catch { /* existing community error surfaces remain unchanged */ }
+    finally { setReplyBusy(false); }
+  };
+
   const activeComments = commentPost ? commentsByPost[commentPost.id] || [] : [];
+  const roots = useMemo(() => activeComments.filter((comment) => !comment.parentCommentId), [activeComments]);
+  const repliesFor = useMemo(() => {
+    const map = new Map<string, CommunityComment[]>();
+    activeComments.forEach((comment) => {
+      if (!comment.parentCommentId) return;
+      const bucket = map.get(comment.parentCommentId) || [];
+      bucket.push(comment);
+      map.set(comment.parentCommentId, bucket);
+    });
+    return map;
+  }, [activeComments]);
+
+  const renderComment = (comment: CommunityComment, depth = 0): React.ReactNode => {
+    const replies = repliesFor.get(comment.id) || [];
+    return (
+      <div key={comment.id} className={depth > 0 ? 'ml-5 border-l-2 border-outline-variant pl-3' : ''}>
+        <div className="border border-outline-variant p-3">
+          <div className="flex items-center gap-2">
+            {comment.authorAvatar ? <img src={comment.authorAvatar} alt="" className="w-6 h-6 border border-outline-variant object-cover" /> : <div className="w-6 h-6 border border-outline-variant bg-dc-yellow flex items-center justify-center text-[9px] font-bold">{comment.authorName.slice(0,1)}</div>}
+            <div><p className="text-[11px] font-bold">{comment.authorName}</p><p className="font-label-mono text-[7px] uppercase text-on-surface-variant">{comment.authorRep} REP</p></div>
+          </div>
+          <p className="text-xs leading-relaxed mt-2 whitespace-pre-wrap">{comment.content}</p>
+          <div className="flex items-center gap-3 mt-2">
+            <button onClick={() => void toggleCommentLike(comment.id)} className="font-label-mono text-[8px] uppercase inline-flex items-center gap-1 hover:text-primary"><Heart className="w-3 h-3" fill={comment.likedByMe ? 'currentColor' : 'none'} /> {comment.likes || 0}</button>
+            <button type="button" onClick={() => { setReplyTargetId((prev) => prev === comment.id ? null : comment.id); setReplyText(''); }} disabled={replyBusy} className="font-label-mono text-[8px] uppercase inline-flex items-center gap-1 hover:text-primary"><Reply className="w-3 h-3" /> Reply</button>
+            {replies.length > 0 && <span className="font-label-mono text-[7px] uppercase text-on-surface-variant">{replies.length} repl{replies.length === 1 ? 'y' : 'ies'}</span>}
+          </div>
+          {replyTargetId === comment.id && <div className="mt-2 ml-3 flex gap-2"><input value={replyText} onChange={(e) => setReplyText(e.target.value.slice(0, 2000))} placeholder={`Reply to ${comment.authorName}...`} className="flex-1 min-w-0 border border-outline-variant bg-surface p-2 text-xs outline-none" disabled={replyBusy} autoFocus /><button type="button" onClick={() => void replySubmit(comment.id)} disabled={!replyText.trim() || replyBusy} className="px-3 bg-primary text-on-primary border border-outline-variant font-label-mono text-[8px] uppercase font-bold disabled:opacity-50">{replyBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Reply'}</button></div>}
+        </div>
+        {replies.length > 0 && <div className="mt-2 space-y-2">{replies.map((reply) => renderComment(reply, depth + 1))}</div>}
+      </div>
+    );
+  };
 
   return (
     <div className="w-full max-w-[1500px] mx-auto space-y-4">
@@ -234,7 +290,7 @@ export const CommunityRefinedPage: React.FC = () => {
         <div className="p-4 space-y-3"><div className="flex flex-wrap gap-1">{categories.map((category) => <button type="button" key={category} onClick={() => category !== 'All' && setPostCategory(category as CommunityPost['category'])} className={`px-2.5 py-1.5 border border-outline-variant font-label-mono text-[8px] uppercase ${postCategory === category ? 'bg-dc-yellow font-bold' : 'hover:bg-dc-blue'}`}>{category}</button>)}</div><input value={postTitle} onChange={(e) => setPostTitle(e.target.value.slice(0, 140))} placeholder="Title (optional)" className="w-full h-10 px-3 border-2 border-outline-variant bg-surface text-sm outline-none" /><textarea value={postContent} onChange={(e) => setPostContent(e.target.value.slice(0, 4000))} placeholder="What are you building, learning, asking or shipping?" rows={7} className="w-full p-3 border-2 border-outline-variant bg-surface text-sm outline-none resize-y" />{publishError && <p className="text-xs text-primary">{publishError}</p>}<div className="flex justify-end"><button disabled={!postContent.trim() || publishing} className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm font-label-mono text-[9px] uppercase font-bold">{publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Publish</button></div></div>
       </form></div>}
 
-      {commentPost && <div className="fixed inset-0 z-[115] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-2 border-outline-variant shadow-[7px_7px_0_#171717]"><header className="sticky top-0 z-10 bg-background flex items-center justify-between p-4 border-b-2 border-outline-variant"><div className="min-w-0"><p className="font-label-mono text-[8px] uppercase text-primary">DISCUSSION</p><h2 className="text-base font-bold truncate">{commentPost.title || 'Community post'}</h2></div><button onClick={() => setCommentPost(null)} className="p-2 border border-outline-variant"><X className="w-4 h-4" /></button></header><div className="p-4 space-y-3"><div className="border-2 border-outline-variant bg-surface p-3"><p className="text-sm leading-relaxed">{commentPost.content}</p><div className="font-label-mono text-[8px] uppercase text-on-surface-variant mt-2">{commentPost.authorName} · {commentPost.authorRep} REP</div></div>{activeComments.map((comment: CommunityComment) => <div key={comment.id} className="border border-outline-variant p-3"><div className="flex items-center gap-2"><div className="w-6 h-6 border border-outline-variant bg-dc-yellow flex items-center justify-center text-[9px] font-bold">{comment.authorName.slice(0,1)}</div><div><p className="text-[11px] font-bold">{comment.authorName}</p><p className="font-label-mono text-[7px] uppercase text-on-surface-variant">{comment.authorRep} REP</p></div></div><p className="text-xs leading-relaxed mt-2">{comment.content}</p><button onClick={() => void toggleCommentLike(comment.id)} className="font-label-mono text-[8px] uppercase mt-2 inline-flex items-center gap-1"><Heart className="w-3 h-3" /> {comment.likes}</button></div>)}{activeComments.length === 0 && <p className="text-xs text-on-surface-variant py-3">No comments yet. Start the discussion.</p>}<form onSubmit={commentSubmit} className="flex gap-2 sticky bottom-0 bg-background pt-2"><input value={commentText} onChange={(e) => setCommentText(e.target.value.slice(0, 2000))} placeholder="Add a useful comment..." className="flex-1 min-w-0 h-10 px-3 border-2 border-outline-variant bg-surface text-sm outline-none" /><button disabled={!commentText.trim() || commentBusy} className="px-3 border-2 border-outline-variant bg-primary text-on-primary"><Send className="w-4 h-4" /></button></form></div></div></div>}
+      {commentPost && <div className="fixed inset-0 z-[115] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-background border-2 border-outline-variant shadow-[7px_7px_0_#171717]"><header className="sticky top-0 z-10 bg-background flex items-center justify-between p-4 border-b-2 border-outline-variant"><div className="min-w-0"><p className="font-label-mono text-[8px] uppercase text-primary">DISCUSSION</p><h2 className="text-base font-bold truncate">{commentPost.title || 'Community post'}</h2></div><button onClick={() => setCommentPost(null)} className="p-2 border border-outline-variant"><X className="w-4 h-4" /></button></header><div className="p-4 space-y-3"><div className="border-2 border-outline-variant bg-surface p-3"><p className="text-sm leading-relaxed">{commentPost.content}</p><div className="font-label-mono text-[8px] uppercase text-on-surface-variant mt-2">{commentPost.authorName} · {commentPost.authorRep} REP</div></div>{roots.length > 0 ? roots.map((comment) => renderComment(comment)) : <p className="text-xs text-on-surface-variant py-3">No comments yet. Start the discussion.</p>}<form onSubmit={commentSubmit} className="flex gap-2 sticky bottom-0 bg-background pt-2"><input value={commentText} onChange={(e) => setCommentText(e.target.value.slice(0, 2000))} placeholder="Add a useful comment..." className="flex-1 min-w-0 h-10 px-3 border-2 border-outline-variant bg-surface text-sm outline-none" /><button disabled={!commentText.trim() || commentBusy || replyBusy} className="px-3 border-2 border-outline-variant bg-primary text-on-primary"><Send className="w-4 h-4" /></button></form></div></div></div>}
     </div>
   );
 };
