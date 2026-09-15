@@ -55,7 +55,6 @@ export interface CommunityComment {
   postId: string;
   parentCommentId?: string | null;
   authorId: string;
-  authorName: string;
   authorAvatar: string;
   authorRole: string;
   authorRep: number;
@@ -128,6 +127,23 @@ export interface LeaderboardEntry {
   isUser?: boolean;
 }
 
+export interface DevEventDetails {
+  specialNote?: string;
+  quote?: string;
+  presidedBy?: string;
+  presidedByTitle?: string;
+  organizedBy?: string;
+  mainDate?: string;
+  mainTime?: string;
+  instructions?: string[];
+  schedule?: Array<{
+    date: string;
+    day: string;
+    morning: string;
+    afternoon: string;
+  }>;
+}
+
 export interface DevEvent {
   id: string;
   slug: string;
@@ -152,6 +168,7 @@ export interface DevEvent {
   speakers: string[];
   coordinators: string[];
   contactInfo?: string | null;
+  details?: DevEventDetails;
   createdAt: string;
   updatedAt: string;
 }
