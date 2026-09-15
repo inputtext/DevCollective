@@ -127,3 +127,49 @@ export interface LeaderboardEntry {
   streakDays: number;
   isUser?: boolean;
 }
+
+export interface DevEventDetails {
+  specialNote?: string;
+  quote?: string;
+  presidedBy?: string;
+  presidedByTitle?: string;
+  organizedBy?: string;
+  mainDate?: string;
+  mainTime?: string;
+  instructions?: string[];
+  schedule?: Array<{
+    date: string;
+    day: string;
+    morning: string;
+    afternoon: string;
+  }>;
+}
+
+export interface DevEvent {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  venue: string;
+  city: string;
+  organizer: string;
+  registrationUrl?: string | null;
+  sourceUrl?: string | null;
+  ticketInfo?: string | null;
+  theme: {
+    background: string;
+    foreground: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  speakers: string[];
+  coordinators: string[];
+  contactInfo?: string | null;
+  details?: DevEventDetails;
+  createdAt: string;
+  updatedAt: string;
+}
