@@ -8,7 +8,7 @@ import Lenis from 'lenis';
 gsap.registerPlugin(ScrollTrigger);
 
 export const MotionSystem = () => {
-  const { activeTab } = useAuth();
+  const { activeTab, user } = useAuth();
   useEffect(() => {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reducedMotion) return;
@@ -21,5 +21,6 @@ export const MotionSystem = () => {
     ScrollTrigger.refresh();
     return () => { animations.forEach((animation) => animation.kill()); gsap.ticker.remove(ticker); lenis.destroy(); };
   }, [activeTab]);
-  return <><EventsExperience /><AdminEventsManager /></>;
+  const showEvents = Boolean(user) || activeTab === 'landing';
+  return <>{showEvents && <EventsExperience />}<AdminEventsManager /></>;
 };
