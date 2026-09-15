@@ -26,6 +26,33 @@ const fallbackEvents: DevEvent[] = [
     theme: { background: '#F7F0E5', foreground: '#171717', primary: '#5B169D', secondary: '#EEE2D4', accent: '#F36B21' },
     speakers: [],
     coordinators: ['Dr. Vivek Kapur · Campus Director, Shraddha Park Campus', 'Team Shree Ganesh Utsav Celebration 2026'], contactInfo: 'Shraddha Park, Nagpur',
+    details: {
+      specialNote: 'Traditional attire is encouraged for all students and faculty.',
+      quote: 'Ganpati Bappa Morya!',
+      presidedBy: 'Dr. Vivek Kapur', presidedByTitle: 'Campus Director, Shraddha Park Campus',
+      organizedBy: 'Team Shree Ganesh Utsav Celebration 2026', mainDate: '15 September 2026', mainTime: '10:30 AM',
+      instructions: [
+        'College ID Card is compulsory for entry. No entry will be permitted without a valid ID Card.',
+        'Students must maintain proper discipline and decorum throughout the celebration.',
+        'Follow the instructions of faculty coordinators and event volunteers.',
+        'Maintain cleanliness and do not litter the campus premises.',
+        'Any misconduct or indiscipline will not be tolerated. Strict action will be taken against students found violating the rules.',
+        'Students are requested to cooperate with the organizing team for the smooth and safe conduct of the event.',
+      ],
+      schedule: [
+        { date: '14-Sep-26', day: 'Monday', morning: 'Hostel', afternoon: 'Hostel' },
+        { date: '15-Sep-26', day: 'Tuesday', morning: 'Campus Director Office, Registrar, Deans and COE Office', afternoon: 'Registrar Office: Account, HR, Student section' },
+        { date: '16-Sep-26', day: 'Wednesday', morning: 'GHRCEM First Year', afternoon: 'GHRCEM and GHRSTU - ETC and GHRUA' },
+        { date: '17-Sep-26', day: 'Thursday', morning: 'GHRCEM - CSE and IT', afternoon: 'GHRCEM - AI' },
+        { date: '18-Sep-26', day: 'Friday', morning: 'Hostel', afternoon: 'Hostel' },
+        { date: '19-Sep-26', day: 'Saturday', morning: 'GHRSTU First Year', afternoon: 'Maintenance Department' },
+        { date: '20-Sep-26', day: 'Sunday', morning: 'Hostel', afternoon: 'Hostel' },
+        { date: '21-Sep-26', day: 'Monday', morning: 'Science and Technology', afternoon: 'GHRCEM and GHRSTU - DS and CYS' },
+        { date: '22-Sep-26', day: 'Tuesday', morning: 'Polytechnic', afternoon: 'GHRSTU 2nd/3rd Year (CSE/AI)' },
+        { date: '23-Sep-26', day: 'Wednesday', morning: 'Commerce and Management', afternoon: 'GHRCEM and GHRSTU - CE, ME and EE' },
+        { date: '24-Sep-26', day: 'Thursday', morning: 'Pharmacy and Junior college', afternoon: 'Mahaprasad and Visarjan' },
+      ],
+    },
     createdAt: '2026-09-16T00:00:00+05:30', updatedAt: '2026-09-16T00:00:00+05:30',
   },
 ];
@@ -77,7 +104,7 @@ export const EventsPage: React.FC = () => {
 
       <div className="flex gap-2 overflow-x-auto pb-1">{(['upcoming', 'ongoing', 'past'] as Filter[]).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`px-4 py-2.5 border-2 border-outline-variant font-label-mono text-[9px] uppercase shrink-0 ${filter === item ? 'bg-primary text-on-primary' : 'bg-surface hover:bg-surface-container-high'}`}>{item}</button>)}</div>
 
-      {loading ? <div className="p-14 border-2 border-outline-variant bg-surface text-center font-label-mono text-[10px] uppercase">Loading campus events...</div> : visible.length === 0 ? <div className="p-14 border-2 border-dashed border-outline-variant text-center bg-surface"><CalendarDays className="w-7 h-7 mx-auto mb-3 text-on-surface-variant"/><p className="font-label-mono text-[10px] uppercase font-bold">No {filter} events</p><p className="text-xs text-on-surface-variant mt-2">Check another event window.</p></div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{visible.map((event) => <button key={event.id} type="button" onClick={() => setSelected(event)} className="group text-left border-2 border-outline-variant bg-surface overflow-hidden shadow-[4px_4px_0_#171717] hover:-translate-y-1 transition-transform"><div className="h-3" style={{ background: event.theme.primary }} />{event.slug === 'shree-ganesh-utsav-2026' && <GaneshMiniPoster /> }<div className="p-5"><div className="flex items-center justify-between gap-3 font-label-mono text-[9px] uppercase"><span style={{ color: event.theme.primary }}>{statusOf(event)}</span><span>{event.slug === 'shree-ganesh-utsav-2026' ? '15 Sep 2026' : formatDate(event.startsAt)}</span></div><h2 className="dc-display text-3xl mt-4 group-hover:text-primary">{event.title}</h2><p className="font-label-mono text-[10px] uppercase mt-1">{event.subtitle}</p><p className="text-sm text-on-surface-variant mt-4 line-clamp-3">{event.description}</p><div className="mt-5 pt-4 border-t border-outline-variant/60 space-y-2 text-xs"><div className="flex gap-2"><MapPin className="w-3.5 h-3.5 shrink-0"/>{event.venue}, {event.city}</div><div className="flex gap-2"><Clock3 className="w-3.5 h-3.5 shrink-0"/>{event.slug === 'shree-ganesh-utsav-2026' ? '15 Sep · 10:30 AM' : `${formatTime(event.startsAt)} — ${formatTime(event.endsAt)}`}</div></div><div className="mt-5 flex items-center justify-between font-label-mono text-[9px] uppercase"><span>Open event</span><ArrowUpRight className="w-4 h-4"/></div></div></button>)}</div>}
+      {loading ? <div className="p-14 border-2 border-outline-variant bg-surface text-center font-label-mono text-[10px] uppercase">Loading campus events...</div> : visible.length === 0 ? <div className="p-14 border-2 border-dashed border-outline-variant text-center bg-surface"><CalendarDays className="w-7 h-7 mx-auto mb-3 text-on-surface-variant"/><p className="font-label-mono text-[10px] uppercase font-bold">No {filter} events</p><p className="text-xs text-on-surface-variant mt-2">Check another event window.</p></div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{visible.map((event) => <button key={event.id} type="button" onClick={() => setSelected(event)} className="group text-left border-2 border-outline-variant bg-surface overflow-hidden shadow-[4px_4px_0_#171717] hover:-translate-y-1 transition-transform"><div className="h-3" style={{ background: event.theme.primary }} />{event.slug === 'shree-ganesh-utsav-2026' && <GaneshMiniPoster /> }<div className="p-5"><div className="flex items-center justify-between gap-3 font-label-mono text-[9px] uppercase"><span style={{ color: event.theme.primary }}>{statusOf(event)}</span><span>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainDate || '15 Sep 2026') : formatDate(event.startsAt)}</span></div><h2 className="dc-display text-3xl mt-4 group-hover:text-primary">{event.title}</h2><p className="font-label-mono text-[10px] uppercase mt-1">{event.subtitle}</p><p className="text-sm text-on-surface-variant mt-4 line-clamp-3">{event.description}</p><div className="mt-5 pt-4 border-t border-outline-variant/60 space-y-2 text-xs"><div className="flex gap-2"><MapPin className="w-3.5 h-3.5 shrink-0"/>{event.venue}, {event.city}</div><div className="flex gap-2"><Clock3 className="w-3.5 h-3.5 shrink-0"/>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainTime || '10:30 AM') : `${formatTime(event.startsAt)} — ${formatTime(event.endsAt)}`}</div></div><div className="mt-5 flex items-center justify-between font-label-mono text-[9px] uppercase"><span>Open event</span><ArrowUpRight className="w-4 h-4"/></div></div></button>)}</div>}
     </div>
   );
 };
@@ -98,21 +125,29 @@ const GaneshMiniPoster: React.FC = () => (
 
 const GaneshEventDetail: React.FC<{ event: DevEvent; onBack: () => void }> = ({ event, onBack }) => {
   const [tab, setTab] = useState<'about' | 'schedule' | 'guidelines' | 'organizers'>('about');
-  const purple = '#5B169D'; const orange = '#F36B21'; const cream = '#F7F0E5'; const soft = '#EEE2D4';
-  const schedule = [
-    ['14-Sep-26', 'Monday', 'Hostel', 'Hostel'],
-    ['15-Sep-26', 'Tuesday', 'Campus Director Office, Registrar, Deans and COE Office', 'Registrar Office: Account, HR, Student section'],
-    ['16-Sep-26', 'Wednesday', 'GHRCEM First Year', 'GHRCEM and GHRSTU - ETC and GHRUA'],
-    ['17-Sep-26', 'Thursday', 'GHRCEM - CSE and IT', 'GHRCEM - AI'],
-    ['18-Sep-26', 'Friday', 'Hostel', 'Hostel'],
-    ['19-Sep-26', 'Saturday', 'GHRSTU First Year', 'Maintenance Department'],
-    ['20-Sep-26', 'Sunday', 'Hostel', 'Hostel'],
-    ['21-Sep-26', 'Monday', 'Science and Technology', 'GHRCEM and GHRSTU - DS and CYS'],
-    ['22-Sep-26', 'Tuesday', 'Polytechnic', 'GHRSTU 2nd/3rd Year (CSE/AI)'],
-    ['23-Sep-26', 'Wednesday', 'Commerce and Management', 'GHRCEM and GHRSTU - CE, ME and EE'],
-    ['24-Sep-26', 'Thursday', 'Pharmacy and Junior college', 'Mahaprasad and Visarjan'],
+  const purple = event.theme.primary || '#5B169D'; const orange = event.theme.accent || '#F36B21'; const cream = event.theme.background || '#F7F0E5'; const soft = event.theme.secondary || '#EEE2D4';
+  const details = event.details || {};
+  const mainDate = details.mainDate || '15 September 2026';
+  const mainTime = details.mainTime || '10:30 AM';
+  const presidedBy = details.presidedBy || 'Dr. Vivek Kapur';
+  const presidedByTitle = details.presidedByTitle || 'Campus Director, Shraddha Park Campus';
+  const organizedBy = details.organizedBy || event.organizer;
+  const quote = details.quote || 'Ganpati Bappa Morya!';
+  const specialNote = details.specialNote || 'Traditional attire is encouraged for all students and faculty.';
+  const schedule = details.schedule?.length ? details.schedule : [
+    { date: '14-Sep-26', day: 'Monday', morning: 'Hostel', afternoon: 'Hostel' },
+    { date: '15-Sep-26', day: 'Tuesday', morning: 'Campus Director Office, Registrar, Deans and COE Office', afternoon: 'Registrar Office: Account, HR, Student section' },
+    { date: '16-Sep-26', day: 'Wednesday', morning: 'GHRCEM First Year', afternoon: 'GHRCEM and GHRSTU - ETC and GHRUA' },
+    { date: '17-Sep-26', day: 'Thursday', morning: 'GHRCEM - CSE and IT', afternoon: 'GHRCEM - AI' },
+    { date: '18-Sep-26', day: 'Friday', morning: 'Hostel', afternoon: 'Hostel' },
+    { date: '19-Sep-26', day: 'Saturday', morning: 'GHRSTU First Year', afternoon: 'Maintenance Department' },
+    { date: '20-Sep-26', day: 'Sunday', morning: 'Hostel', afternoon: 'Hostel' },
+    { date: '21-Sep-26', day: 'Monday', morning: 'Science and Technology', afternoon: 'GHRCEM and GHRSTU - DS and CYS' },
+    { date: '22-Sep-26', day: 'Tuesday', morning: 'Polytechnic', afternoon: 'GHRSTU 2nd/3rd Year (CSE/AI)' },
+    { date: '23-Sep-26', day: 'Wednesday', morning: 'Commerce and Management', afternoon: 'GHRCEM and GHRSTU - CE, ME and EE' },
+    { date: '24-Sep-26', day: 'Thursday', morning: 'Pharmacy and Junior college', afternoon: 'Mahaprasad and Visarjan' },
   ];
-  const guidelines = [
+  const guidelines = details.instructions?.length ? details.instructions : [
     'College ID Card is compulsory for entry. No entry will be permitted without a valid ID Card.',
     'Students must maintain proper discipline and decorum throughout the celebration.',
     'Follow the instructions of faculty coordinators and event volunteers.',
@@ -130,24 +165,24 @@ const GaneshEventDetail: React.FC<{ event: DevEvent; onBack: () => void }> = ({ 
               <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_37%,#F9B51B_0,transparent_17%),radial-gradient(circle_at_50%_45%,#FF55C8_0,transparent_33%),linear-gradient(180deg,transparent_50%,#2B0755_100%)]" />
               <div className="absolute -right-8 top-0 text-5xl">🪔</div><div className="absolute right-3 top-14 text-5xl">🪔</div>
               <div className="relative flex items-center justify-between gap-4 text-[9px] font-semibold tracking-tight"><span>G H RAISONI<br/><b>COLLEGE</b><small className="block font-normal opacity-80">Engineering and Management<br/>Nagpur</small></span><span className="h-9 w-px bg-white/40"/><span>G H RAISONI<br/><b>SKILL TECH UNIVERSITY</b><small className="block font-normal opacity-80">Nagpur</small></span></div>
-              <div className="relative text-center py-10"><div className="text-[7rem] sm:text-[9rem] leading-none drop-shadow-[0_12px_20px_rgba(0,0,0,.25)]">ॐ</div><div className="font-serif text-4xl sm:text-5xl font-bold leading-none">Shree Ganesh Utsav</div><div className="font-label-mono text-lg sm:text-xl text-[#FFB10A] mt-2 tracking-tight">Celebration 2026</div><p className="text-sm mt-5 max-w-md mx-auto leading-relaxed opacity-90">G H Raisoni College of Engineering & Management, Nagpur & G H Raisoni Skill Tech University, Nagpur</p><div className="inline-block mt-5 bg-[#F36B21] px-5 py-3 font-bold">15<sup>th</sup> September 2026 at 10.30 AM<br/><span className="font-normal">Venue: Shraddha Park, Nagpur</span></div><p className="mt-5 text-sm opacity-90">Presided by<br/><b className="text-[#FFB10A] text-lg">Dr Vivek Kapur</b><br/>Campus Director, Shraddha Park Campus</p></div>
-              <div className="relative text-center text-xs opacity-90">Special Note<br/><b>Traditional attire is encouraged for all students and faculty.</b><div className="mt-5 font-serif italic text-[#FFB10A] text-xl">Ganpati Bappa Morya!</div><div className="mt-4 text-[8px] tracking-[0.25em]">DEVOTION · DISCIPLINE · TOGETHERNESS</div></div>
+              <div className="relative text-center py-10"><div className="text-[7rem] sm:text-[9rem] leading-none drop-shadow-[0_12px_20px_rgba(0,0,0,.25)]">ॐ</div><div className="font-serif text-4xl sm:text-5xl font-bold leading-none">Shree Ganesh Utsav</div><div className="font-label-mono text-lg sm:text-xl text-[#FFB10A] mt-2 tracking-tight">Celebration 2026</div><p className="text-sm mt-5 max-w-md mx-auto leading-relaxed opacity-90">G H Raisoni College of Engineering & Management, Nagpur & G H Raisoni Skill Tech University, Nagpur</p><div className="inline-block mt-5 bg-[#F36B21] px-5 py-3 font-bold">15<sup>th</sup> September 2026 at 10.30 AM<br/><span className="font-normal">Venue: Shraddha Park, Nagpur</span></div><p className="mt-5 text-sm opacity-90">Presided by<br/><b className="text-[#FFB10A] text-lg">{presidedBy}</b><br/>{presidedByTitle}</p></div>
+              <div className="relative text-center text-xs opacity-90">Special Note<br/><b>{specialNote}</b><div className="mt-5 font-serif italic text-[#FFB10A] text-xl">{quote}</div><div className="mt-4 text-[8px] tracking-[0.25em]">DEVOTION · DISCIPLINE · TOGETHERNESS</div></div>
             </div>
             <button type="button" onClick={() => setTab('schedule')} className="w-full mt-5 py-4 text-white font-label-mono text-[10px] uppercase font-bold flex items-center justify-center gap-2 shadow-[5px_5px_0_#171717]" style={{ background: purple }}><CalendarDays className="w-4 h-4"/> View full schedule</button>
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2 font-label-mono text-[9px] uppercase"><span style={{ color: orange }}>EVENT</span><span>/</span><span>15 SEP 2026</span><span>/</span><span>COMMUNITY</span><span className="px-2 py-1 text-white" style={{ background: purple }}>ONGOING</span></div>
-            <div className="flex flex-col lg:flex-row lg:items-start gap-5 justify-between"><div><h1 className="dc-display text-5xl sm:text-6xl lg:text-7xl leading-[0.92] tracking-[-0.055em] mt-4 max-w-4xl">Shree Ganesh Utsav<br className="hidden sm:block"/> Celebration 2026</h1><p className="text-base mt-5 max-w-3xl">G H Raisoni College of Engineering and Management, Nagpur & G H Raisoni SkillTech University, Nagpur</p></div><div className="shrink-0 px-6 py-5 text-white font-serif italic text-2xl shadow-[5px_5px_0_#171717]" style={{ background: purple }}>“<br/>Ganpati Bappa<br/>Morya!”</div></div>
+            <div className="flex items-center gap-2 font-label-mono text-[9px] uppercase"><span style={{ color: orange }}>EVENT</span><span>/</span><span>{mainDate}</span><span>/</span><span>COMMUNITY</span><span className="px-2 py-1 text-white" style={{ background: purple }}>{statusOf(event)}</span></div>
+            <div className="flex flex-col lg:flex-row lg:items-start gap-5 justify-between"><div><h1 className="dc-display text-5xl sm:text-6xl lg:text-7xl leading-[0.92] tracking-[-0.055em] mt-4 max-w-4xl">{event.title}</h1><p className="text-base mt-5 max-w-3xl">G H Raisoni College of Engineering and Management, Nagpur & G H Raisoni SkillTech University, Nagpur</p></div><div className="shrink-0 px-6 py-5 text-white font-serif italic text-2xl shadow-[5px_5px_0_#171717]" style={{ background: purple }}>“<br/>{quote}</div></div>
             <p className="text-base sm:text-lg leading-relaxed mt-6 max-w-4xl">{event.description}</p>
-            <div className="grid md:grid-cols-3 gap-px mt-7 border-2" style={{ borderColor: soft, background: soft }}><Info icon={<CalendarDays className="w-5 h-5"/>} label="15 Sep 2026" sub="Tuesday"/><Info icon={<Clock3 className="w-5 h-5"/>} label="10:30 AM" sub="Onwards"/><Info icon={<MapPin className="w-5 h-5"/>} label="Shraddha Park" sub="Nagpur"/></div>
+            <div className="grid md:grid-cols-3 gap-px mt-7 border-2" style={{ borderColor: soft, background: soft }}><Info icon={<CalendarDays className="w-5 h-5"/>} label={mainDate} sub="Tuesday"/><Info icon={<Clock3 className="w-5 h-5"/>} label={mainTime} sub="Onwards"/><Info icon={<MapPin className="w-5 h-5"/>} label={event.venue} sub={event.city}/></div>
 
             <div className="grid grid-cols-4 border-b-2 mt-8" style={{ borderColor: soft }}>{(['about','schedule','guidelines','organizers'] as const).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className="py-4 font-label-mono text-[9px] uppercase" style={{ color: tab === item ? purple : '#444', borderBottom: tab === item ? `3px solid ${purple}` : '3px solid transparent' }}>{item}</button>)}</div>
 
-            {tab === 'about' && <div className="grid lg:grid-cols-[1.05fr_.95fr] gap-4 mt-4"><div className="space-y-4"><InfoCard icon={<CalendarDays className="w-4 h-4"/>} title="Event details"><p>Join us for the Shree Ganesh Utsav Celebration 2026 at Shraddha Park, Nagpur. All students and faculty members are encouraged to participate and be part of this sacred and joyous celebration.</p><div className="mt-4 p-4" style={{ background: '#F0E5FA' }}><div className="flex gap-3"><Shirt className="w-5 h-5 shrink-0" style={{ color: purple }}/><div><b style={{ color: purple }}>SPECIAL NOTE</b><p className="mt-1 text-xs">All students and faculty members are encouraged to wear traditional attire as part of the festive celebrations.</p></div></div></div></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>Dr. Vivek Kapur</b><p>Campus Director, Shraddha Park Campus</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>Team Shree Ganesh Utsav Celebration 2026</b><p>Shraddha Park, Nagpur</p></InfoCard></div><InfoCard icon={<ShieldCheck className="w-4 h-4"/>} title="Important instructions for students"><div className="space-y-3">{guidelines.map((item, i) => <div key={item} className="flex gap-3 text-sm"><span className="shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><span>{item}</span></div>)}</div><div className="mt-6 pt-5 border-t" style={{ borderColor: soft }}>🙏 Let us celebrate Ganesh Utsav with devotion, discipline and joy.<br/><br/>— Team Shree Ganesh Utsav Celebration 2026</div></InfoCard></div>}
-            {tab === 'schedule' && <div className="mt-4 border-2 overflow-x-auto" style={{ borderColor: purple }}><table className="w-full min-w-[760px] text-sm"><thead style={{ background: purple, color: 'white' }}><tr>{['Date','Day','Morning (11.00 am)','Afternoon (4.30 pm)'].map((x) => <th key={x} className="p-3 text-left font-label-mono text-[9px] uppercase">{x}</th>)}</tr></thead><tbody>{schedule.map((row) => <tr key={row[0]} className="border-t" style={{ borderColor: '#F1B184' }}>{row.map((cell, i) => <td key={`${row[0]}-${i}`} className="p-3 align-top">{cell}</td>)}</tr>)}</tbody></table></div>}
+            {tab === 'about' && <div className="grid lg:grid-cols-[1.05fr_.95fr] gap-4 mt-4"><div className="space-y-4"><InfoCard icon={<CalendarDays className="w-4 h-4"/>} title="Event details"><p>{event.description}</p><div className="mt-4 p-4" style={{ background: '#F0E5FA' }}><div className="flex gap-3"><Shirt className="w-5 h-5 shrink-0" style={{ color: purple }}/><div><b style={{ color: purple }}>SPECIAL NOTE</b><p className="mt-1 text-xs">{specialNote}</p></div></div></div></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>{presidedBy}</b><p>{presidedByTitle}</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>{organizedBy}</b><p>{event.city}</p></InfoCard></div><InfoCard icon={<ShieldCheck className="w-4 h-4"/>} title="Important instructions for students"><div className="space-y-3">{guidelines.map((item, i) => <div key={item} className="flex gap-3 text-sm"><span className="shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><span>{item}</span></div>)}</div><div className="mt-6 pt-5 border-t" style={{ borderColor: soft }}>🙏 Let us celebrate with devotion, discipline and joy.<br/><br/>— {organizedBy}</div></InfoCard></div>}
+            {tab === 'schedule' && <div className="mt-4 border-2 overflow-x-auto" style={{ borderColor: purple }}><table className="w-full min-w-[760px] text-sm"><thead style={{ background: purple, color: 'white' }}><tr>{['Date','Day','Morning (11.00 am)','Afternoon (4.30 pm)'].map((x) => <th key={x} className="p-3 text-left font-label-mono text-[9px] uppercase">{x}</th>)}</tr></thead><tbody>{schedule.map((row) => <tr key={row.date} className="border-t" style={{ borderColor: '#F1B184' }}><td className="p-3 align-top">{row.date}</td><td className="p-3 align-top">{row.day}</td><td className="p-3 align-top">{row.morning}</td><td className="p-3 align-top">{row.afternoon}</td></tr>)}</tbody></table></div>}
             {tab === 'guidelines' && <div className="mt-4 border-2 p-6" style={{ borderColor: purple }}><h2 className="dc-display text-3xl">IMPORTANT INSTRUCTIONS</h2><div className="mt-6 space-y-4">{guidelines.map((item, i) => <div key={item} className="flex gap-4"><span className="shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><p>{item}</p></div>)}</div></div>}
-            {tab === 'organizers' && <div className="grid md:grid-cols-2 gap-4 mt-4"><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>Dr. Vivek Kapur</b><p>Campus Director, Shraddha Park Campus</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>Team Shree Ganesh Utsav Celebration 2026</b><p>Shraddha Park, Nagpur</p></InfoCard></div>}
+            {tab === 'organizers' && <div className="grid md:grid-cols-2 gap-4 mt-4"><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>{presidedBy}</b><p>{presidedByTitle}</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>{organizedBy}</b><p>{event.city}</p></InfoCard></div>}
           </div>
         </div>
       </div>
