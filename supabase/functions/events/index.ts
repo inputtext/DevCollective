@@ -11,7 +11,7 @@ const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPAB
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const clerkIssuer = String(Deno.env.get("CLERK_ISSUER_URL") || "").replace(/\/$/, "");
-const clerkAuthorizedParties = String(Deno.env.get("CLERK_AUTHORIZED_PARTIES") || "")
+const clerkAuthorizedParties = String(Deno.env.get("EVENTS_CLERK_AUTHORIZED_PARTIES") || "")
   .split(",")
   .map((value) => value.trim())
   .filter(Boolean);
@@ -25,7 +25,6 @@ async function userId(req: Request) {
   const { payload } = await jwtVerify(token, clerkJwks, {
     issuer: clerkIssuer,
     algorithms: ["RS256"],
-    ...(clerkAuthorizedParties.length ? { audience: undefined } : {}),
   });
 
   if (clerkAuthorizedParties.length) {
