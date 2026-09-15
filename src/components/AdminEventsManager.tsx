@@ -159,7 +159,7 @@ export const AdminEventsManager: React.FC = () => {
 
       {open && (
         <div className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
-          <div className="max-w-[1300px] mx-auto bg-background border-2 border-outline-variant shadow-[9px_9px_0_#171717]">
+          <div className="max-w-[1300px] mx-auto bg-background border-2 border-outline-variant shadow-[9px_9px_0_#171717] max-h-[calc(100vh-1.5rem)] overflow-y-auto">
             <header className="flex items-center justify-between p-5 border-b-2 border-outline-variant">
               <div>
                 <p className="font-mono text-[9px] uppercase text-primary">RBAC / ADMIN ONLY</p>
