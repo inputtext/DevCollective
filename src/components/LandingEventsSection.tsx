@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, CalendarDays, ChevronRight, MapPin } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { DevEvent } from '../types';
@@ -32,6 +33,7 @@ const formatDate = (value: string) => new Intl.DateTimeFormat('en-IN', { day: '2
 export const LandingEventsSection: React.FC = () => {
   const { setActiveTab } = useAuth();
   const [events, setEvents] = useState<DevEvent[]>([]);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -46,13 +48,31 @@ export const LandingEventsSection: React.FC = () => {
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    const root = document.querySelector('.dc-public');
+    if (!root) return;
+    const cflowSection = Array.from(root.querySelectorAll('section')).find((section) => section.textContent?.includes('Understand the flow.'));
+    if (!cflowSection?.parentElement) return;
+
+    const slot = document.createElement('div');
+    slot.setAttribute('data-dc-landing-events-slot', 'true');
+    cflowSection.parentElement.insertBefore(slot, cflowSection.nextElementSibling);
+    setPortalTarget(slot);
+
+    return () => {
+      setPortalTarget(null);
+      slot.remove();
+    };
+  }, []);
+
   const featured = useMemo(() => {
     const active = events.filter((event) => statusOf(event) !== 'PAST');
     return active.length ? active : events.slice(0, 3);
   }, [events]);
   const openEvents = () => setActiveTab('events');
 
-  return (
+  const section = (
     <section className="border-y-2 border-outline-variant bg-[#F3EBDD]" data-gsap-reveal>
       <div className="max-w-[1500px] mx-auto py-20 sm:py-28">
         <div className="px-5 sm:px-8 lg:px-12">
@@ -76,4 +96,6 @@ export const LandingEventsSection: React.FC = () => {
       </div>
     </section>
   );
+
+  return portalTarget ? createPortal(section, portalTarget) : null;
 };
