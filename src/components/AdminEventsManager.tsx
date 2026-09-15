@@ -9,6 +9,7 @@ const API = `${String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, ''
 const blank = {
   title: '', subtitle: '', description: '', startsAt: '', endsAt: '', venue: '', city: 'Nagpur', organizer: '',
   registrationUrl: '', sourceUrl: '', ticketInfo: '', speakers: '', coordinators: '', contactInfo: '',
+  detailsJson: '{}',
   background: '#050505', foreground: '#FFFFFF', primary: '#E50914', secondary: '#171717', accent: '#FF1A1A'
 };
 
@@ -46,9 +47,18 @@ export const AdminEventsManager: React.FC = () => {
     setMessage('');
     try {
       const token = await auth();
+      let details: unknown = {};
+      try {
+        details = JSON.parse(form.detailsJson || '{}');
+        if (!details || Array.isArray(details) || typeof details !== 'object') throw new Error('Event details must be a JSON object.');
+      } catch (error) {
+        throw new Error(error instanceof Error && error.message.includes('JSON') ? `Invalid event details JSON: ${error.message}` : 'Event details must be a JSON object.');
+      }
+
       const payload = {
         ...form,
         id: editing || undefined,
+        details,
         startsAt: new Date(form.startsAt).toISOString(),
         endsAt: new Date(form.endsAt).toISOString(),
         speakers: form.speakers.split(',').map(v => v.trim()).filter(Boolean),
@@ -98,6 +108,7 @@ export const AdminEventsManager: React.FC = () => {
       speakers: event.speakers.join(', '),
       coordinators: event.coordinators.join(', '),
       contactInfo: event.contactInfo || '',
+      detailsJson: JSON.stringify(event.details || {}, null, 2),
       background: event.theme.background,
       foreground: event.theme.foreground,
       primary: event.theme.primary,
@@ -203,6 +214,19 @@ export const AdminEventsManager: React.FC = () => {
                       rows={4}
                       className="mt-1 w-full border-2 border-outline-variant bg-background p-2 text-xs"
                     />
+                  </label>
+
+                  <label className="block">
+                    <span className="font-mono text-[8px] uppercase">Structured details JSON</span>
+                    <textarea
+                      value={form.detailsJson}
+                      onChange={event => setForm({ ...form, detailsJson: event.target.value })}
+                      rows={12}
+                      spellCheck={false}
+                      className="mt-1 w-full border-2 border-outline-variant bg-background p-2 text-[10px] font-mono leading-relaxed"
+                      placeholder='{"specialNote":"...","instructions":["..."],"schedule":[]}'
+                    />
+                    <span className="block mt-1 text-[9px] text-on-surface-variant">Optional event-specific content used by themed detail pages.</span>
                   </label>
 
                   <div className="grid grid-cols-2 gap-3">
