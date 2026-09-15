@@ -55,6 +55,7 @@ export interface CommunityComment {
   postId: string;
   parentCommentId?: string | null;
   authorId: string;
+  authorName: string;
   authorAvatar: string;
   authorRole: string;
   authorRep: number;
