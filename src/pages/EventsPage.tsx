@@ -156,32 +156,236 @@ const GaneshEventDetail: React.FC<{ event: DevEvent; onBack: () => void }> = ({ 
     'Students are requested to cooperate with the organizing team for the smooth and safe conduct of the event.',
   ];
   return (
-    <div className="-m-4 sm:-m-8 lg:-m-10 min-h-screen" style={{ background: cream, color: '#171717' }}>
-      <div className="bg-[#090909] text-white px-5 sm:px-8 lg:px-12 py-4 flex items-center justify-between"><button type="button" onClick={onBack} className="inline-flex items-center gap-2 font-label-mono text-[9px] uppercase"><ChevronLeft className="w-4 h-4"/> All events</button><div className="font-label-mono text-[9px] uppercase tracking-[0.16em] text-white/60">DEVCOLLECTIVE / CAMPUS EVENTS</div></div>
-      <div className="max-w-[1450px] mx-auto px-5 sm:px-8 lg:px-12 py-8 lg:py-12">
-        <div className="grid xl:grid-cols-[minmax(390px,0.9fr)_1.25fr] gap-8 lg:gap-10 items-start">
+    <div className="ganesh-event-detail -m-4 sm:-m-8 lg:-m-10 min-h-screen" style={{ background: cream, color: '#171717' }}>
+      <style>{`
+        /* Keep the 100% desktop composition untouched. These rules only engage
+           when browser zoom makes the effective viewport narrower than the
+           desktop layout can comfortably support. */
+        @media (max-width: 1300px) {
+          .ganesh-event-detail .ganesh-detail-shell {
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-detail-grid {
+            gap: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster {
+            min-height: 0;
+            padding: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-main {
+            padding-top: 2.5rem;
+            padding-bottom: 2.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-om {
+            font-size: 6rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-title {
+            font-size: 2.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-date {
+            padding: .65rem 1rem;
+            margin-top: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-special {
+            margin-top: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-heading-row {
+            flex-direction: column;
+            gap: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-quote {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            font-size: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-description {
+            margin-top: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-info-row {
+            margin-top: 1.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-tabs {
+            margin-top: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-tabs button {
+            padding-top: .75rem;
+            padding-bottom: .75rem;
+          }
+
+          .ganesh-event-detail .ganesh-info-card {
+            padding: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-info-card-body {
+            margin-top: .75rem;
+          }
+
+          .ganesh-event-detail .ganesh-instruction-list {
+            gap: .5rem;
+          }
+
+          .ganesh-event-detail .ganesh-guidelines {
+            padding: 1.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-guidelines-list {
+            margin-top: 1rem;
+            gap: .75rem;
+          }
+
+          .ganesh-event-detail .ganesh-schedule-table th,
+          .ganesh-event-detail .ganesh-schedule-table td {
+            padding: .6rem .65rem;
+          }
+        }
+
+        @media (max-width: 900px) {
+          .ganesh-event-detail .ganesh-detail-shell {
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster {
+            padding: 1.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-main {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+          }
+
+          .ganesh-event-detail .ganesh-om {
+            font-size: 5rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-title {
+            font-size: 2.15rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-subtitle {
+            font-size: .95rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-description {
+            margin-top: .75rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-date {
+            margin-top: .85rem;
+            padding: .55rem .8rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-special {
+            margin-top: .75rem;
+          }
+
+          .ganesh-event-detail .ganesh-main-title {
+            font-size: clamp(2.6rem, 8vw, 4.25rem);
+          }
+
+          .ganesh-event-detail .ganesh-info-row {
+            grid-template-columns: 1fr;
+          }
+
+          .ganesh-event-detail .ganesh-about-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .ganesh-event-detail .ganesh-topbar {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-detail-shell {
+            padding-left: 1rem;
+            padding-right: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster {
+            padding: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-main {
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-om {
+            font-size: 4.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-title {
+            font-size: 1.9rem;
+          }
+
+          .ganesh-event-detail .ganesh-poster-description {
+            font-size: .78rem;
+          }
+
+          .ganesh-event-detail .ganesh-quote {
+            font-size: 1.25rem;
+          }
+
+          .ganesh-event-detail .ganesh-tabs {
+            display: flex;
+            overflow-x: auto;
+          }
+
+          .ganesh-event-detail .ganesh-tabs button {
+            flex: 0 0 25%;
+            min-width: 5.5rem;
+          }
+
+          .ganesh-event-detail .ganesh-guidelines {
+            padding: 1rem;
+          }
+
+          .ganesh-event-detail .ganesh-guidelines-list {
+            gap: .6rem;
+          }
+        }
+      `}</style>
+      <div className="ganesh-topbar bg-[#090909] text-white px-5 sm:px-8 lg:px-12 py-4 flex items-center justify-between"><button type="button" onClick={onBack} className="inline-flex items-center gap-2 font-label-mono text-[9px] uppercase"><ChevronLeft className="w-4 h-4"/> All events</button><div className="font-label-mono text-[9px] uppercase tracking-[0.16em] text-white/60">DEVCOLLECTIVE / CAMPUS EVENTS</div></div>
+      <div className="ganesh-detail-shell max-w-[1450px] mx-auto px-5 sm:px-8 lg:px-12 py-8 lg:py-12">
+        <div className="ganesh-detail-grid grid xl:grid-cols-[minmax(390px,0.9fr)_1.25fr] gap-8 lg:gap-10 items-start">
           <div>
-            <div className="relative overflow-hidden border-2 border-[#2C1350] shadow-[7px_7px_0_#171717] bg-[#54149A] min-h-[610px] flex flex-col justify-between text-white p-7 sm:p-10">
+            <div className="ganesh-poster relative overflow-hidden border-2 border-[#2C1350] shadow-[7px_7px_0_#171717] bg-[#54149A] min-h-[610px] flex flex-col justify-between text-white p-7 sm:p-10">
               <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_50%_37%,#F9B51B_0,transparent_17%),radial-gradient(circle_at_50%_45%,#FF55C8_0,transparent_33%),linear-gradient(180deg,transparent_50%,#2B0755_100%)]" />
               <div className="absolute -right-8 top-0 text-5xl">🪔</div><div className="absolute right-3 top-14 text-5xl">🪔</div>
               <div className="relative flex items-center justify-between gap-4 text-[9px] font-semibold tracking-tight"><span>G H RAISONI<br/><b>COLLEGE</b><small className="block font-normal opacity-80">Engineering and Management<br/>Nagpur</small></span><span className="h-9 w-px bg-white/40"/><span>G H RAISONI<br/><b>SKILL TECH UNIVERSITY</b><small className="block font-normal opacity-80">Nagpur</small></span></div>
-              <div className="relative text-center py-10"><div className="text-[7rem] sm:text-[9rem] leading-none drop-shadow-[0_12px_20px_rgba(0,0,0,.25)]">ॐ</div><div className="font-serif text-4xl sm:text-5xl font-bold leading-none">Shree Ganesh Utsav</div><div className="font-label-mono text-lg sm:text-xl text-[#FFB10A] mt-2 tracking-tight">Celebration 2026</div><p className="text-sm mt-5 max-w-md mx-auto leading-relaxed opacity-90">G H Raisoni College of Engineering & Management, Nagpur & G H Raisoni Skill Tech University, Nagpur</p><div className="inline-block mt-5 bg-[#F36B21] px-5 py-3 font-bold">15<sup>th</sup> September 2026 at 10.30 AM<br/><span className="font-normal">Venue: Shraddha Park, Nagpur</span></div><p className="mt-5 text-sm opacity-90">Presided by<br/><b className="text-[#FFB10A] text-lg">{presidedBy}</b><br/>{presidedByTitle}</p></div>
-              <div className="relative text-center text-xs opacity-90">Special Note<br/><b>{specialNote}</b><div className="mt-5 font-serif italic text-[#FFB10A] text-xl">{quote}</div><div className="mt-4 text-[8px] tracking-[0.25em]">DEVOTION · DISCIPLINE · TOGETHERNESS</div></div>
+              <div className="ganesh-poster-main relative text-center py-10"><div className="ganesh-om text-[7rem] sm:text-[9rem] leading-none drop-shadow-[0_12px_20px_rgba(0,0,0,.25)]">ॐ</div><div className="ganesh-poster-title font-serif text-4xl sm:text-5xl font-bold leading-none">Shree Ganesh Utsav</div><div className="ganesh-poster-subtitle font-label-mono text-lg sm:text-xl text-[#FFB10A] mt-2 tracking-tight">Celebration 2026</div><p className="ganesh-poster-description text-sm mt-5 max-w-md mx-auto leading-relaxed opacity-90">G H Raisoni College of Engineering & Management, Nagpur & G H Raisoni Skill Tech University, Nagpur</p><div className="ganesh-poster-date inline-block mt-5 bg-[#F36B21] px-5 py-3 font-bold">15<sup>th</sup> September 2026 at 10.30 AM<br/><span className="font-normal">Venue: Shraddha Park, Nagpur</span></div><p className="ganesh-poster-presided mt-5 text-sm opacity-90">Presided by<br/><b className="text-[#FFB10A] text-lg">{presidedBy}</b><br/>{presidedByTitle}</p></div>
+              <div className="ganesh-poster-special relative text-center text-xs opacity-90">Special Note<br/><b>{specialNote}</b><div className="mt-5 font-serif italic text-[#FFB10A] text-xl">{quote}</div><div className="mt-4 text-[8px] tracking-[0.25em]">DEVOTION · DISCIPLINE · TOGETHERNESS</div></div>
             </div>
             <button type="button" onClick={() => setTab('schedule')} className="w-full mt-5 py-4 text-white font-label-mono text-[10px] uppercase font-bold flex items-center justify-center gap-2 shadow-[5px_5px_0_#171717]" style={{ background: purple }}><CalendarDays className="w-4 h-4"/> View full schedule</button>
           </div>
 
           <div className="min-w-0">
             <div className="flex items-center gap-2 font-label-mono text-[9px] uppercase"><span style={{ color: orange }}>EVENT</span><span>/</span><span>{mainDate}</span><span>/</span><span>COMMUNITY</span><span className="px-2 py-1 text-white" style={{ background: purple }}>{statusOf(event)}</span></div>
-            <div className="flex flex-col lg:flex-row lg:items-start gap-5 justify-between"><div><h1 className="dc-display text-5xl sm:text-6xl lg:text-7xl leading-[0.92] tracking-[-0.055em] mt-4 max-w-4xl">{event.title}</h1><p className="text-base mt-5 max-w-3xl">G H Raisoni College of Engineering and Management, Nagpur & G H Raisoni SkillTech University, Nagpur</p></div><div className="shrink-0 px-6 py-5 text-white font-serif italic text-2xl shadow-[5px_5px_0_#171717]" style={{ background: purple }}>“<br/>{quote}</div></div>
-            <p className="text-base sm:text-lg leading-relaxed mt-6 max-w-4xl">{event.description}</p>
-            <div className="grid md:grid-cols-3 gap-px mt-7 border-2" style={{ borderColor: soft, background: soft }}><Info icon={<CalendarDays className="w-5 h-5"/>} label={mainDate} sub="Tuesday"/><Info icon={<Clock3 className="w-5 h-5"/>} label={mainTime} sub="Onwards"/><Info icon={<MapPin className="w-5 h-5"/>} label={event.venue} sub={event.city}/></div>
+            <div className="ganesh-heading-row flex flex-col lg:flex-row lg:items-start gap-5 justify-between"><div><h1 className="ganesh-main-title dc-display text-5xl sm:text-6xl lg:text-7xl leading-[0.92] tracking-[-0.055em] mt-4 max-w-4xl">{event.title}</h1><p className="text-base mt-5 max-w-3xl">G H Raisoni College of Engineering and Management, Nagpur & G H Raisoni SkillTech University, Nagpur</p></div><div className="ganesh-quote shrink-0 px-6 py-5 text-white font-serif italic text-2xl shadow-[5px_5px_0_#171717]" style={{ background: purple }}>“<br/>{quote}</div></div>
+            <p className="ganesh-description text-base sm:text-lg leading-relaxed mt-6 max-w-4xl">{event.description}</p>
+            <div className="ganesh-info-row grid md:grid-cols-3 gap-px mt-7 border-2" style={{ borderColor: soft, background: soft }}><Info icon={<CalendarDays className="w-5 h-5"/>} label={mainDate} sub="Tuesday"/><Info icon={<Clock3 className="w-5 h-5"/>} label={mainTime} sub="Onwards"/><Info icon={<MapPin className="w-5 h-5"/>} label={event.venue} sub={event.city}/></div>
 
-            <div className="grid grid-cols-4 border-b-2 mt-8" style={{ borderColor: soft }}>{(['about','schedule','guidelines','organizers'] as const).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className="py-4 font-label-mono text-[9px] uppercase" style={{ color: tab === item ? purple : '#444', borderBottom: tab === item ? `3px solid ${purple}` : '3px solid transparent' }}>{item}</button>)}</div>
+            <div className="ganesh-tabs grid grid-cols-4 border-b-2 mt-8" style={{ borderColor: soft }}>{(['about','schedule','guidelines','organizers'] as const).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className="py-4 font-label-mono text-[9px] uppercase" style={{ color: tab === item ? purple : '#444', borderBottom: tab === item ? `3px solid ${purple}` : '3px solid transparent' }}>{item}</button>)}</div>
 
-            {tab === 'about' && <div className="grid lg:grid-cols-[1.05fr_.95fr] gap-4 mt-4"><div className="space-y-4"><InfoCard icon={<CalendarDays className="w-4 h-4"/>} title="Event details"><p>{event.description}</p><div className="mt-4 p-4" style={{ background: '#F0E5FA' }}><div className="flex gap-3"><Shirt className="w-5 h-5 shrink-0" style={{ color: purple }}/><div><b style={{ color: purple }}>SPECIAL NOTE</b><p className="mt-1 text-xs">{specialNote}</p></div></div></div></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>{presidedBy}</b><p>{presidedByTitle}</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>{organizedBy}</b><p>{event.city}</p></InfoCard></div><InfoCard icon={<ShieldCheck className="w-4 h-4"/>} title="Important instructions for students"><div className="space-y-3">{guidelines.map((item, i) => <div key={item} className="flex gap-3 text-sm"><span className="shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><span>{item}</span></div>)}</div><div className="mt-6 pt-5 border-t" style={{ borderColor: soft }}>🙏 Let us celebrate with devotion, discipline and joy.<br/><br/>— {organizedBy}</div></InfoCard></div>}
-            {tab === 'schedule' && <div className="mt-4 border-2 overflow-x-auto" style={{ borderColor: purple }}><table className="w-full min-w-[760px] text-sm"><thead style={{ background: purple, color: 'white' }}><tr>{['Date','Day','Morning (11.00 am)','Afternoon (4.30 pm)'].map((x) => <th key={x} className="p-3 text-left font-label-mono text-[9px] uppercase">{x}</th>)}</tr></thead><tbody>{schedule.map((row) => <tr key={row.date} className="border-t" style={{ borderColor: '#F1B184' }}><td className="p-3 align-top">{row.date}</td><td className="p-3 align-top">{row.day}</td><td className="p-3 align-top">{row.morning}</td><td className="p-3 align-top">{row.afternoon}</td></tr>)}</tbody></table></div>}
-            {tab === 'guidelines' && <div className="mt-4 border-2 p-6" style={{ borderColor: purple }}><h2 className="dc-display text-3xl">IMPORTANT INSTRUCTIONS</h2><div className="mt-6 space-y-4">{guidelines.map((item, i) => <div key={item} className="flex gap-4"><span className="shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><p>{item}</p></div>)}</div></div>}
+            {tab === 'about' && <div className="ganesh-about-grid grid lg:grid-cols-[1.05fr_.95fr] gap-4 mt-4"><div className="space-y-4"><InfoCard icon={<CalendarDays className="w-4 h-4"/>} title="Event details"><p>{event.description}</p><div className="mt-4 p-4" style={{ background: '#F0E5FA' }}><div className="flex gap-3"><Shirt className="w-5 h-5 shrink-0" style={{ color: purple }}/><div><b style={{ color: purple }}>SPECIAL NOTE</b><p className="mt-1 text-xs">{specialNote}</p></div></div></div></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>{presidedBy}</b><p>{presidedByTitle}</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>{organizedBy}</b><p>{event.city}</p></InfoCard></div><InfoCard icon={<ShieldCheck className="w-4 h-4"/>} title="Important instructions for students"><div className="ganesh-instruction-list space-y-3">{guidelines.map((item, i) => <div key={item} className="flex gap-3 text-sm"><span className="shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><span>{item}</span></div>)}</div><div className="mt-6 pt-5 border-t" style={{ borderColor: soft }}>🙏 Let us celebrate with devotion, discipline and joy.<br/><br/>— {organizedBy}</div></InfoCard></div>}
+            {tab === 'schedule' && <div className="mt-4 border-2 overflow-x-auto" style={{ borderColor: purple }}><table className="ganesh-schedule-table w-full min-w-[760px] text-sm"><thead style={{ background: purple, color: 'white' }}><tr>{['Date','Day','Morning (11.00 am)','Afternoon (4.30 pm)'].map((x) => <th key={x} className="p-3 text-left font-label-mono text-[9px] uppercase">{x}</th>)}</tr></thead><tbody>{schedule.map((row) => <tr key={row.date} className="border-t" style={{ borderColor: '#F1B184' }}><td className="p-3 align-top">{row.date}</td><td className="p-3 align-top">{row.day}</td><td className="p-3 align-top">{row.morning}</td><td className="p-3 align-top">{row.afternoon}</td></tr>)}</tbody></table></div>}
+            {tab === 'guidelines' && <div className="ganesh-guidelines mt-4 border-2 p-6" style={{ borderColor: purple }}><h2 className="dc-display text-3xl">IMPORTANT INSTRUCTIONS</h2><div className="ganesh-guidelines-list mt-6 space-y-4">{guidelines.map((item, i) => <div key={item} className="flex gap-4"><span className="shrink-0 w-8 h-8 rounded-full text-white flex items-center justify-center font-bold" style={{ background: purple }}>{i + 1}</span><p>{item}</p></div>)}</div></div>}
             {tab === 'organizers' && <div className="grid md:grid-cols-2 gap-4 mt-4"><InfoCard icon={<Users className="w-4 h-4"/>} title="Presided by"><b style={{ color: purple }}>{presidedBy}</b><p>{presidedByTitle}</p></InfoCard><InfoCard icon={<Users className="w-4 h-4"/>} title="Organized by"><b style={{ color: purple }}>{organizedBy}</b><p>{event.city}</p></InfoCard></div>}
           </div>
         </div>
@@ -192,7 +396,7 @@ const GaneshEventDetail: React.FC<{ event: DevEvent; onBack: () => void }> = ({ 
 
 const Info: React.FC<{ icon: React.ReactNode; label: string; sub: string }> = ({ icon, label, sub }) => <div className="bg-[#F0E9DF] p-4 flex items-center gap-3"><div className="w-9 h-9 rounded-full border-2 border-[#5B169D] flex items-center justify-center text-[#5B169D]">{icon}</div><div><b className="block text-sm">{label}</b><span className="text-xs text-[#555]">{sub}</span></div></div>;
 
-const InfoCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => <div className="border-2 border-[#DDD2C3] bg-white/55 p-5"><div className="flex items-center gap-2 font-label-mono text-[9px] uppercase font-bold"><span className="text-[#5B169D]">{icon}</span>{title}</div><div className="mt-4 text-sm leading-relaxed">{children}</div></div>;
+const InfoCard: React.FC<{ icon: React.ReactNode; title: string; children: React.ReactNode }> = ({ icon, title, children }) => <div className="ganesh-info-card border-2 border-[#DDD2C3] bg-white/55 p-5"><div className="flex items-center gap-2 font-label-mono text-[9px] uppercase font-bold"><span className="text-[#5B169D]">{icon}</span>{title}</div><div className="ganesh-info-card-body mt-4 text-sm leading-relaxed">{children}</div></div>;
 
 const EventDetail: React.FC<{ event: DevEvent; onBack: () => void }> = ({ event, onBack }) => {
   const status = statusOf(event); const past = status === 'past';
