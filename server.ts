@@ -78,7 +78,130 @@ const ROADMAP_JSON_SCHEMA = { type: Type.OBJECT, properties: { roadmapTitle: { t
 const ROADMAP_MENTOR_SYSTEM_PROMPT = `You are an expert tech career mentor and roadmap architect for college engineering students on DevCollective. Your job is to have a short, natural conversation with the student to understand: (1) which technology or field they're interested in, (2) their current skill level (beginner, intermediate, or advanced), and (3) what they already know. Ask ONE short question at a time. Once you have enough information, usually after 2 to 4 exchanges, call finalize_roadmap with a complete, realistic, progressive roadmap. If they're a true beginner, start with real fundamentals and never skip ahead. Use plain, encouraging language and concrete topics, capstones, and learning resources.`;
 const finalizeRoadmapFunctionDeclaration = { name: 'finalize_roadmap', description: "Generate the student's complete personalized learning roadmap once enough information is known.", parameters: ROADMAP_JSON_SCHEMA as any };
 app.post('/api/ai/roadmap-chat', async (req, res) => { try { const { message, history } = req.body as { message: string; history?: { role: 'user' | 'model'; text: string }[] }; if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const contents = [...(history || []).slice(-16).map((h) => ({ role: h.role, parts: [{ text: h.text }] })), { role: 'user', parts: [{ text: message }] }]; const response = await ai.models.generateContent({ model: AI_MODEL, contents, config: { systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT, tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }] } }); const functionCalls = response.functionCalls; if (functionCalls?.length && functionCalls[0].name === 'finalize_roadmap') return res.json({ success: true, type: 'roadmap', roadmap: functionCalls[0].args }); return res.json({ success: true, type: 'question', message: response.text || "Could you tell me a bit more about what you're interested in?" }); } catch (err: any) { console.error('Error in /api/ai/roadmap-chat:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
-app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, res) => { try { if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const { PDFParse } = await import('pdf-parse'); const parser = new PDFParse({ data: req.file.buffer }); const textResult = await parser.getText(); await parser.destroy(); const resumeText = textResult.text.slice(0, 15000); if (!resumeText.trim()) return res.status(422).json({ error: 'Could not extract any text from this PDF. Try a text-based PDF, not a scanned image.' }); const prompt = `Here is the raw extracted text from a student's resume:\n\n"""\n${resumeText}\n"""\n\nRead it carefully and extract structured profile data for a college developer platform. Only include information actually present or strongly implied. Do not invent information.`; const response = await ai.models.generateContent({ model: AI_MODEL, contents: prompt, config: { systemInstruction: 'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements.', responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { branch: { type: Type.STRING }, academicYear: { type: Type.STRING }, bio: { type: Type.STRING }, skills: { type: Type.ARRAY, items: { type: Type.STRING } }, githubUrl: { type: Type.STRING }, linkedinUrl: { type: Type.STRING }, confidence: { type: Type.STRING } }, required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'] } } }); const parsed = JSON.parse(response.text || '{}'); return res.json({ success: true, extracted: parsed }); } catch (err: any) { console.error('Error parsing resume:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
+type ResumeExtraction = {
+  branch: string;
+  academicYear: string;
+  bio: string;
+  skills: string[];
+  githubUrl: string;
+  linkedinUrl: string;
+  confidence?: string;
+};
+
+function validateResumeExtraction(value: unknown): ResumeExtraction {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('The AI service returned an invalid resume extraction.');
+  }
+
+  const data = value as Record<string, unknown>;
+  const stringField = (field: keyof ResumeExtraction, maxLength: number, required = true): string => {
+    const raw = data[field];
+    if (raw === undefined || raw === null) {
+      if (required) throw new Error(`Resume extraction is missing the "${String(field)}" field.`);
+      return '';
+    }
+    if (typeof raw !== 'string') throw new Error(`Resume extraction field "${String(field)}" must be a string.`);
+    return raw.trim().slice(0, maxLength);
+  };
+
+  const rawSkills = data.skills;
+  if (!Array.isArray(rawSkills)) {
+    throw new Error('Resume extraction field "skills" must be an array.');
+  }
+
+  const skills = Array.from(new Set(
+    rawSkills
+      .filter((skill): skill is string => typeof skill === 'string')
+      .map((skill) => skill.trim().slice(0, 80))
+      .filter(Boolean)
+  )).slice(0, 50);
+
+  if (rawSkills.some((skill) => typeof skill !== 'string')) {
+    throw new Error('Resume extraction contains an invalid skill value.');
+  }
+
+  const githubUrl = stringField('githubUrl', 500);
+  const linkedinUrl = stringField('linkedinUrl', 500);
+  const urlPattern = /^https?:\\/\\//i;
+  if (githubUrl && !urlPattern.test(githubUrl)) throw new Error('Resume extraction returned an invalid GitHub URL.');
+  if (linkedinUrl && !urlPattern.test(linkedinUrl)) throw new Error('Resume extraction returned an invalid LinkedIn URL.');
+
+  return {
+    branch: stringField('branch', 120),
+    academicYear: stringField('academicYear', 80),
+    bio: stringField('bio', 250),
+    skills,
+    githubUrl,
+    linkedinUrl,
+    confidence: stringField('confidence', 200, false) || undefined,
+  };
+}
+
+app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' });
+    const ai = getGeminiClient();
+    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' });
+
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ data: req.file.buffer });
+    const textResult = await parser.getText();
+    await parser.destroy();
+
+    const resumeText = textResult.text.slice(0, 15000);
+    if (!resumeText.trim()) {
+      return res.status(422).json({ error: 'Could not extract any text from this PDF. Try a text-based PDF, not a scanned image.' });
+    }
+
+    const prompt = `Here is the raw extracted text from a student's resume:
+
+"""
+${resumeText}
+"""
+
+Read it carefully and extract structured profile data for a college developer platform.
+Only include information actually present or strongly implied by the resume.
+Do not invent information.
+For skills, only include technologies or technical skills supported by the resume text.
+For URLs, return only URLs that are explicitly present in the resume.
+Keep the bio concise and grounded in the resume.`;
+
+    const response = await ai.models.generateContent({
+      model: AI_MODEL,
+      contents: prompt,
+      config: {
+        systemInstruction: 'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements.',
+        responseMimeType: 'application/json',
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            branch: { type: Type.STRING },
+            academicYear: { type: Type.STRING },
+            bio: { type: Type.STRING },
+            skills: { type: Type.ARRAY, items: { type: Type.STRING } },
+            githubUrl: { type: Type.STRING },
+            linkedinUrl: { type: Type.STRING },
+            confidence: { type: Type.STRING },
+          },
+          required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'],
+        },
+      },
+    });
+
+    let rawParsed: unknown;
+    try {
+      rawParsed = JSON.parse(response.text || '{}');
+    } catch {
+      throw new Error('The AI service returned invalid JSON for the resume.');
+    }
+
+    const extracted = validateResumeExtraction(rawParsed);
+    return res.json({ success: true, extracted });
+  } catch (err: any) {
+    console.error('Error parsing resume:', err);
+    return res.status(500).json({ error: friendlyAiError(err) });
+  }
+});
 
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
