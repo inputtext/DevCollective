@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Marquee } from '../components/Marquee';
 import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
+import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
 import gsap from 'gsap';
 import {
@@ -50,8 +51,9 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
   };
 
   return (
-    <section className="border-t-2 border-outline-variant bg-[#F3EBDD]" data-gsap-reveal>
-      <div className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-24">
+    <section className="relative border-t-2 border-outline-variant bg-[#F3EBDD]" data-gsap-reveal>
+      <FluidShader className="absolute inset-0 z-0 h-full w-full" />
+      <div className="relative z-10 max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-24">
         <div className="flex flex-col items-center text-center">
           <p className="dc-mono text-[9px] uppercase tracking-[0.22em] mb-4 text-[#171717]/60">[ 07 / A SMALL NOTE ]</p>
           <h2 className="dc-display text-4xl sm:text-5xl lg:text-6xl text-[#171717]">There is a note behind the work.</h2>
