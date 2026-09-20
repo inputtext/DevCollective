@@ -1,0 +1,15 @@
+{
+  "project": {
+    "name": "DevCollective",
+    "type": "web",
+    "stack": ["react", "express", "supabase", "clerk", "gemini", "websockets"]
+  },
+  "workflow": {
+    "auto_verify": true,
+    "proof_required": true,
+    "subagent_delegation": true
+  },
+  "intel": {
+    "enabled": true
+  }
+}
