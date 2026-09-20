@@ -122,7 +122,7 @@ function validateResumeExtraction(value: unknown): ResumeExtraction {
 
   const githubUrl = stringField('githubUrl', 500);
   const linkedinUrl = stringField('linkedinUrl', 500);
-  const urlPattern = /^https?:\\/\\//i;
+  const urlPattern = /^https?:\/\//i;
   if (githubUrl && !urlPattern.test(githubUrl)) throw new Error('Resume extraction returned an invalid GitHub URL.');
   if (linkedinUrl && !urlPattern.test(linkedinUrl)) throw new Error('Resume extraction returned an invalid LinkedIn URL.');
 
