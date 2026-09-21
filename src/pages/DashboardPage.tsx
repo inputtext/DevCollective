@@ -289,7 +289,7 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-6" data-gsap-reveal>
-        <DcCard className="p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <DcCard className="p-6 md:p-8" shadow="md">
           <DcSectionHeader
             eyebrow="Learning / Live"
             title="TODAY'S TASKS"
@@ -317,7 +317,7 @@ export const DashboardPage: React.FC = () => {
           )}
         </DcCard>
 
-        <DcCard className="p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <DcCard className="p-6 md:p-8" shadow="md">
           <DcSectionHeader
             eyebrow="Momentum / Signal"
             title="RECENT ACTIVITY"
