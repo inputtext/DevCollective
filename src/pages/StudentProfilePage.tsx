@@ -70,11 +70,11 @@ export const StudentProfilePage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-16">
-      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface shadow-[7px_7px_0_#171717]">
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface dc-shadow-lg">
         <div className="h-40 md:h-52 bg-[linear-gradient(135deg,var(--dc-blue),var(--dc-lavender),var(--dc-mint))] border-b-2 border-outline-variant" />
         <div className="p-6 md:p-8 -mt-14 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
-            <div className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-outline-variant bg-surface-container flex items-center justify-center overflow-hidden shadow-[4px_4px_0_#171717]">
+            <div className="w-28 h-28 sm:w-32 sm:h-32 border-2 border-outline-variant bg-surface-container flex items-center justify-center overflow-hidden dc-shadow-sm">
               {user.avatar ? <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" /> : <span className="font-label-mono text-3xl font-bold">{user.name.slice(0, 1).toUpperCase()}</span>}
             </div>
             <div className="space-y-2">
@@ -86,8 +86,8 @@ export const StudentProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <button onClick={openIdentityEditor} className="flex items-center gap-2 px-4 py-3 bg-dc-blue border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit name & college</button>
-            <button onClick={() => setActiveTab('profile-setup')} className="flex items-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit Profile</button>
+            <button onClick={openIdentityEditor} className="flex items-center gap-2 px-4 py-3 bg-dc-blue border-2 border-outline-variant dc-shadow-sm font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit name & college</button>
+            <button onClick={() => setActiveTab('profile-setup')} className="flex items-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant dc-shadow-sm font-label-mono text-[10px] uppercase font-bold"><Pencil className="w-4 h-4" /> Edit Profile</button>
             {user.githubUrl && <a href={user.githubUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Github className="w-5 h-5" /></a>}
             {user.linkedinUrl && <a href={user.linkedinUrl} target="_blank" rel="noreferrer" className="p-3 bg-surface border-2 border-outline-variant"><Linkedin className="w-5 h-5" /></a>}
           </div>
@@ -95,7 +95,7 @@ export const StudentProfilePage: React.FC = () => {
       </section>
 
       {user.role === 'student' && (
-        <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 dc-shadow-md">
           <div className="absolute inset-x-0 top-0 h-2 bg-dc-yellow" />
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-start gap-4">
@@ -106,14 +106,14 @@ export const StudentProfilePage: React.FC = () => {
                 <p className="text-sm text-on-surface-variant mt-2 max-w-2xl leading-relaxed">Apply for verified mentor access. Your application and resume are reviewed by the DevCollective developer/admin team before your role is upgraded.</p>
               </div>
             </div>
-            <button type="button" onClick={() => setMentorAccessOpen(true)} className="shrink-0 inline-flex items-center justify-center gap-2 bg-primary text-on-primary border-2 border-outline-variant px-5 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[4px_4px_0_#171717] hover:-translate-y-0.5 transition-transform">Apply to become a mentor <ArrowRight className="w-4 h-4" /></button>
+            <button type="button" onClick={() => setMentorAccessOpen(true)} className="shrink-0 inline-flex items-center justify-center gap-2 bg-primary text-on-primary border-2 border-outline-variant px-5 py-3 font-label-mono text-[10px] uppercase font-bold dc-shadow-sm hover:-translate-y-0.5 transition-transform">Apply to become a mentor <ArrowRight className="w-4 h-4" /></button>
           </div>
         </section>
       )}
 
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(({ label, value, tone }) => (
-          <div key={label} className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-5 shadow-[4px_4px_0_#171717]">
+          <div key={label} className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-5 dc-shadow-sm">
             <div className={`absolute inset-x-0 top-0 h-2 ${tone}`} />
             <span className="font-label-mono text-[10px] uppercase text-on-surface-variant block mt-1">{label}</span>
             <span className="dc-display text-3xl mt-2 block">{value}{label === 'STREAK' && <Flame className="inline w-5 h-5 ml-1" />}</span>
@@ -121,7 +121,7 @@ export const StudentProfilePage: React.FC = () => {
         ))}
       </section>
 
-      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 dc-shadow-md">
         <div className="absolute inset-y-0 left-0 w-2 bg-dc-lavender" />
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b-2 border-outline-variant pb-4 mb-6 pl-2">
           <div className="flex items-start gap-3"><div className="w-10 h-10 border-2 border-outline-variant bg-dc-lavender flex items-center justify-center"><Compass className="w-5 h-5" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DISCOVERY / PATH SIGNAL</p><h3 className="dc-display text-3xl mt-1">INTERESTED IN</h3></div></div>
@@ -142,7 +142,7 @@ export const StudentProfilePage: React.FC = () => {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 dc-shadow-md">
           <div className="absolute inset-x-0 top-0 h-2 bg-dc-blue" />
           <div className="flex items-end justify-between border-b-2 border-outline-variant pb-4 mb-5 pt-1">
             <div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-blue flex items-center justify-center"><Code2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / SKILLS</p><h3 className="dc-display text-3xl mt-1">TECH STACK</h3></div></div>
@@ -151,7 +151,7 @@ export const StudentProfilePage: React.FC = () => {
           {user.skills.length ? <div className="flex flex-wrap gap-2">{user.skills.map((skill) => <span key={skill} className="px-3 py-2 bg-dc-blue border-2 border-outline-variant font-label-mono text-[10px] uppercase">{skill}</span>)}</div> : <p className="font-label-mono text-xs text-on-surface-variant">NO SKILLS ADDED YET.</p>}
         </div>
 
-        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <div className="dc-hover-block relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 dc-shadow-md">
           <div className="absolute inset-x-0 top-0 h-2 bg-dc-mint" />
           <div className="border-b-2 border-outline-variant pb-4 mb-5 pt-1"><div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-mint flex items-center justify-center"><Link2 className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">DATA / LINKS</p><h3 className="dc-display text-3xl mt-1">IDENTITY</h3></div></div></div>
           <div className="space-y-4 font-label-mono text-xs">
@@ -162,7 +162,7 @@ export const StudentProfilePage: React.FC = () => {
         </div>
       </section>
 
-      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+      <section className="relative overflow-hidden border-2 border-outline-variant bg-surface p-6 md:p-8 dc-shadow-md">
         <div className="absolute inset-x-0 top-0 h-2 bg-dc-yellow" />
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 border-b-2 border-outline-variant pb-4 mb-6 pt-1">
           <div className="flex items-end gap-3"><div className="w-9 h-9 border-2 border-outline-variant bg-dc-yellow flex items-center justify-center"><Activity className="w-4 h-4" /></div><div><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">ACTIVITY / LIVE DATA</p><h3 className="dc-display text-3xl">STARTING POINT</h3></div></div>
@@ -174,7 +174,7 @@ export const StudentProfilePage: React.FC = () => {
       <SocialNetworkPanel userId={user.id} />
       <DeleteAccountSection />
 
-      {showIdentityEditor && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 sm:p-7 max-w-lg w-full shadow-[7px_7px_0_#171717] relative"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="absolute top-3 right-3 p-1 disabled:opacity-40" aria-label="Close editor"><X className="w-5 h-5" /></button><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">PROFILE / IDENTITY</p><h3 className="dc-display text-4xl mt-2">UPDATE SIGNAL.</h3><p className="text-sm text-on-surface-variant mt-2 mb-6">Keep the public identity on your DevCollective profile current.</p><form onSubmit={saveIdentity} className="space-y-4"><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">Full name</span><input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={100} autoFocus disabled={identitySaving} className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">College / Institution</span><input value={editCollege} onChange={(e) => setEditCollege(e.target.value)} maxLength={160} disabled={identitySaving} placeholder="Your college or institution" className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label>{identityError && <p className="text-xs text-error">{identityError}</p>}<div className="flex gap-3 pt-2"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="flex-1 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase">Cancel</button><button type="submit" disabled={identitySaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] flex items-center justify-center gap-2">{identitySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {identitySaving ? 'Saving...' : 'Save changes'}</button></div></form></div></div>}
+      {showIdentityEditor && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 sm:p-7 max-w-lg w-full dc-shadow-lg relative"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="absolute top-3 right-3 p-1 disabled:opacity-40" aria-label="Close editor"><X className="w-5 h-5" /></button><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">PROFILE / IDENTITY</p><h3 className="dc-display text-4xl mt-2">UPDATE SIGNAL.</h3><p className="text-sm text-on-surface-variant mt-2 mb-6">Keep the public identity on your DevCollective profile current.</p><form onSubmit={saveIdentity} className="space-y-4"><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">Full name</span><input value={editName} onChange={(e) => setEditName(e.target.value)} maxLength={100} autoFocus disabled={identitySaving} className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label><label className="block"><span className="font-label-mono text-[10px] uppercase text-on-surface-variant">College / Institution</span><input value={editCollege} onChange={(e) => setEditCollege(e.target.value)} maxLength={160} disabled={identitySaving} placeholder="Your college or institution" className="mt-2 w-full bg-surface border-2 border-outline-variant p-3.5 text-sm" /></label>{identityError && <p className="text-xs text-error">{identityError}</p>}<div className="flex gap-3 pt-2"><button type="button" onClick={closeIdentityEditor} disabled={identitySaving} className="flex-1 border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase">Cancel</button><button type="submit" disabled={identitySaving} className="flex-1 bg-primary text-on-primary border-2 border-outline-variant py-3 font-label-mono text-[10px] uppercase font-bold dc-shadow-sm flex items-center justify-center gap-2">{identitySaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} {identitySaving ? 'Saving...' : 'Save changes'}</button></div></form></div></div>}
       <MentorAccessModal open={mentorAccessOpen} onClose={() => setMentorAccessOpen(false)} />
     </div>
   );
