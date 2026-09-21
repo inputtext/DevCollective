@@ -197,3 +197,12 @@ html.dark .dc-dashboard-rep-toast{box-shadow:4px 4px 0 #111318}
 .dc-page-dashboard [class*="rounded-full"] {
   border-radius: 9999px !important;
 }
+
+
+/* Dashboard snapshot: prevent long identity/email text from expanding the card or grid. */
+.dc-page-dashboard .dc-dashboard-snapshot{min-width:0;max-width:100%;overflow:hidden}
+.dc-page-dashboard .dc-dashboard-snapshot-top,.dc-page-dashboard .dc-dashboard-snapshot-top > div{min-width:0}
+.dc-page-dashboard .dc-dashboard-meta{min-width:0;width:100%}
+.dc-page-dashboard .dc-dashboard-meta-item{min-width:0;overflow:hidden}
+.dc-page-dashboard .dc-dashboard-meta-value{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;overflow-wrap:anywhere;word-break:break-word;white-space:normal}
+.dc-page-dashboard .dc-dashboard-meta-item:nth-child(4) .dc-dashboard-meta-value{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
