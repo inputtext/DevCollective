@@ -83,6 +83,7 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
                   ['--pui-grad-from' as string]: '#E83E8C',
                   ['--pui-grad-mid' as string]: '#F2C14E',
                   ['--pui-grad-to' as string]: '#8E7CFF',
+                  ['--pui-grad' as string]: 'linear-gradient(120deg, #E83E8C 0%, #F2C14E 52%, #8E7CFF 100%)',
                 }}
               />
             </div>
