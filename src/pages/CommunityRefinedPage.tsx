@@ -4,6 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useSocial } from '../context/SocialContext';
 import type { CommunityComment, CommunityPost } from '../types';
+import { DcBadge } from '../components/ui/DcBadge';
+import { DcCard } from '../components/ui/DcCard';
+import { DcEmptyState } from '../components/ui/DcEmptyState';
 import {
   Search, Plus, Heart, MessageSquare, Send, X, Users, GitBranch,
   Rocket, HelpCircle, Sparkles, Trophy, UserPlus, UserCheck,
@@ -178,7 +181,7 @@ export const CommunityRefinedPage: React.FC = () => {
     const replies = repliesFor.get(comment.id) || [];
     return (
       <div key={comment.id} className={depth > 0 ? 'ml-5 border-l-2 border-outline-variant pl-3' : ''}>
-        <div className="border border-outline-variant p-3">
+        <DcCard shadow="none" className="p-3">
           <div className="flex items-center gap-2">
             {comment.authorAvatar ? <img src={comment.authorAvatar} alt="" className="w-6 h-6 border border-outline-variant object-cover" /> : <div className="w-6 h-6 border border-outline-variant bg-dc-yellow flex items-center justify-center text-[9px] font-bold">{comment.authorName.slice(0,1)}</div>}
             <div><div className="flex items-center gap-2"><p className="text-[11px] font-bold">{comment.authorName}</p><span className="dc-community-level">Level {comment.authorLevel || 1}</span></div><p className="font-label-mono text-[7px] uppercase text-on-surface-variant">{comment.authorAcademicYear || "Batch not set"} · {comment.authorRep} REP</p></div>
@@ -190,7 +193,7 @@ export const CommunityRefinedPage: React.FC = () => {
             {replies.length > 0 && <span className="font-label-mono text-[7px] uppercase text-on-surface-variant">{replies.length} repl{replies.length === 1 ? 'y' : 'ies'}</span>}
           </div>
           {replyTargetId === comment.id && <div className="mt-2 ml-3 flex gap-2"><input value={replyText} onChange={(e) => setReplyText(e.target.value.slice(0, 2000))} placeholder={`Reply to ${comment.authorName}...`} className="flex-1 min-w-0 border border-outline-variant bg-surface p-2 text-xs outline-none" disabled={replyBusy} autoFocus /><button type="button" onClick={() => void replySubmit(comment.id)} disabled={!replyText.trim() || replyBusy} className="px-3 bg-primary text-on-primary border border-outline-variant font-label-mono text-[8px] uppercase font-bold disabled:opacity-50">{replyBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Reply'}</button></div>}
-        </div>
+        </DcCard>
         {replies.length > 0 && <div className="mt-2 space-y-2">{replies.map((reply) => renderComment(reply, depth + 1))}</div>}
       </div>
     );
@@ -198,7 +201,7 @@ export const CommunityRefinedPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1500px] mx-auto space-y-4">
-      <header className="dc-community-header border-2 border-outline-variant bg-surface p-4 sm:p-5 dc-hard-shadow-sm">
+      <DcCard shadow="sm" className="dc-community-header p-4 sm:p-5">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="min-w-0">
             <div className="font-label-mono text-[9px] uppercase text-on-surface-variant tracking-widest">COMMUNITY / DISCOVER / COLLABORATE</div>
@@ -225,7 +228,7 @@ export const CommunityRefinedPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </header>
+      </DcCard>
 
       <div className="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
         <section className="dc-community-main min-w-0 space-y-3">
@@ -234,18 +237,18 @@ export const CommunityRefinedPage: React.FC = () => {
             <span className="font-label-mono text-[9px] text-on-surface-variant">{filtered.length} shown</span>
           </div>
 
-          {filtered.length === 0 && <div className="border-2 border-dashed border-outline-variant p-8 text-center bg-surface"><Users className="w-6 h-6 mx-auto mb-2" /><p className="text-sm font-bold">Nothing here yet.</p><p className="text-xs text-on-surface-variant mt-1">Start the conversation.</p></div>}
+          {filtered.length === 0 && <DcEmptyState icon={<Users className="w-6 h-6" />} title="Nothing here yet." description="Start the conversation." />}
 
           {filtered.map((post) => {
             const t = typeFor(post); const Icon = t.icon;
             return (
-              <article key={post.id} className="dc-community-post border-2 border-outline-variant bg-surface hover:translate-x-[2px] hover:shadow-[3px_3px_0_#171717] transition-all">
+              <DcCard key={post.id} shadow="sm" interactive className="dc-community-post">
                 <div className="px-4 py-3 border-b border-outline-variant/60 flex items-center justify-between gap-3">
                   <button onClick={() => openProfile(post.authorId)} className="flex items-center gap-2 min-w-0 text-left">
                     {post.authorAvatar ? <img src={post.authorAvatar} alt="" className="w-8 h-8 border border-outline-variant object-cover shrink-0" /> : <div className="w-8 h-8 border border-outline-variant bg-dc-yellow flex items-center justify-center text-xs font-bold shrink-0">{post.authorName.slice(0,1)}</div>}
                     <div className="min-w-0"><div className="flex items-center gap-2"><p className="text-xs font-bold truncate">{post.authorName}</p><span className="dc-community-level">Level {post.authorLevel || 1}</span></div><p className="font-label-mono text-[8px] uppercase text-on-surface-variant truncate">{meta(post)}</p></div>
                   </button>
-                  <span className={`inline-flex items-center gap-1 px-2 py-1 border border-outline-variant font-label-mono text-[8px] uppercase font-bold shrink-0 ${t.cls}`}><Icon className="w-3 h-3" /> {t.label}</span>
+                  <DcBadge tone={post.category === 'Projects' ? 'blue' : post.category === 'Questions' ? 'yellow' : post.category === 'Build in Public' ? 'pink' : post.category === 'Hackathons' ? 'lavender' : 'default'} className="gap-1 border shrink-0"><Icon className="w-3 h-3" /> {t.label}</DcBadge>
                 </div>
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -260,7 +263,7 @@ export const CommunityRefinedPage: React.FC = () => {
                     {post.category === 'Projects' && <span className="font-label-mono text-[8px] uppercase text-on-surface-variant">Open to collaborators</span>}
                   </div>
                 </div>
-              </article>
+              </DcCard>
             );
           })}
         </section>
@@ -297,7 +300,7 @@ export const CommunityRefinedPage: React.FC = () => {
         </aside>
       </div>
 
-      {showCreate && <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><form onSubmit={publish} className="w-full max-w-2xl bg-background border-2 border-outline-variant shadow-[7px_7px_0_#171717]">
+      {showCreate && <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><form onSubmit={publish} className="w-full max-w-2xl bg-background border-2 border-outline-variant dc-shadow-lg rounded-[var(--dc-radius-card)]">
         <header className="flex items-center justify-between p-4 border-b-2 border-outline-variant"><div><p className="font-label-mono text-[8px] uppercase text-primary">COMMUNITY / CREATE</p><h2 className="dc-display text-3xl">MAKE SOMETHING.</h2></div><button type="button" onClick={() => setShowCreate(false)} className="p-2 border border-outline-variant"><X className="w-4 h-4" /></button></header>
         <div className="p-4 space-y-3"><div className="flex flex-wrap gap-1">{categories.map((category) => <button type="button" key={category} onClick={() => category !== 'All' && setPostCategory(category as CommunityPost['category'])} className={`px-2.5 py-1.5 border border-outline-variant font-label-mono text-[8px] uppercase ${postCategory === category ? 'bg-dc-yellow font-bold' : 'hover:bg-dc-blue'}`}>{category}</button>)}</div><input value={postTitle} onChange={(e) => setPostTitle(e.target.value.slice(0, 140))} placeholder="Title (optional)" className="w-full h-10 px-3 border-2 border-outline-variant bg-surface text-sm outline-none" /><textarea value={postContent} onChange={(e) => setPostContent(e.target.value.slice(0, 4000))} placeholder="What are you building, learning, asking or shipping?" rows={7} className="w-full p-3 border-2 border-outline-variant bg-surface text-sm outline-none resize-y" />{publishError && <p className="text-xs text-primary">{publishError}</p>}<div className="flex justify-end"><button disabled={!postContent.trim() || publishing} className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm font-label-mono text-[9px] uppercase font-bold">{publishing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Publish</button></div></div>
       </form></div>}
