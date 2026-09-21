@@ -12,7 +12,7 @@ type PostCategory = CommunityPost['category'];
 const formatPostTime = (value: string) => new Date(value).toLocaleString();
 
 export const CommunityPage: React.FC = () => {
-  const { user, posts, commentsByPost, addPost, toggleLikePost, loadPostComments, updateProfile } = useAuth();
+  const { user, posts, commentsByPost, addPost, toggleLikePost, loadPostComments, updateProfile, setActiveTab } = useAuth();
   const { toggleCommentLike } = useNotifications();
   const { getToken } = useClerkAuth();
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -44,8 +44,27 @@ export const CommunityPage: React.FC = () => {
   const [postActionError, setPostActionError] = useState<string | null>(null);
 
   const categories = ['All', 'Build in Public', 'Questions', 'Projects', 'Hackathons', 'AI', 'Android'];
+  const categoryLabels: Record<string, string> = { All: 'All', 'Build in Public': 'Showcase', Questions: 'Discussions', Projects: 'Projects', Hackathons: 'Hackathons', AI: 'AI', Android: 'Android' };
+  const [overview, setOverview] = useState<{ stats: { members: number; posts: number; projects: number; activeToday: number }; popularTags: { tag: string; count: number }[]; topContributors: { id: string; name: string; avatar: string; rep: number; level: number; academicYear: string; college: string; branch: string }[] } | null>(null);
 
   useEffect(() => setDisplayPosts(posts), [posts]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const response = await fetch('/api/community/overview', { headers: { Authorization: `Bearer ${token}` } });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Could not load community overview.');
+        if (!cancelled) setOverview(data);
+      } catch (error) {
+        console.error('Could not load community overview:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [getToken]);
 
   const filteredPosts = selectedCategory === 'All' ? displayPosts : displayPosts.filter((post) => post.category === selectedCategory);
   const activeCommentPost = openCommentsFor ? displayPosts.find((post) => post.id === openCommentsFor) : null;
