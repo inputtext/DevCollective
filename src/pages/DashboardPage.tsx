@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, CheckCircle2, Circle, Clock3, Flame, GitBranch, Keyboard, Map, Search, Sparkles, Terminal, Trophy, UserRound, Users, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { DcBadge } from '../components/ui/DcBadge';
+import { DcCard } from '../components/ui/DcCard';
+import { DcEmptyState } from '../components/ui/DcEmptyState';
 import { DcSectionHeader } from '../components/ui/DcSectionHeader';
 
 type ActivityItem = {
@@ -287,19 +289,19 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-6" data-gsap-reveal>
-        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <DcCard className="p-6 md:p-8 shadow-[5px_5px_0_#171717]">
           <DcSectionHeader
             eyebrow="Learning / Live"
             title="TODAY'S TASKS"
             trailing={<span className="font-label-mono text-[9px] uppercase text-on-surface-variant">{completedTasksCount}/{tasks.length} COMPLETE</span>}
           />
           {tasks.length === 0 ? (
-            <div className="border-2 border-dashed border-outline-variant p-8 text-center">
-              <Zap className="w-6 h-6 mx-auto mb-3 text-primary" />
-              <p className="font-label-mono text-xs uppercase font-bold">NO TASKS YET</p>
-              <p className="text-xs text-on-surface-variant mt-2 max-w-sm mx-auto">Your learning tasks will appear here when a roadmap assigns them.</p>
-              <button onClick={() => navigateAndRemember('roadmap')} className="mt-5 border-2 border-outline-variant bg-dc-mint px-4 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] inline-flex items-center gap-2">EXPLORE ROADMAPS <ArrowRight className="w-3 h-3" /></button>
-            </div>
+            <DcEmptyState
+              title="NO TASKS YET"
+              description="Your learning tasks will appear here when a roadmap assigns them."
+              icon={<Zap className="w-6 h-6" />}
+              action={<button onClick={() => navigateAndRemember('roadmap')} className="border-2 border-outline-variant bg-dc-mint px-4 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] inline-flex items-center gap-2 rounded-[var(--dc-radius-control)]">EXPLORE ROADMAPS <ArrowRight className="w-3 h-3" /></button>}
+            />
           ) : (
             <div className="space-y-3">
               {tasks.map((task) => (
@@ -313,9 +315,9 @@ export const DashboardPage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
+        </DcCard>
 
-        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
+        <DcCard className="p-6 md:p-8 shadow-[5px_5px_0_#171717]">
           <DcSectionHeader
             eyebrow="Momentum / Signal"
             title="RECENT ACTIVITY"
@@ -332,9 +334,14 @@ export const DashboardPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="dc-dashboard-empty-activity"><Terminal className="w-5 h-5 mx-auto mb-3 text-primary" /><p>YOUR ACTIVITY FEED STARTS HERE</p><small>Finish a task or use a dashboard workspace to build your first local activity trail.</small></div>
+            <DcEmptyState
+              title="YOUR ACTIVITY FEED STARTS HERE"
+              description="Finish a task or use a dashboard workspace to build your first local activity trail."
+              icon={<Terminal className="w-5 h-5" />}
+              className="dc-dashboard-empty-activity"
+            />
           )}
-        </div>
+        </DcCard>
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[.9fr_1.1fr] gap-6" data-gsap-reveal>
@@ -362,10 +369,11 @@ export const DashboardPage: React.FC = () => {
             trailing={<Trophy className="w-5 h-5 text-dc-yellow" />}
           />
           {visibleLeaderboard.length === 0 ? (
-            <div className="border-2 border-dashed border-outline-variant p-6 text-center">
-              <p className="font-label-mono text-xs uppercase font-bold">NO RANKINGS YET</p>
-              <p className="text-xs text-on-surface-variant mt-2">Rankings will populate when real community activity exists.</p>
-            </div>
+            <DcEmptyState
+              title="NO RANKINGS YET"
+              description="Rankings will populate when real community activity exists."
+              className="p-6"
+            />
           ) : (
             <div>
               {visibleLeaderboard.map((entry) => (
