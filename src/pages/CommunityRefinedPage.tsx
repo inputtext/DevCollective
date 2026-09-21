@@ -220,7 +220,7 @@ export const CommunityRefinedPage: React.FC = () => {
           <div className="flex gap-1 overflow-x-auto pb-1">
             {(['all','discussions','projects','questions','showcase','building'] as View[]).map((item) => (
               <button key={item} onClick={() => setView(item)} className={`px-3 h-10 border-2 border-outline-variant font-label-mono text-[8px] uppercase whitespace-nowrap ${view === item ? 'bg-dc-yellow font-bold' : 'bg-surface hover:bg-dc-blue'}`}>
-                {item === 'all' ? 'All' : item}
+                {({ all: 'All', discussions: 'Discussions', projects: 'Projects', questions: 'Help', showcase: 'Showcase', building: 'Building' } as Record<View, string>)[item]}
               </button>
             ))}
           </div>
