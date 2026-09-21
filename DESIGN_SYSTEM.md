@@ -39,14 +39,23 @@ Located in `src/components/ui/`:
 - `DcBadge`
 - `DcSectionHeader`
 - `DcEmptyState`
+- `ErrorBoundary`
 
 Primitives should own repeated geometry and semantics. Page components should continue to own page-specific data, API calls, Supabase interactions, and business rules.
 
 ## Migration rule
 
-Migrate one page at a time. Start with Dashboard and Community, validate with `npm run lint` and `npm run build`, then continue to the next page.
+Migration is staged at the page level, but the shared foundation is now in place across the main workspace surfaces. Preserve existing handlers, API calls, auth state, routing, and business logic when adopting primitives.
 
 Do not modify Supabase schema, authentication, REP logic, routing, or community backend as part of a visual component migration.
+
+## State, recovery, and accessibility
+
+- Loading states should use stable layout surfaces rather than blank screens.
+- Empty states should explain what is missing and provide an action when one exists.
+- Recoverable page failures are contained by `src/components/ErrorBoundary.tsx`.
+- Interactive elements keep native button/link/form semantics; primitives should not replace a semantic element merely for styling.
+- Icon-only controls must have an accessible label or equivalent text.
 
 ## State and behavior
 
