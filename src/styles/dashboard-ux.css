@@ -156,3 +156,44 @@ html.dark .dc-dashboard-rep-toast{box-shadow:4px 4px 0 #111318}
 @media(max-width:700px){.dc-dashboard-continue{align-items:flex-start;flex-wrap:wrap}.dc-dashboard-continue-button{margin-left:62px}.dc-dashboard-week-grid{grid-template-columns:1fr}.dc-dashboard-week-grid>div{display:grid;grid-template-columns:54px 1fr auto;align-items:center;gap:8px}.dc-dashboard-week-grid strong{margin-top:0}.dc-dashboard-week-grid small{margin-top:0;text-align:right}}
 @media(max-width:640px){.dc-page-dashboard .dc-dashboard-hero{padding:22px;box-shadow:5px 5px 0 #171717}.dc-dashboard-title{font-size:clamp(2.7rem,14vw,4.5rem)}.dc-dashboard-copy{font-size:13px}.dc-dashboard-section-heading{align-items:flex-start;flex-direction:column;gap:7px}.dc-dashboard-quick-grid{grid-template-columns:1fr}.dc-dashboard-rep-toast{right:14px;top:84px}.dc-dashboard-meta{grid-template-columns:1fr}.dc-dashboard-meta-item:nth-child(odd){padding-right:0;border-right:0}.dc-dashboard-meta-item:nth-child(even){padding-left:0}.dc-dashboard-task-row{padding:12px}.dc-dashboard-task-rep{display:none}.dc-dashboard-activity{grid-template-columns:10px minmax(0,1fr)}.dc-dashboard-activity time{grid-column:2;padding-left:0;margin-top:3px}.dc-dashboard-continue-button{margin-left:0}.dc-dashboard-command{box-shadow:6px 6px 0 #171717}}
 @media(prefers-reduced-motion:reduce){.dc-dashboard-action,.dc-dashboard-task-row,.dc-dashboard-rank-row,.dc-dashboard-quick,.dc-dashboard-progress-fill,.dc-dashboard-stat,.dc-dashboard-continue,.dc-dashboard-activity,.dc-dashboard-recommendation,.dc-dashboard-command-item,.dc-dashboard-quick-icon,.dc-dashboard-streak-track span{transition:none!important}.dc-dashboard-rep-toast{animation:none!important}}
+
+
+/* Dashboard-only radius completion pass. Geometry only; preserve layout, shadows, colors, and behavior. */
+.dc-page-dashboard .space-y-7 > section > div.border-2.border-outline-variant {
+  border-radius: var(--dc-radius-card, 18px);
+}
+.dc-page-dashboard .space-y-7 > section > div.border-2.border-dashed {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-dashboard .space-y-7 > section > div.border-2.border-outline-variant > .dc-dashboard-section-heading + div.border-2.border-dashed {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-dashboard .space-y-7 > section > div.border-2.border-outline-variant > button.border-2,
+.dc-page-dashboard .space-y-7 > section > div.border-2.border-outline-variant button.border-2 {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-dashboard .dc-dashboard-progress-rail,
+.dc-page-dashboard .dc-dashboard-week-grid > div,
+.dc-page-dashboard .dc-dashboard-command-item-icon,
+.dc-page-dashboard .dc-dashboard-continue-icon,
+.dc-page-dashboard .dc-dashboard-quick-icon,
+.dc-page-dashboard .dc-dashboard-recommendation-index,
+.dc-page-dashboard .dc-dashboard-rank-chip {
+  border-radius: var(--dc-radius-small, 10px);
+}
+.dc-page-dashboard .dc-dashboard-avatar,
+.dc-page-dashboard .dc-dashboard-rank-avatar {
+  border-radius: 12px;
+}
+.dc-page-dashboard .dc-dashboard-activity-dot,
+.dc-page-dashboard .dc-dashboard-streak-track span {
+  border-radius: 6px;
+}
+.dc-page-dashboard .dc-dashboard-section-heading {
+  border-radius: 0;
+}
+/* Keep intentional circular UI circular. */
+.dc-page-dashboard .rounded-full,
+.dc-page-dashboard [class*="rounded-full"] {
+  border-radius: 9999px !important;
+}
