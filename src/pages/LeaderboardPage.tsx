@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Trophy, Flame, Search, Share2 } from 'lucide-react';
-import { DcBadge } from '../components/ui/DcBadge';
 import { DcButton } from '../components/ui/DcButton';
 import { DcCard } from '../components/ui/DcCard';
-import { DcEmptyState } from '../components/ui/DcEmptyState';
 import { DcSectionHeader } from '../components/ui/DcSectionHeader';
 
 export const LeaderboardPage: React.FC = () => {
