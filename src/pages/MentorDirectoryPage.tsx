@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { Mentor } from '../types';
 import { Calendar, MessageSquare, Search, ShieldCheck, X } from 'lucide-react';
 import { openMessagingForUser } from '../components/MessagingOverlay';
-import { DcBadge } from '../components/ui/DcBadge';
 import { DcButton } from '../components/ui/DcButton';
 import { DcCard } from '../components/ui/DcCard';
 import { DcEmptyState } from '../components/ui/DcEmptyState';
