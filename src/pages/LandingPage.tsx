@@ -5,6 +5,8 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
+import { GradientText, LogoMarquee } from 'performative-ui';
+import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
   Activity,
@@ -97,7 +99,7 @@ export const LandingPage: React.FC = () => {
           <div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
             <div>
               <p className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] mb-6">A technical collective for developers in the making.</p>
-              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl">LEARN.<br />BUILD.<br /><span className="text-primary">SHIP.</span></h1>
+              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl">LEARN.<br />BUILD.<br /><GradientText as="span" className="dc-performative-gradient">SHIP.</GradientText></h1>
               <p className="mt-8 text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-xl">DevCollective connects community, mentorship, learning paths, projects, and reputation into one serious developer workspace.</p>
               <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => setActiveTab('register')} className="dc-hard-shadow-sm inline-flex items-center gap-3 px-6 py-4 bg-primary text-on-primary border-2 border-outline-variant font-bold uppercase tracking-wide">Join the collective <ArrowRight className="w-4 h-4" /></button><button onClick={() => setActiveTab('login')} className="inline-flex items-center gap-3 px-6 py-4 bg-surface border-2 border-outline-variant font-bold uppercase tracking-wide">Sign in</button></div>
             </div>
@@ -114,6 +116,35 @@ export const LandingPage: React.FC = () => {
       </section>
 
       <Marquee items={marqueeItems} />
+
+      <section className="border-b-2 border-outline-variant bg-[#171717] text-[#FFF9F0]" data-gsap-reveal>
+        <div className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12">
+          <div className="flex items-center justify-between border-b border-white/15 py-5">
+            <p className="dc-mono text-[9px] uppercase tracking-[0.2em] text-white/55">[ 00 / THE STACK ]</p>
+            <p className="hidden dc-mono text-[9px] uppercase tracking-[0.16em] text-white/35 sm:block">TOOLS WE BUILD WITH</p>
+          </div>
+          <div className="py-2">
+            <LogoMarquee
+              logos={[
+                { kind: 'node', node: 'React', key: 'react' },
+                { kind: 'node', node: 'TypeScript', key: 'typescript' },
+                { kind: 'node', node: 'Node.js', key: 'node' },
+                { kind: 'node', node: 'Express', key: 'express' },
+                { kind: 'node', node: 'PostgreSQL', key: 'postgresql' },
+                { kind: 'node', node: 'Supabase', key: 'supabase' },
+                { kind: 'node', node: 'GitHub', key: 'github' },
+                { kind: 'node', node: 'Vite', key: 'vite' },
+                { kind: 'node', node: 'GSAP', key: 'gsap' },
+                { kind: 'node', node: 'Three.js', key: 'three' },
+              ]}
+              speed={34}
+              gap={64}
+              fade
+              pauseOnHover
+            />
+          </div>
+        </div>
+      </section>
 
       <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-24 sm:py-32" data-gsap-reveal><ScrollReveal><div className="grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16"><div className="dc-mono text-xs uppercase tracking-[0.2em]">[ 01 / THE PROBLEM ]</div><div><h2 className="dc-display text-5xl sm:text-6xl lg:text-8xl max-w-5xl">Learning is static. <span className="text-primary">Building isn't.</span></h2><p className="mt-10 max-w-2xl text-lg leading-relaxed text-on-surface-variant">Tutorials can tell you what to learn. DevCollective helps you turn that knowledge into projects, conversations, feedback, contributions, and a visible body of work.</p><div className="mt-10 flex flex-wrap gap-2 dc-mono text-[9px] uppercase tracking-[0.12em]"><span className="border-2 border-outline-variant bg-dc-yellow px-3 py-2">SKILL → PROJECT</span><span className="border-2 border-outline-variant bg-dc-mint px-3 py-2">PROJECT → FEEDBACK</span><span className="border-2 border-outline-variant bg-dc-lavender px-3 py-2">FEEDBACK → SHIP</span></div></div></div></ScrollReveal></section>
       <Marquee items={['SHIP SOMETHING', 'GET FEEDBACK', 'ITERATE', 'HELP SOMEONE', 'LEVEL UP', 'REPEAT']} reverse className="bg-secondary-container" />
