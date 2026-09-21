@@ -265,40 +265,36 @@ export const CommunityRefinedPage: React.FC = () => {
           })}
         </section>
 
-        <aside className="space-y-3 xl:sticky xl:top-4">
-          <div className="border-2 border-outline-variant bg-surface p-4">
-            <div className="flex items-center justify-between mb-3"><p className="font-label-mono text-[9px] uppercase tracking-widest">DISCOVER PEOPLE</p><Users className="w-4 h-4" /></div>
-            <div className="space-y-2">
-              {people.map((person) => <div key={person.authorId} className="flex items-center gap-2 border border-outline-variant p-2">
-                <button onClick={() => openProfile(person.authorId)} className="min-w-0 flex-1 flex items-center gap-2 text-left">
-                  {person.authorAvatar ? <img src={person.authorAvatar} alt="" className="w-7 h-7 border border-outline-variant object-cover" /> : <div className="w-7 h-7 bg-dc-yellow border border-outline-variant flex items-center justify-center text-[10px] font-bold">{person.authorName.slice(0,1)}</div>}
-                  <div className="min-w-0"><p className="text-[11px] font-bold truncate">{person.authorName}</p><p className="font-label-mono text-[7px] uppercase text-on-surface-variant truncate">{person.authorRole} · {person.authorRep} REP</p></div>
-                </button>
-                <div className="flex gap-1 shrink-0">
-                  <button disabled={socialBusy === person.authorId} onClick={() => void socialAction(person.authorId, 'follow')} className={`p-1.5 border border-outline-variant ${followed[person.authorId] ? 'bg-dc-blue' : 'hover:bg-dc-blue'}`} title="Follow"><UserCheck className="w-3.5 h-3.5" /></button>
-                  <button disabled={socialBusy === person.authorId} onClick={() => void socialAction(person.authorId, 'connect')} className={`p-1.5 border border-outline-variant ${connected[person.authorId] ? 'bg-dc-yellow' : 'hover:bg-dc-yellow'}`} title="Connect">{socialBusy === person.authorId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}</button>
-                </div>
-              </div>)}
-              {people.length === 0 && <p className="text-xs text-on-surface-variant">People will appear as the community grows.</p>}
+        <aside className="dc-community-sidebar space-y-3 xl:sticky xl:top-4">
+          <div className="dc-community-side-card">
+            <h3>Community Stats</h3>
+            <div className="dc-community-stat-grid">
+              <div><span>◌</span><strong>{overview?.stats.members ?? '—'}</strong><small>Members</small></div>
+              <div><span>▤</span><strong>{overview?.stats.posts ?? posts.length}</strong><small>Posts</small></div>
+              <div><span>⌘</span><strong>{overview?.stats.projects ?? projects.length}</strong><small>Projects</small></div>
+              <div><span>ϟ</span><strong>{overview?.stats.activeToday ?? '—'}</strong><small>Active Today</small></div>
             </div>
           </div>
-
-          <div className="border-2 border-outline-variant bg-surface p-4">
-            <div className="flex items-center justify-between mb-3"><p className="font-label-mono text-[9px] uppercase tracking-widest">PROJECTS</p><GitBranch className="w-4 h-4" /></div>
-            <div className="space-y-2">
-              {projects.map((project) => <button key={project.id} onClick={() => setCommentPost(project)} className="w-full text-left border border-outline-variant p-3 hover:bg-dc-blue"><div className="flex items-center justify-between gap-2"><span className="text-xs font-bold truncate">{project.title || 'Untitled project'}</span><ArrowUpRight className="w-3.5 h-3.5 shrink-0" /></div><p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{project.content}</p><div className="font-label-mono text-[7px] uppercase mt-2">{project.authorName} · PROJECT</div></button>)}
-              {projects.length === 0 && <p className="text-xs text-on-surface-variant">Create a Projects post to start the project board.</p>}
-            </div>
+          <div className="dc-community-side-card">
+            <div className="dc-community-side-heading"><h3>Popular Tags</h3><button onClick={() => setQuery('')}>View all</button></div>
+            <div className="dc-community-tags">{(overview?.popularTags || []).map((item) => <button key={item.tag} onClick={() => setQuery(item.tag)}>{item.tag} <span>{item.count}</span></button>)}</div>
           </div>
-
-          <div className="border-2 border-outline-variant bg-dc-yellow p-4">
-            <div className="flex items-center gap-2 mb-2"><Rocket className="w-4 h-4" /><p className="font-label-mono text-[9px] uppercase tracking-widest font-bold">BUILDING NOW</p></div>
-            {builders.map((builder) => <button key={builder.id} onClick={() => setCommentPost(builder)} className="w-full text-left border-t border-outline-variant/60 py-2 first:border-t-0"><p className="text-[11px] font-bold truncate">{builder.authorName}</p><p className="text-[10px] leading-snug line-clamp-2">{builder.title || builder.content}</p></button>)}
-            {builders.length === 0 && <p className="text-xs">No public builds yet.</p>}
+          <div className="dc-community-side-card">
+            <div className="dc-community-side-heading"><h3>Top Contributors</h3><span>REP</span></div>
+            <div className="dc-community-contributors">{(overview?.topContributors || []).map((person, index) => <div key={person.id}>
+              <span className="dc-community-rank">{index + 1}</span>
+              {person.avatar ? <img src={person.avatar} alt="" /> : <div className="dc-community-avatar-fallback small">{person.name.slice(0,1)}</div>}
+              <div className="min-w-0"><strong>{person.name}</strong><small>Level {person.level} · {person.academicYear || 'Batch not set'}</small></div>
+              <b>{person.rep.toLocaleString()} REP</b>
+            </div>)}</div>
           </div>
-
-          <div className="border-2 border-outline-variant bg-surface p-4"><p className="font-label-mono text-[8px] uppercase text-on-surface-variant">THE LOOP</p><p className="text-sm font-bold mt-1">DISCOVER → TALK → BUILD → COLLAB → SHIP</p><p className="text-[10px] text-on-surface-variant mt-2">Reputation should follow contribution, not noise.</p></div>
-        </aside>
+          <div className="dc-community-event-card">
+            <div className="dc-community-event-icon">ϟ</div>
+            <h3>Host an Event?</h3>
+            <p>Share your workshop, webinar or study session with the community.</p>
+            <button onClick={() => setActiveTab('events')}>Create Event</button>
+          </div>
+        </aside>        </aside>
       </div>
 
       {showCreate && <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><form onSubmit={publish} className="w-full max-w-2xl bg-background border-2 border-outline-variant shadow-[7px_7px_0_#171717]">
