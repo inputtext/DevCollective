@@ -13,7 +13,7 @@ import {
 type View = 'all' | 'discussions' | 'projects' | 'questions' | 'showcase' | 'building';
 const categories = ['All', 'Build in Public', 'Questions', 'Projects', 'Hackathons', 'AI', 'Android', 'General'];
 
-const meta = (post: CommunityPost) => `${post.authorRole} · ${post.authorRep} REP`;
+const meta = (post: CommunityPost) => `${post.authorAcademicYear || 'Batch not set'} · Level ${post.authorLevel || 1} · ${post.authorRep} REP`;
 
 const typeFor = (post: CommunityPost) => {
   if (post.category === 'Projects') return { label: 'PROJECT', icon: GitBranch, cls: 'bg-dc-blue' };
@@ -201,12 +201,12 @@ export const CommunityRefinedPage: React.FC = () => {
       <header className="border-2 border-outline-variant bg-surface p-4 sm:p-5 dc-hard-shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="min-w-0">
-            <div className="font-label-mono text-[9px] uppercase text-primary tracking-widest">04 / COMMUNITY</div>
+            <div className="font-label-mono text-[9px] uppercase text-on-surface-variant tracking-widest">COMMUNITY / DISCOVER / COLLABORATE</div>
             <div className="flex items-baseline gap-3 flex-wrap mt-1">
-              <h1 className="dc-display text-4xl sm:text-5xl leading-none">BUILD TOGETHER.</h1>
+              <h1 className="dc-display text-4xl sm:text-5xl leading-none">Learn. Share. Build Together.</h1>
               <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">{posts.length} contributions</span>
             </div>
-            <p className="text-sm text-on-surface-variant mt-2 max-w-2xl">A compact space to ask, build, showcase, find collaborators and ship.</p>
+            <p className="text-sm text-on-surface-variant mt-2 max-w-2xl">Ask questions, share your progress, find collaborators, and be part of the DevCollective community.</p>
           </div>
           <button onClick={() => setShowCreate(true)} className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm font-label-mono text-[9px] uppercase font-bold">
             <Plus className="w-4 h-4" /> Create post
