@@ -5,7 +5,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
-import { Goldeneye, GradientText, LogoMarquee, Rotator } from 'performative-ui';
+import { Goldeneye, GradientText, LogoMarquee, Rotator, SlippyWords } from 'performative-ui';
 import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
@@ -57,20 +57,28 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
       <FluidShader className="absolute inset-0 z-0 h-full w-full" />
       <div className="relative z-10 max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-24">
         <div className="flex flex-col items-center text-center">
-          <div className="w-full max-w-[1180px] mx-auto mb-16 sm:mb-20 text-left">
-            <div className="flex items-start gap-5">
+          <div className="w-full max-w-[1180px] mx-auto mb-16 sm:mb-20">
+            <div className="flex items-start gap-5 mb-8">
               <span className="dc-mono text-[9px] uppercase tracking-[0.2em] text-[#171717]/55 pt-3 shrink-0">04 / THE STACK</span>
-              <div className="flex-1">
-                <h2 className="dc-display text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-[#171717] leading-[0.9]">TOOLS I LIKE TO BUILD WITH.</h2>
-                <p className="mt-8 max-w-4xl text-lg sm:text-xl lg:text-2xl leading-relaxed text-[#171717]/70">
-                  React, TypeScript, Vite, Tailwind CSS, GSAP, ScrollTrigger, Lenis, Three.js, Node.js, Supabase and Clerk — a stack chosen for fast iteration, expressive interfaces and products that can grow beyond a prototype.
+              <div>
+                <h2 className="dc-display text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-[#171717] leading-[0.9]">WORDS I BUILD WITH.</h2>
+                <p className="mt-5 max-w-2xl text-sm sm:text-base leading-relaxed text-[#171717]/60">
+                  Scroll through the tools, ideas and systems that shape how I build.
                 </p>
-                <div className="mt-10 flex flex-wrap gap-2">
-                  {['REACT', 'TYPESCRIPT', 'VITE', 'TAILWIND', 'GSAP', 'SCROLLTRIGGER', 'LENIS', 'THREE.JS', 'NODE.JS', 'SUPABASE', 'CLERK'].map((tool) => (
-                    <span key={tool} className="dc-mono text-[9px] uppercase tracking-[0.12em] border border-[#171717]/30 px-4 py-3 text-[#171717]/80">{tool}</span>
-                  ))}
-                </div>
               </div>
+            </div>
+            <div className="border-y-2 border-[#171717]/15 py-5 overflow-hidden">
+              <SlippyWords
+                rows={[
+                  ['REACT', 'TYPESCRIPT', 'VITE', 'TAILWIND CSS', 'GSAP', 'SCROLLTRIGGER', 'LENIS'],
+                  ['THREE.JS', 'NODE.JS', 'EXPRESS', 'POSTGRESQL', 'SUPABASE', 'CLERK', 'GITHUB'],
+                  ['SYSTEM DESIGN', 'DSA', 'FULL STACK', 'OPEN SOURCE', 'BUILD IN PUBLIC', 'SHIP IT'],
+                ]}
+                intensity={360}
+                startDirection="left"
+                gap={14}
+                fade
+              />
             </div>
           </div>
           <div className="flex flex-col items-center text-center">
