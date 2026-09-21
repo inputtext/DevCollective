@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Marquee } from '../components/Marquee';
 import { ScrollReveal } from '../components/ScrollReveal';
@@ -116,6 +116,25 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
 export const LandingPage: React.FC = () => {
   const { setActiveTab } = useAuth();
   const [showDeveloperNote, setShowDeveloperNote] = useState(false);
+
+  useEffect(() => {
+    if (!showDeveloperNote) return;
+
+    // The note replaces the landing page in-place, so explicitly reset the
+    // browser scroll position after the new page has rendered.
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+    const timeout = window.setTimeout(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, 120);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timeout);
+    };
+  }, [showDeveloperNote]);
 
   if (showDeveloperNote) {
     return <DeveloperNotePage onBack={() => setShowDeveloperNote(false)} />;
