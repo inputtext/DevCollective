@@ -5,6 +5,12 @@ type State = { hasError: boolean };
 
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
+  private readonly children: ReactNode;
+
+  constructor(props: Props) {
+    super(props);
+    this.children = props.children;
+  }
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
@@ -15,11 +21,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false });
+    window.location.reload();
   };
 
   render() {
-    if (!this.state.hasError) return this.props.children;
+    if (!this.state.hasError) return this.children;
 
     return (
       <div className="dc-app-shell min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
