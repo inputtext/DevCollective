@@ -198,7 +198,7 @@ export const CommunityRefinedPage: React.FC = () => {
 
   return (
     <div className="w-full max-w-[1500px] mx-auto space-y-4">
-      <header className="border-2 border-outline-variant bg-surface p-4 sm:p-5 dc-hard-shadow-sm">
+      <header className="dc-community-header border-2 border-outline-variant bg-surface p-4 sm:p-5 dc-hard-shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
           <div className="min-w-0">
             <div className="font-label-mono text-[9px] uppercase text-on-surface-variant tracking-widest">COMMUNITY / DISCOVER / COLLABORATE</div>
@@ -212,7 +212,7 @@ export const CommunityRefinedPage: React.FC = () => {
             <Plus className="w-4 h-4" /> Create post
           </button>
         </div>
-        <div className="grid lg:grid-cols-[1fr_auto] gap-3 mt-4">
+        <div className="dc-community-filterbar grid lg:grid-cols-[1fr_auto] gap-3 mt-4">
           <label className="flex items-center gap-2 border-2 border-outline-variant bg-background px-3 h-10">
             <Search className="w-4 h-4 text-on-surface-variant shrink-0" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search people, projects, discussions..." className="bg-transparent outline-none w-full text-sm" />
@@ -228,7 +228,7 @@ export const CommunityRefinedPage: React.FC = () => {
       </header>
 
       <div className="grid xl:grid-cols-[minmax(0,1fr)_320px] gap-4 items-start">
-        <section className="min-w-0 space-y-3">
+        <section className="dc-community-main min-w-0 space-y-3">
           <div className="flex items-center justify-between px-1">
             <div className="font-label-mono text-[9px] uppercase tracking-widest">COMMUNITY FEED / {view}</div>
             <span className="font-label-mono text-[9px] text-on-surface-variant">{filtered.length} shown</span>
@@ -239,7 +239,7 @@ export const CommunityRefinedPage: React.FC = () => {
           {filtered.map((post) => {
             const t = typeFor(post); const Icon = t.icon;
             return (
-              <article key={post.id} className="border-2 border-outline-variant bg-surface hover:translate-x-[2px] hover:shadow-[3px_3px_0_#171717] transition-all">
+              <article key={post.id} className="dc-community-post border-2 border-outline-variant bg-surface hover:translate-x-[2px] hover:shadow-[3px_3px_0_#171717] transition-all">
                 <div className="px-4 py-3 border-b border-outline-variant/60 flex items-center justify-between gap-3">
                   <button onClick={() => openProfile(post.authorId)} className="flex items-center gap-2 min-w-0 text-left">
                     {post.authorAvatar ? <img src={post.authorAvatar} alt="" className="w-8 h-8 border border-outline-variant object-cover shrink-0" /> : <div className="w-8 h-8 border border-outline-variant bg-dc-yellow flex items-center justify-center text-xs font-bold shrink-0">{post.authorName.slice(0,1)}</div>}
