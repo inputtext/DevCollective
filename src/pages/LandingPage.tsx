@@ -74,10 +74,16 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
                   ['THREE.JS', 'NODE.JS', 'EXPRESS', 'POSTGRESQL', 'SUPABASE', 'CLERK', 'GITHUB'],
                   ['SYSTEM DESIGN', 'DSA', 'FULL STACK', 'OPEN SOURCE', 'BUILD IN PUBLIC', 'SHIP IT'],
                 ]}
+                gradient
                 intensity={360}
                 startDirection="left"
                 gap={14}
                 fade
+                style={{
+                  ['--pui-grad-from' as string]: '#E83E8C',
+                  ['--pui-grad-mid' as string]: '#F2C14E',
+                  ['--pui-grad-to' as string]: '#8E7CFF',
+                }}
               />
             </div>
           </div>
