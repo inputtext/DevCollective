@@ -99,7 +99,7 @@ export const LandingPage: React.FC = () => {
           <div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
             <div>
               <p className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] mb-6">A technical collective for developers in the making.</p>
-              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl">LEARN.<br /><Rotator words={['BUILD.', 'SHIP.']} typeMs={90} deleteMs={55} holdMs={1200} /></h1>
+              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl">LEARN.<br /><Rotator words={['BUILD.', 'SHIP.']} typeMs={90} deleteMs={55} holdMs={1200} renderWord={(word) => <span className={word === 'SHIP.' ? 'text-[#E83E8C]' : ''}>{word}</span>} /></h1>
               <p className="mt-8 text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-xl">DevCollective connects community, mentorship, learning paths, projects, and reputation into one serious developer workspace.</p>
               <div className="mt-8 flex flex-wrap gap-3"><button onClick={() => setActiveTab('register')} className="dc-hard-shadow-sm inline-flex items-center gap-3 px-6 py-4 bg-primary text-on-primary border-2 border-outline-variant font-bold uppercase tracking-wide">Join the collective <ArrowRight className="w-4 h-4" /></button><button onClick={() => setActiveTab('login')} className="inline-flex items-center gap-3 px-6 py-4 bg-surface border-2 border-outline-variant font-bold uppercase tracking-wide">Sign in</button></div>
             </div>
