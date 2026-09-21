@@ -139,7 +139,7 @@ async function loadComments(postId: string, viewerId: string) {
   if (error) throw error;
   if (!comments?.length) return [];
   const authorIds = [...new Set(comments.map((comment) => comment.author_clerk_user_id))];
-  const { data: profiles, error: profileError } = await supabase.from("devcollective_profiles").select("clerk_user_id,name,avatar,role,rep").in("clerk_user_id", authorIds);
+  const { data: profiles, error: profileError } = await supabase.from("devcollective_profiles").select("clerk_user_id,name,avatar,role,rep,academic_year,level").in("clerk_user_id", authorIds);
   if (profileError) throw profileError;
   const profileMap = new Map((profiles || []).map((profile) => [profile.clerk_user_id, profile]));
   const commentIds = comments.map((comment) => comment.id);
@@ -162,6 +162,8 @@ async function loadComments(postId: string, viewerId: string) {
       authorAvatar: author?.avatar || "",
       authorRole: author?.role || "student",
       authorRep: Number(author?.rep) || 0,
+      authorAcademicYear: author?.academic_year || "",
+      authorLevel: Number(author?.level) || 1,
       content: comment.content,
       createdAt: comment.created_at,
       updatedAt: comment.updated_at || comment.created_at,

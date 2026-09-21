@@ -30,7 +30,7 @@ async function loadCommunityPosts(userId: string) {
   if (postsError) throw postsError;
   if (!posts?.length) return [];
   const authorIds = Array.from(new Set(posts.map((post: any) => post.author_clerk_user_id)));
-  const { data: profiles, error: profilesError } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,college,avatar,role,rep').in('clerk_user_id', authorIds);
+  const { data: profiles, error: profilesError } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,college,avatar,role,rep,academic_year,level').in('clerk_user_id', authorIds);
   if (profilesError) throw profilesError;
   const profileMap = new Map((profiles || []).map((profile: any) => [profile.clerk_user_id, profile]));
   const postIds = posts.map((post: any) => post.id);
@@ -52,6 +52,8 @@ async function loadCommunityPosts(userId: string) {
       authorAvatar: author.avatar || '',
       authorRole: author.role || 'student',
       authorRep: Number(author.rep) || 0,
+      authorAcademicYear: author.academic_year || '',
+      authorLevel: Number(author.level) || 1,
       category: post.category,
       title: post.title || undefined,
       content: post.content,
@@ -68,6 +70,42 @@ app.get('/api/auth/info', (req, res) => res.json({ appUrl: getAppBaseUrl(req), a
 app.get('/api/auth/me', requireAuth, async (req, res) => { try { let user = await getOrCreateProfile((req as any).authUserId); user = await syncAdminProfileRole((req as any).authUserId, user); return res.json({ user: toUserProfile(user) }); } catch (err: any) { console.error('Error loading Clerk/Supabase profile:', err); return res.status(500).json({ error: err.message || 'Could not load your profile.' }); } });
 app.post('/api/auth/sync', requireAuth, async (req, res) => { try { let user = await getOrCreateProfile((req as any).authUserId, req.body || {}); user = await syncAdminProfileRole((req as any).authUserId, user); return res.json({ user: toUserProfile(user) }); } catch (err: any) { console.error('Error syncing Clerk profile to Supabase:', err); return res.status(500).json({ error: err.message || 'Could not sync your profile.' }); } });
 app.get('/api/mentors', requireAuth, async (_req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const { data, error } = await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,email,role,college,avatar,bio,rep,level,skills').in('role', ['mentor','faculty']).order('name', { ascending: true }); if (error) throw error; return res.json({ mentors: (data || []).map(toMentorProfile) }); } catch (err: any) { console.error('Error loading mentors from Supabase:', err); return res.status(500).json({ error: err.message || 'Could not load mentors.' }); } });
+app.get('/api/community/overview', requireAuth, async (_req, res) => { try {
+  if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+  const [{ count: memberCount, error: memberError }, { data: posts, error: postError }, { data: profiles, error: profileError }, { data: comments, error: commentError }] = await Promise.all([
+    supabaseAdmin.from('devcollective_profiles').select('clerk_user_id', { count: 'exact', head: true }),
+    supabaseAdmin.from('devcollective_posts').select('id,author_clerk_user_id,category,title,content,created_at').order('created_at', { ascending: false }).limit(500),
+    supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,avatar,rep,level,academic_year,role,college,branch').order('rep', { ascending: false }).limit(10),
+    supabaseAdmin.from('devcollective_post_comments').select('id,author_clerk_user_id,created_at').order('created_at', { ascending: false }).limit(1000),
+  ]);
+  if (memberError) throw memberError;
+  if (postError) throw postError;
+  if (profileError) throw profileError;
+  if (commentError) throw commentError;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const activeIds = new Set<string>();
+  for (const post of posts || []) if (new Date(post.created_at) >= today) activeIds.add(post.author_clerk_user_id);
+  for (const comment of comments || []) if (new Date(comment.created_at) >= today) activeIds.add(comment.author_clerk_user_id);
+  const tagCounts = new Map<string, number>();
+  for (const post of posts || []) {
+    const text = `${post.title || ''} ${post.content || ''}`;
+    for (const match of text.matchAll(/#[a-zA-Z0-9_-]+/g)) {
+      const tag = match[0].toLowerCase();
+      tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+    }
+  }
+  if (tagCounts.size === 0) { const inferred = [['#dsa', /dsa|data structure|algorithm/i], ['#web-dev', /web|frontend|backend|full.?stack|node|react/i], ['#system-design', /system design|architecture|scalability|websocket/i], ['#react', /react|next\.js|nextjs/i], ['#career', /career|placement|internship|resume/i], ['#project', /project|build|app|devcollective/i], ['#ai', /ai|gemini|llm|model/i], ['#help', /help|issue|problem|stuck|question/i]] as const; for (const post of posts || []) { const text = `${post.title || ''} ${post.content || ''}`; for (const [tag, pattern] of inferred) if (pattern.test(text)) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1); } } const popularTags = Array.from(tagCounts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8).map(([tag,count]) => ({ tag, count }));
+  const topContributors = (profiles || []).slice(0, 5).map((profile: any) => ({
+    id: profile.clerk_user_id, name: profile.name || 'Developer', avatar: profile.avatar || '',
+    rep: Number(profile.rep) || 0, level: Number(profile.level) || 1,
+    academicYear: profile.academic_year || '', college: profile.college || '', branch: profile.branch || '',
+  }));
+  return res.json({
+    stats: { members: Number(memberCount) || 0, posts: (posts || []).length, projects: (posts || []).filter((post: any) => post.category === 'Projects').length, activeToday: activeIds.size },
+    popularTags, topContributors,
+  });
+} catch (err: any) { console.error('Error loading community overview:', err); return res.status(500).json({ error: err.message || 'Could not load community overview.' }); } });
+
 app.get('/api/community/posts', requireAuth, async (req, res) => { try { const posts = await loadCommunityPosts((req as any).authUserId); return res.json({ posts }); } catch (err: any) { console.error('Error loading community posts:', err); return res.status(500).json({ error: err.message || 'Could not load community posts.' }); } });
 app.post('/api/community/posts', requireAuth, async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const userId = (req as any).authUserId as string; const category = String(req.body?.category || 'General'); const allowedCategories = new Set(['Build in Public','Questions','Projects','Hackathons','AI','Android','General']); const title = typeof req.body?.title === 'string' ? req.body.title.trim().slice(0, 160) : ''; const content = typeof req.body?.content === 'string' ? req.body.content.trim().slice(0, 5000) : ''; if (!allowedCategories.has(category)) return res.status(400).json({ error: 'Invalid post category.' }); if (!content) return res.status(400).json({ error: 'Post content is required.' }); const { data, error } = await supabaseAdmin.from('devcollective_posts').insert({ author_clerk_user_id: userId, category, title: title || null, content }).select('id,author_clerk_user_id,category,title,content,image_url,created_at,updated_at').single(); if (error) throw error; const posts = await loadCommunityPosts(userId); const created = posts.find((post: any) => post.id === data.id) || null; return res.status(201).json({ success: true, post: created }); } catch (err: any) { console.error('Error creating community post:', err); return res.status(500).json({ error: err.message || 'Could not create community post.' }); } });
 app.post('/api/community/posts/:postId/like', requireAuth, async (req, res) => { try { if (!supabaseAdmin) throw new Error('Supabase is not configured.'); const userId = (req as any).authUserId as string; const postId = req.params.postId; const { data: existing, error: lookupError } = await supabaseAdmin.from('devcollective_post_likes').select('post_id').eq('post_id', postId).eq('user_clerk_user_id', userId).maybeSingle(); if (lookupError) throw lookupError; if (existing) { const { error } = await supabaseAdmin.from('devcollective_post_likes').delete().eq('post_id', postId).eq('user_clerk_user_id', userId); if (error) throw error; } else { const { error } = await supabaseAdmin.from('devcollective_post_likes').insert({ post_id: postId, user_clerk_user_id: userId }); if (error) throw error; } const { count, error: countError } = await supabaseAdmin.from('devcollective_post_likes').select('*', { count: 'exact', head: true }).eq('post_id', postId); if (countError) throw countError; return res.json({ success: true, likedByMe: !existing, likes: count || 0 }); } catch (err: any) { console.error('Error toggling community post like:', err); return res.status(500).json({ error: err.message || 'Could not update post like.' }); } });

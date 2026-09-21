@@ -1,6 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CalendarDays, CheckCircle2, Circle, Clock3, Flame, GitBranch, Keyboard, Map, Search, Sparkles, Terminal, Trophy, UserRound, Users, Zap } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { DcBadge } from '../components/ui/DcBadge';
+import { DcCard } from '../components/ui/DcCard';
+import { DcEmptyState } from '../components/ui/DcEmptyState';
+import { DcSectionHeader } from '../components/ui/DcSectionHeader';
 
 type ActivityItem = {
   id: string;
@@ -285,18 +289,19 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[1.2fr_.8fr] gap-6" data-gsap-reveal>
-        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
-          <div className="dc-dashboard-section-heading">
-            <div><p className="dc-dashboard-section-label">Learning / Live</p><h3 className="dc-dashboard-section-title">TODAY'S TASKS</h3></div>
-            <span className="font-label-mono text-[9px] uppercase text-on-surface-variant">{completedTasksCount}/{tasks.length} COMPLETE</span>
-          </div>
+        <DcCard className="p-6 md:p-8" shadow="md">
+          <DcSectionHeader
+            eyebrow="Learning / Live"
+            title="TODAY'S TASKS"
+            trailing={<span className="font-label-mono text-[9px] uppercase text-on-surface-variant">{completedTasksCount}/{tasks.length} COMPLETE</span>}
+          />
           {tasks.length === 0 ? (
-            <div className="border-2 border-dashed border-outline-variant p-8 text-center">
-              <Zap className="w-6 h-6 mx-auto mb-3 text-primary" />
-              <p className="font-label-mono text-xs uppercase font-bold">NO TASKS YET</p>
-              <p className="text-xs text-on-surface-variant mt-2 max-w-sm mx-auto">Your learning tasks will appear here when a roadmap assigns them.</p>
-              <button onClick={() => navigateAndRemember('roadmap')} className="mt-5 border-2 border-outline-variant bg-dc-mint px-4 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] inline-flex items-center gap-2">EXPLORE ROADMAPS <ArrowRight className="w-3 h-3" /></button>
-            </div>
+            <DcEmptyState
+              title="NO TASKS YET"
+              description="Your learning tasks will appear here when a roadmap assigns them."
+              icon={<Zap className="w-6 h-6" />}
+              action={<button onClick={() => navigateAndRemember('roadmap')} className="border-2 border-outline-variant bg-dc-mint px-4 py-3 font-label-mono text-[10px] uppercase font-bold shadow-[3px_3px_0_#171717] inline-flex items-center gap-2 rounded-[var(--dc-radius-control)]">EXPLORE ROADMAPS <ArrowRight className="w-3 h-3" /></button>}
+            />
           ) : (
             <div className="space-y-3">
               {tasks.map((task) => (
@@ -310,13 +315,14 @@ export const DashboardPage: React.FC = () => {
               ))}
             </div>
           )}
-        </div>
+        </DcCard>
 
-        <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
-          <div className="dc-dashboard-section-heading">
-            <div><p className="dc-dashboard-section-label">Momentum / Signal</p><h3 className="dc-dashboard-section-title">RECENT ACTIVITY</h3></div>
-            <GitBranch className="w-5 h-5 text-dc-blue" />
-          </div>
+        <DcCard className="p-6 md:p-8" shadow="md">
+          <DcSectionHeader
+            eyebrow="Momentum / Signal"
+            title="RECENT ACTIVITY"
+            trailing={<GitBranch className="w-5 h-5 text-dc-blue" />}
+          />
           {recentActivity.length ? (
             <div className="dc-dashboard-activity-list">
               {recentActivity.map((item) => (
@@ -328,17 +334,23 @@ export const DashboardPage: React.FC = () => {
               ))}
             </div>
           ) : (
-            <div className="dc-dashboard-empty-activity"><Terminal className="w-5 h-5 mx-auto mb-3 text-primary" /><p>YOUR ACTIVITY FEED STARTS HERE</p><small>Finish a task or use a dashboard workspace to build your first local activity trail.</small></div>
+            <DcEmptyState
+              title="YOUR ACTIVITY FEED STARTS HERE"
+              description="Finish a task or use a dashboard workspace to build your first local activity trail."
+              icon={<Terminal className="w-5 h-5" />}
+              className="dc-dashboard-empty-activity"
+            />
           )}
-        </div>
+        </DcCard>
       </section>
 
       <section className="grid grid-cols-1 xl:grid-cols-[.9fr_1.1fr] gap-6" data-gsap-reveal>
         <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
-          <div className="dc-dashboard-section-heading">
-            <div><p className="dc-dashboard-section-label">Personalized / Signal</p><h3 className="dc-dashboard-section-title">RECOMMENDED FOR YOU</h3></div>
-            <Sparkles className="w-5 h-5 text-dc-lavender" />
-          </div>
+          <DcSectionHeader
+            eyebrow="Personalized / Signal"
+            title="RECOMMENDED FOR YOU"
+            trailing={<Sparkles className="w-5 h-5 text-dc-lavender" />}
+          />
           <div className="space-y-3">
             {recommendations.map((item, index) => (
               <button key={`${item.title}-${index}`} onClick={() => navigateAndRemember('roadmap')} className="dc-dashboard-recommendation text-left">
@@ -351,15 +363,17 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         <div className="border-2 border-outline-variant bg-surface p-6 md:p-8 shadow-[5px_5px_0_#171717]">
-          <div className="dc-dashboard-section-heading">
-            <div><p className="dc-dashboard-section-label">Ranking / Live</p><h3 className="dc-dashboard-section-title">LEADERBOARD</h3></div>
-            <Trophy className="w-5 h-5 text-dc-yellow" />
-          </div>
+          <DcSectionHeader
+            eyebrow="Ranking / Live"
+            title="LEADERBOARD"
+            trailing={<Trophy className="w-5 h-5 text-dc-yellow" />}
+          />
           {visibleLeaderboard.length === 0 ? (
-            <div className="border-2 border-dashed border-outline-variant p-6 text-center">
-              <p className="font-label-mono text-xs uppercase font-bold">NO RANKINGS YET</p>
-              <p className="text-xs text-on-surface-variant mt-2">Rankings will populate when real community activity exists.</p>
-            </div>
+            <DcEmptyState
+              title="NO RANKINGS YET"
+              description="Rankings will populate when real community activity exists."
+              className="p-6"
+            />
           ) : (
             <div>
               {visibleLeaderboard.map((entry) => (
@@ -367,7 +381,7 @@ export const DashboardPage: React.FC = () => {
                   <span className="dc-dashboard-rank-chip">{entry.rank}</span>
                   <div className="dc-dashboard-rank-avatar-wrap">
                     {entry.avatar ? <img src={entry.avatar} alt="" className="dc-dashboard-rank-avatar" /> : <span className="dc-dashboard-rank-avatar grid place-items-center text-xs font-bold">{entry.name.slice(0, 1).toUpperCase()}</span>}
-                    <div className="min-w-0"><p className="dc-dashboard-rank-name">{entry.name}{entry.isUser && <span className="ml-2 text-[8px] uppercase text-primary">YOU</span>}</p><p className="dc-dashboard-rank-sub">{entry.college || 'College not set'} · {entry.branch || 'Branch not set'}</p></div>
+                    <div className="min-w-0"><p className="dc-dashboard-rank-name">{entry.name}{entry.isUser && <DcBadge tone="blue" className="ml-2 px-1.5 py-0.5 text-[8px]">YOU</DcBadge>}</p><p className="dc-dashboard-rank-sub">{entry.college || 'College not set'} · {entry.branch || 'Branch not set'}</p></div>
                   </div>
                   <span className="dc-dashboard-rank-rep">{entry.rep.toLocaleString()} REP</span>
                 </div>

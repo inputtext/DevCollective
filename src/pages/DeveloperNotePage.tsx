@@ -3,6 +3,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowLeft, ArrowUpRight, Code2, Heart, Sparkles } from 'lucide-react';
 import { Marquee } from '../components/Marquee';
+import { CommunityBadge } from 'performative-ui';
+import 'performative-ui/styles.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -29,6 +31,7 @@ export const DeveloperNotePage: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const root = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     if (!root.current) return;
     const ctx = gsap.context(() => {
       const intro = gsap.timeline({ defaults: { ease: 'power4.out' } });
@@ -116,10 +119,57 @@ export const DeveloperNotePage: React.FC<{ onBack: () => void }> = ({ onBack }) 
           </div>
         </section>
 
+        <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-16 sm:py-20">
+          <div className="dn-reveal grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16 items-start">
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em]">04 / FIND ME</span>
+            <div>
+              <h2 className="text-4xl sm:text-6xl font-black uppercase tracking-[-0.05em]">Across the web.</h2>
+              <p className="mt-5 max-w-2xl text-base sm:text-lg leading-relaxed opacity-75">Projects, notes, experiments and the things I am building in public.</p>
+              <div className="mt-8 grid md:grid-cols-3 gap-4">
+                <CommunityBadge
+                  href="https://github.com/inputtext/DevCollective"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/github.svg"
+                  title="GitHub"
+                  subtitle={<>DevCollective · source & projects</>}
+                  className="!w-full"
+                />
+                <CommunityBadge
+                  href="https://www.linkedin.com/in/piyush-kanojiya-b78340358/"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/linkedin.svg"
+                  title="LinkedIn"
+                  subtitle={<>Connect · professional profile</>}
+                  className="!w-full"
+                />
+                <CommunityBadge
+                  href="https://www.instagram.com/_input_text.jpg/"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/instagram.svg"
+                  title="Instagram"
+                  subtitle={<>_input_text.jpg · daily builds</>}
+                  className="!w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-28">
           <div className="dn-reveal grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16">
             <span className="font-mono text-[9px] uppercase tracking-[0.18em]">04 / THE STACK</span>
-            <div><div className="flex items-center gap-3"><Code2 className="w-5 h-5" /><h2 className="text-4xl sm:text-6xl font-black uppercase tracking-[-0.05em]">Tools I like to build with.</h2></div><p className="mt-7 max-w-3xl text-lg leading-relaxed opacity-75">React, TypeScript, Vite, Tailwind CSS, GSAP, ScrollTrigger, Lenis, Three.js, Node.js, Supabase and Clerk — a stack chosen for fast iteration, expressive interfaces and products that can grow beyond a prototype.</p><div className="mt-8 flex flex-wrap gap-2">{['React', 'TypeScript', 'Vite', 'Tailwind', 'GSAP', 'ScrollTrigger', 'Lenis', 'Three.js', 'Node.js', 'Supabase', 'Clerk'].map((item) => <span key={item} className="font-mono text-[9px] uppercase tracking-[0.12em] border px-3 py-2" style={{ borderColor: `${INK}55` }}>{item}</span>)}</div></div>
+            <div>
+              <div className="border-2 border-[#171717] bg-[#0B0B0F] px-5 py-4 sm:px-7 sm:py-5 overflow-hidden">
+                <div className="flex items-center gap-3 mb-3">
+                  <Code2 className="w-5 h-5 text-[#A6FF00] shrink-0" />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#8A8A96]">/ STACK.LOG</span>
+                </div>
+                <h2 className="font-mono text-2xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-[-0.03em] text-[#A6FF00]">TOOLS I LIKE TO BUILD WITH.</h2>
+              </div>
+              <p className="mt-7 max-w-3xl text-lg leading-relaxed opacity-75">React, TypeScript, Vite, Tailwind CSS, GSAP, ScrollTrigger, Lenis, Three.js, Node.js, Supabase and Clerk — a stack chosen for fast iteration, expressive interfaces and products that can grow beyond a prototype.</p><div className="mt-8 flex flex-wrap gap-2">{['React', 'TypeScript', 'Vite', 'Tailwind', 'GSAP', 'ScrollTrigger', 'Lenis', 'Three.js', 'Node.js', 'Supabase', 'Clerk'].map((item) => <span key={item} className="font-mono text-[9px] uppercase tracking-[0.12em] border px-3 py-2" style={{ borderColor: `${INK}55` }}>{item}</span>)}</div></div>
           </div>
         </section>
       </main>
