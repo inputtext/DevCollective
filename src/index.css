@@ -71,3 +71,67 @@ body:has(main[class*="max-w-[1320px]"]) .min-h-screen.bg-background.text-on-back
 
 /* Preserve circular avatars/loaders and intentionally pill-shaped controls. */
 .dc-app-shell .rounded-full,.dc-public .rounded-full,.profile-setup-page .rounded-full{border-radius:9999px!important}
+
+
+/* Community-only radius completion pass.
+   Geometry only: preserve layout, spacing, colors, shadows, animations, and behavior. */
+.dc-page-community > .space-y-8 > section:first-child {
+  border-radius: 0;
+}
+.dc-page-community > .space-y-8 > div.flex.flex-wrap.gap-2 {
+  padding: 2px 0;
+}
+.dc-page-community > .space-y-8 > div.flex.flex-wrap.gap-2 > button {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-community > .space-y-8 > section.space-y-5 > div.border-2.border-dashed,
+.dc-page-community > .space-y-8 > section.space-y-5 > article {
+  border-radius: var(--dc-radius-card, 18px);
+}
+.dc-page-community > .space-y-8 > section.space-y-5 > article .font-label-mono.border-2 {
+  border-radius: var(--dc-radius-small, 10px);
+}
+.dc-page-community > .space-y-8 > section.space-y-5 > article img,
+.dc-page-community > .space-y-8 > section.space-y-5 > article [class*="w-11"][class*="h-11"] {
+  border-radius: 12px;
+}
+.dc-page-community > .space-y-8 > section.space-y-5 > article > div:last-child > button {
+  border-radius: var(--dc-radius-small, 10px);
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface {
+  border-radius: var(--dc-radius-card, 18px);
+  overflow: hidden;
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface > form input,
+.dc-page-community .fixed.inset-0 > div.bg-surface > form textarea,
+.dc-page-community .fixed.inset-0 > div.bg-surface > form select,
+.dc-page-community .fixed.inset-0 > div.bg-surface > div input,
+.dc-page-community .fixed.inset-0 > div.bg-surface > div textarea,
+.dc-page-community .fixed.inset-0 > div.bg-surface > div select {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface button {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface .border-2.border-dashed {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface .border-2.border-outline-variant\/60 {
+  border-radius: var(--dc-radius-control, 12px);
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface .border-l-2 {
+  border-radius: 0;
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface img.w-9,
+.dc-page-community .fixed.inset-0 > div.bg-surface [class*="w-9"][class*="h-9"] {
+  border-radius: 10px;
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface form {
+  min-width: 0;
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface form input {
+  min-width: 0;
+}
+.dc-page-community .fixed.inset-0 > div.bg-surface .flex-1.border-2 {
+  border-radius: var(--dc-radius-control, 12px);
+}
