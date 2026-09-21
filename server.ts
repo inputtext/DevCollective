@@ -94,7 +94,7 @@ app.get('/api/community/overview', requireAuth, async (_req, res) => { try {
       tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
     }
   }
-  const popularTags = Array.from(tagCounts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8).map(([tag,count]) => ({ tag, count }));
+  if (tagCounts.size === 0) { const inferred = [['#dsa', /dsa|data structure|algorithm/i], ['#web-dev', /web|frontend|backend|full.?stack|node|react/i], ['#system-design', /system design|architecture|scalability|websocket/i], ['#react', /react|next\.js|nextjs/i], ['#career', /career|placement|internship|resume/i], ['#project', /project|build|app|devcollective/i], ['#ai', /ai|gemini|llm|model/i], ['#help', /help|issue|problem|stuck|question/i]] as const; for (const post of posts || []) { const text = `${post.title || ''} ${post.content || ''}`; for (const [tag, pattern] of inferred) if (pattern.test(text)) tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1); } } const popularTags = Array.from(tagCounts.entries()).sort((a,b) => b[1] - a[1]).slice(0, 8).map(([tag,count]) => ({ tag, count }));
   const topContributors = (profiles || []).slice(0, 5).map((profile: any) => ({
     id: profile.clerk_user_id, name: profile.name || 'Developer', avatar: profile.avatar || '',
     rep: Number(profile.rep) || 0, level: Number(profile.level) || 1,
