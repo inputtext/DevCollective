@@ -208,7 +208,7 @@ export const CommunityRefinedPage: React.FC = () => {
             </div>
             <p className="text-sm text-on-surface-variant mt-2 max-w-2xl">Ask questions, share your progress, find collaborators, and be part of the DevCollective community.</p>
           </div>
-          <button onClick={() => setShowCreate(true)} className="shrink-0 inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm font-label-mono text-[9px] uppercase font-bold">
+          <button onClick={() => setShowCreate(true)} className="dc-community-create shrink-0 inline-flex items-center justify-center gap-2 px-4 py-3 bg-primary text-on-primary border-2 border-outline-variant dc-hard-shadow-sm font-label-mono text-[9px] uppercase font-bold">
             <Plus className="w-4 h-4" /> Create post
           </button>
         </div>
