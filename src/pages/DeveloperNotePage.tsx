@@ -31,6 +31,7 @@ export const DeveloperNotePage: React.FC<{ onBack: () => void }> = ({ onBack }) 
   const root = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     if (!root.current) return;
     const ctx = gsap.context(() => {
       const intro = gsap.timeline({ defaults: { ease: 'power4.out' } });
