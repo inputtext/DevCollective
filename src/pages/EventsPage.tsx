@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight, CalendarDays, ChevronLeft, Clock3, ExternalLink, MapPin, Shirt, Users, ShieldCheck } from 'lucide-react';
 import type { DevEvent } from '../types';
+import { DcBadge } from '../components/ui/DcBadge';
+import { DcButton } from '../components/ui/DcButton';
+import { DcCard } from '../components/ui/DcCard';
+import { DcEmptyState } from '../components/ui/DcEmptyState';
+import { DcSectionHeader } from '../components/ui/DcSectionHeader';
 
 const API = `${String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')}/functions/v1/events`;
 
@@ -94,17 +99,17 @@ export const EventsPage: React.FC = () => {
 
   return (
     <div className="space-y-7 pb-16">
-      <header className="border-b-2 border-outline-variant pb-7">
+      <DcSectionHeader className="border-b-2 border-outline-variant pb-7">
         <p className="font-label-mono text-[9px] uppercase tracking-[0.2em] text-primary">DEVCOLLECTIVE / CAMPUS EVENTS</p>
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5 mt-3">
           <div><h1 className="dc-display text-5xl sm:text-7xl">EVENTS.</h1><p className="max-w-2xl text-sm text-on-surface-variant mt-3">Real college events, talks, hackathons and community gatherings — organised into one living campus calendar.</p></div>
-          <div className="border-2 border-outline-variant bg-surface px-4 py-3 dc-hard-shadow-sm"><p className="font-label-mono text-[9px] uppercase text-on-surface-variant">EVENT DATA</p><p className="font-bold mt-1">{events.length} listed event{events.length === 1 ? '' : 's'}</p><p className="font-label-mono text-[9px] uppercase text-primary mt-1">UPDATED REGULARLY</p></div>
+          <DcCard shadow="sm" className="px-4 py-3"><p className="font-label-mono text-[9px] uppercase text-on-surface-variant">EVENT DATA</p><p className="font-bold mt-1">{events.length} listed event{events.length === 1 ? '' : 's'}</p><DcBadge tone="mint" className="mt-1">Updated regularly</DcBadge></DcCard>
         </div>
-      </header>
+      </DcSectionHeader>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">{(['upcoming', 'ongoing', 'past'] as Filter[]).map((item) => <button key={item} type="button" onClick={() => setFilter(item)} className={`px-4 py-2.5 border-2 border-outline-variant font-label-mono text-[9px] uppercase shrink-0 ${filter === item ? 'bg-primary text-on-primary' : 'bg-surface hover:bg-surface-container-high'}`}>{item}</button>)}</div>
+      <div className="flex gap-2 overflow-x-auto pb-1">{(['upcoming', 'ongoing', 'past'] as Filter[]).map((item) => <DcButton key={item} variant={filter === item ? 'primary' : 'secondary'} className="shrink-0 px-4 py-2.5">{item}</DcButton>)}</div>
 
-      {loading ? <div className="p-14 border-2 border-outline-variant bg-surface text-center font-label-mono text-[10px] uppercase">Loading campus events...</div> : visible.length === 0 ? <div className="p-14 border-2 border-dashed border-outline-variant text-center bg-surface"><CalendarDays className="w-7 h-7 mx-auto mb-3 text-on-surface-variant"/><p className="font-label-mono text-[10px] uppercase font-bold">No {filter} events</p><p className="text-xs text-on-surface-variant mt-2">Check another event window.</p></div> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{visible.map((event) => <button key={event.id} type="button" onClick={() => setSelected(event)} className="group text-left border-2 border-outline-variant bg-surface overflow-hidden shadow-[4px_4px_0_#171717] hover:-translate-y-1 transition-transform"><div className="h-3" style={{ background: event.theme.primary }} />{event.slug === 'shree-ganesh-utsav-2026' && <GaneshMiniPoster /> }<div className="p-5"><div className="flex items-center justify-between gap-3 font-label-mono text-[9px] uppercase"><span style={{ color: event.theme.primary }}>{statusOf(event)}</span><span>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainDate || '15 Sep 2026') : formatDate(event.startsAt)}</span></div><h2 className="dc-display text-3xl mt-4 group-hover:text-primary">{event.title}</h2><p className="font-label-mono text-[10px] uppercase mt-1">{event.subtitle}</p><p className="text-sm text-on-surface-variant mt-4 line-clamp-3">{event.description}</p><div className="mt-5 pt-4 border-t border-outline-variant/60 space-y-2 text-xs"><div className="flex gap-2"><MapPin className="w-3.5 h-3.5 shrink-0"/>{event.venue}, {event.city}</div><div className="flex gap-2"><Clock3 className="w-3.5 h-3.5 shrink-0"/>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainTime || '10:30 AM') : `${formatTime(event.startsAt)} — ${formatTime(event.endsAt)}`}</div></div><div className="mt-5 flex items-center justify-between font-label-mono text-[9px] uppercase"><span>Open event</span><ArrowUpRight className="w-4 h-4"/></div></div></button>)}</div>}
+      {loading ? <DcCard shadow="sm" className="p-14 text-center"><p className="font-label-mono text-[10px] uppercase">Loading campus events...</p></DcCard> : visible.length === 0 ? <DcEmptyState icon={<CalendarDays className="w-7 h-7" />} title={`No ${filter} events`} description="Check another event window." /> : <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{visible.map((event) => <button key={event.id} type="button" onClick={() => setSelected(event)} className="group text-left border-2 border-outline-variant bg-surface overflow-hidden dc-shadow-sm hover:-translate-y-1 transition-transform"><div className="h-3" style={{ background: event.theme.primary }} />{event.slug === 'shree-ganesh-utsav-2026' && <GaneshMiniPoster /> }<div className="p-5"><div className="flex items-center justify-between gap-3 font-label-mono text-[9px] uppercase"><span style={{ color: event.theme.primary }}>{statusOf(event)}</span><span>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainDate || '15 Sep 2026') : formatDate(event.startsAt)}</span></div><h2 className="dc-display text-3xl mt-4 group-hover:text-primary">{event.title}</h2><p className="font-label-mono text-[10px] uppercase mt-1">{event.subtitle}</p><p className="text-sm text-on-surface-variant mt-4 line-clamp-3">{event.description}</p><div className="mt-5 pt-4 border-t border-outline-variant/60 space-y-2 text-xs"><div className="flex gap-2"><MapPin className="w-3.5 h-3.5 shrink-0"/>{event.venue}, {event.city}</div><div className="flex gap-2"><Clock3 className="w-3.5 h-3.5 shrink-0"/>{event.slug === 'shree-ganesh-utsav-2026' ? (event.details?.mainTime || '10:30 AM') : `${formatTime(event.startsAt)} — ${formatTime(event.endsAt)}`}</div></div><div className="mt-5 flex items-center justify-between font-label-mono text-[9px] uppercase"><span>Open event</span><ArrowUpRight className="w-4 h-4"/></div></div></button>)}</div>}
     </div>
   );
 };
