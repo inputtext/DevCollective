@@ -308,9 +308,9 @@ export const CommunityPage: React.FC = () => {
   };
 
   return <div className="space-y-8 pb-16">
-    <section className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b-2 border-outline-variant pb-7">
+    <section className="dc-community-header">
       <div><p className="font-label-mono text-[10px] uppercase tracking-[0.18em] text-on-surface-variant">COMMUNITY / LIVE DATA</p><h2 className="dc-display text-5xl sm:text-6xl mt-2">COMMUNITY.</h2><p className="mt-4 text-sm text-on-surface-variant max-w-xl">Posts are created by real DevCollective users. Nothing is pre-seeded.</p></div>
-      <button onClick={() => { setPublishError(null); setShowNewPostModal(true); }} className="px-5 py-3 bg-primary text-on-primary border-2 border-outline-variant shadow-[4px_4px_0_#171717] font-label-mono text-[10px] uppercase font-bold flex items-center gap-2"><Plus className="w-4 h-4" /> New Post</button>
+      <button onClick={() => { setPublishError(null); setShowNewPostModal(true); }} className="dc-community-create"><Plus className="w-4 h-4" /> New Post</button>
     </section>
 
     <div className="dc-community-layout">
