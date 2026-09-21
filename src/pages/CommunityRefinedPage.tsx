@@ -294,7 +294,7 @@ export const CommunityRefinedPage: React.FC = () => {
             <p>Share your workshop, webinar or study session with the community.</p>
             <button onClick={() => setActiveTab('events')}>Create Event</button>
           </div>
-        </aside>        </aside>
+        </aside>
       </div>
 
       {showCreate && <div className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm p-3 sm:p-6 flex items-center justify-center"><form onSubmit={publish} className="w-full max-w-2xl bg-background border-2 border-outline-variant shadow-[7px_7px_0_#171717]">
