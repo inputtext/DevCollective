@@ -9,15 +9,18 @@ export const DcBadge: React.FC<DcBadgeProps> = ({
   className = '',
   tone = 'default',
   ...props
-}) => (
+}) => {
+  const toneClasses = { default: 'bg-surface', blue: 'bg-dc-blue', mint: 'bg-dc-mint', yellow: 'bg-dc-yellow', lavender: 'bg-dc-lavender', pink: 'bg-dc-pink' } as const;
+  return (
   <span
     className={[
       'inline-flex items-center border-2 border-outline-variant rounded-full px-2.5 py-1 font-label-mono text-[9px] uppercase font-bold',
-      tone !== 'default' ? 'bg-dc-' + tone : 'bg-surface',
+      toneClasses[tone],
       className,
     ].join(' ')}
     {...props}
   >
     {children}
   </span>
-);
+  );
+};
