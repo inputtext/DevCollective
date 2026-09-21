@@ -3,6 +3,8 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowLeft, ArrowUpRight, Code2, Heart, Sparkles } from 'lucide-react';
 import { Marquee } from '../components/Marquee';
+import { CommunityBadge } from 'performative-ui';
+import 'performative-ui/styles.css';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -111,6 +113,45 @@ export const DeveloperNotePage: React.FC<{ onBack: () => void }> = ({ onBack }) 
               <div className="relative min-h-[360px] flex items-center justify-center overflow-hidden border" style={{ borderColor: INK, background: PAPER }}>
                 <div className="dn-orbit absolute w-72 h-72 rounded-full border" style={{ borderColor: `${INK}22` }} />
                 <div className="relative z-10 text-center max-w-md px-8"><Sparkles className="w-7 h-7 mx-auto mb-6" /><p className="text-2xl sm:text-3xl font-bold leading-tight">I admire Apple's attention to micro-interactions — the way a tap, swipe, transition or tiny response makes an interface feel physical.</p><p className="mt-6 font-mono text-[9px] uppercase tracking-[0.18em] opacity-60">Motion should communicate, not distract.</p></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-16 sm:py-20">
+          <div className="dn-reveal grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16 items-start">
+            <span className="font-mono text-[9px] uppercase tracking-[0.18em]">04 / FIND ME</span>
+            <div>
+              <h2 className="text-4xl sm:text-6xl font-black uppercase tracking-[-0.05em]">Across the web.</h2>
+              <p className="mt-5 max-w-2xl text-base sm:text-lg leading-relaxed opacity-75">Projects, notes, experiments and the things I am building in public.</p>
+              <div className="mt-8 grid md:grid-cols-3 gap-4">
+                <CommunityBadge
+                  href="https://github.com/inputtext/DevCollective"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/github.svg"
+                  title="GitHub"
+                  subtitle={<>DevCollective · source & projects</>}
+                  className="!w-full"
+                />
+                <CommunityBadge
+                  href="https://www.linkedin.com/in/piyush-kanojiya-b78340358/"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/linkedin.svg"
+                  title="LinkedIn"
+                  subtitle={<>Connect · professional profile</>}
+                  className="!w-full"
+                />
+                <CommunityBadge
+                  href="https://www.instagram.com/_input_text.jpg/"
+                  target="_blank"
+                  rel="noreferrer"
+                  icon="https://cdn.jsdelivr.net/npm/simple-icons@11/icons/instagram.svg"
+                  title="Instagram"
+                  subtitle={<>_input_text.jpg · daily builds</>}
+                  className="!w-full"
+                />
               </div>
             </div>
           </div>
