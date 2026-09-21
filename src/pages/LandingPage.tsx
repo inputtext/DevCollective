@@ -5,7 +5,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
-import { GradientText, LogoMarquee } from 'performative-ui';
+import { Goldeneye, GradientText, LogoMarquee } from 'performative-ui';
 import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
@@ -142,6 +142,31 @@ export const LandingPage: React.FC = () => {
               fade
               pauseOnHover
             />
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b-2 border-outline-variant bg-[#171717] text-[#FFF9F0]" data-gsap-reveal>
+        <div className="max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-8 sm:py-10">
+          <div className="flex items-center justify-between border-b border-white/15 pb-5 mb-5">
+            <p className="dc-mono text-[9px] uppercase tracking-[0.2em] text-white/55">[ 01 / THE LAB ]</p>
+            <p className="hidden dc-mono text-[9px] uppercase tracking-[0.16em] text-white/35 sm:block">MOVE THROUGH THE SYSTEM</p>
+          </div>
+          <div className="border-2 border-white/15 overflow-hidden">
+            <Goldeneye
+              text_default="AGENTIC"
+              text_reveal="if/else"
+              pattern="0 1 0 1 "
+              pattern_size_default={14}
+              pattern_size_reveal={22}
+              scopeSize={320}
+              fontSize="clamp(56px, 11vw, 160px)"
+              fontFamily="var(--dc-display-font, Inter, ui-sans-serif, system-ui, sans-serif)"
+            />
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4">
+            <p className="dc-mono text-[9px] uppercase tracking-[0.16em] text-white/45">CURSOR / ACTIVE</p>
+            <p className="text-xs text-white/45">Move across the field to reveal another layer.</p>
           </div>
         </div>
       </section>
