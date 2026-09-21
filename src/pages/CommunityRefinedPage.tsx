@@ -24,7 +24,7 @@ const typeFor = (post: CommunityPost) => {
 };
 
 export const CommunityRefinedPage: React.FC = () => {
-  const { user, posts, commentsByPost, addPost, toggleLikePost, loadPostComments } = useAuth();
+  const { user, posts, commentsByPost, addPost, toggleLikePost, loadPostComments, setActiveTab } = useAuth();
   const { toggleCommentLike } = useNotifications();
   const { openProfile, toggleFollow, requestConnection, loadSocialSummary } = useSocial();
   const { getToken } = useClerkAuth();
@@ -46,6 +46,22 @@ export const CommunityRefinedPage: React.FC = () => {
   const [socialBusy, setSocialBusy] = useState<string | null>(null);
   const [followed, setFollowed] = useState<Record<string, boolean>>({});
   const [connected, setConnected] = useState<Record<string, boolean>>({});
+  const [overview, setOverview] = useState<{ stats: { members: number; posts: number; projects: number; activeToday: number }; popularTags: { tag: string; count: number }[]; topContributors: { id: string; name: string; avatar: string; rep: number; level: number; academicYear: string; college: string; branch: string }[] } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const response = await fetch('/api/community/overview', { headers: { Authorization: `Bearer ${token}` } });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Could not load community overview.');
+        if (!cancelled) setOverview(data);
+      } catch (error) { console.error('Could not load community overview:', error); }
+    })();
+    return () => { cancelled = true; };
+  }, [getToken]);
 
   useEffect(() => {
     if (!commentPost) return;
