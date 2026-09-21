@@ -3,7 +3,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowLeft, ArrowUpRight, Code2, Heart, Sparkles } from 'lucide-react';
 import { Marquee } from '../components/Marquee';
-import { CommunityBadge, QuestText } from 'performative-ui';
+import { CommunityBadge } from 'performative-ui';
 import 'performative-ui/styles.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -162,13 +162,12 @@ export const DeveloperNotePage: React.FC<{ onBack: () => void }> = ({ onBack }) 
           <div className="dn-reveal grid lg:grid-cols-[0.3fr_1.7fr] gap-8 lg:gap-16">
             <span className="font-mono text-[9px] uppercase tracking-[0.18em]">04 / THE STACK</span>
             <div>
-              <div className="overflow-hidden py-2">
-                <QuestText
-                  text="TOOLS I LIKE TO BUILD WITH."
-                  animation="scroll"
-                  color="#171717"
-                  className="font-black uppercase text-4xl sm:text-6xl lg:text-7xl"
-                />
+              <div className="border-2 border-[#171717] bg-[#0B0B0F] px-5 py-4 sm:px-7 sm:py-5 overflow-hidden">
+                <div className="flex items-center gap-3 mb-3">
+                  <Code2 className="w-5 h-5 text-[#A6FF00] shrink-0" />
+                  <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[#8A8A96]">/ STACK.LOG</span>
+                </div>
+                <h2 className="font-mono text-2xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-[-0.03em] text-[#A6FF00]">TOOLS I LIKE TO BUILD WITH.</h2>
               </div>
               <p className="mt-7 max-w-3xl text-lg leading-relaxed opacity-75">React, TypeScript, Vite, Tailwind CSS, GSAP, ScrollTrigger, Lenis, Three.js, Node.js, Supabase and Clerk — a stack chosen for fast iteration, expressive interfaces and products that can grow beyond a prototype.</p><div className="mt-8 flex flex-wrap gap-2">{['React', 'TypeScript', 'Vite', 'Tailwind', 'GSAP', 'ScrollTrigger', 'Lenis', 'Three.js', 'Node.js', 'Supabase', 'Clerk'].map((item) => <span key={item} className="font-mono text-[9px] uppercase tracking-[0.12em] border px-3 py-2" style={{ borderColor: `${INK}55` }}>{item}</span>)}</div></div>
           </div>
