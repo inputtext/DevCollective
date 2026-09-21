@@ -15,6 +15,7 @@ import { OAuthGuideModal } from './components/OAuthGuideModal';
 import { ChatWidget } from './components/ChatWidget';
 import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 import { MotionSystem } from './components/MotionSystem';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { LandingEventsSection } from './components/LandingEventsSection';
 import { usePlatformAccess } from './hooks/usePlatformAccess';
 import { useAdminAccess } from './hooks/useAdminAccess';
@@ -108,7 +109,7 @@ const MainContent: React.FC = () => {
   }
 
   const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(activeTab);
-  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
+  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}><ErrorBoundary>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</ErrorBoundary></Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
 };
 
 export default function App() { return <AuthProvider><NotificationProvider><SocialProvider><MainContent /></SocialProvider></NotificationProvider></AuthProvider>; }
