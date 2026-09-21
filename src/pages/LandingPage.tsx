@@ -154,8 +154,8 @@ export const LandingPage: React.FC = () => {
           </div>
           <div className="border-2 border-white/15 overflow-hidden">
             <Goldeneye
-              text_default="AGENTIC"
-              text_reveal="if/else"
+              text_default="TUTORIAL"
+              text_reveal="PROJECT"
               pattern="0 1 0 1 "
               pattern_size_default={14}
               pattern_size_reveal={22}
@@ -166,7 +166,7 @@ export const LandingPage: React.FC = () => {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4">
             <p className="dc-mono text-[9px] uppercase tracking-[0.16em] text-white/45">CURSOR / ACTIVE</p>
-            <p className="text-xs text-white/45">Move across the field to reveal another layer.</p>
+            <p className="text-xs text-white/45">Move across the field to turn learning into something real.</p>
           </div>
         </div>
       </section>
