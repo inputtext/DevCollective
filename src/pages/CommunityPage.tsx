@@ -293,7 +293,7 @@ export const CommunityPage: React.FC = () => {
               {comment.authorAvatar ? <img src={comment.authorAvatar} alt={comment.authorName} className="w-9 h-9 border border-outline-variant object-cover" /> : <div className="w-9 h-9 border border-outline-variant bg-dc-yellow flex items-center justify-center text-xs font-bold">{comment.authorName.slice(0, 1)}</div>}
               <div className="min-w-0">
                 <p className="text-sm font-bold truncate">{comment.authorName}</p>
-                <p className="font-label-mono text-[9px] uppercase text-on-surface-variant">{comment.authorRole} · {comment.authorRep} REP · {formatPostTime(comment.createdAt)}{comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' · EDITED' : ''}</p>
+                <p className="font-label-mono text-[9px] uppercase text-on-surface-variant">{comment.authorAcademicYear || 'Batch not set'} · Level {comment.authorLevel || 1} · {comment.authorRep} REP · {formatPostTime(comment.createdAt)}{comment.updatedAt && comment.updatedAt !== comment.createdAt ? ' · EDITED' : ''}</p>
               </div>
             </div>
             {isMine && <div className="flex items-center gap-1 shrink-0"><button onClick={() => beginEditComment(comment)} disabled={isBusy} className="p-2 border border-outline-variant hover:bg-dc-blue disabled:opacity-50" aria-label="Edit comment"><Pencil className="w-3.5 h-3.5" /></button><button onClick={() => void handleDeleteComment(comment.id)} disabled={isBusy} className="p-2 border border-outline-variant hover:bg-dc-yellow disabled:opacity-50" aria-label="Delete comment">{isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}</button></div>}
