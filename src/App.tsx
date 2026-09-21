@@ -26,6 +26,7 @@ import './styles/workspace-pastel.css';
 import './styles/dark-theme.css';
 import './styles/workspace-controls.css';
 import './styles/dashboard-ux.css';
+import './styles/community-category-theme.css';
 import './styles/rep-reward.css';
 import './styles/social-profile.css';
 import './styles/level0-theme.css';
