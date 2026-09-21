@@ -82,7 +82,7 @@ export const CommunityRefinedPage: React.FC = () => {
         || (view === 'building' && post.category === 'Build in Public');
       if (!matchesView) return false;
       if (!needle) return true;
-      return [post.title, post.content, post.authorName, post.authorCollege, post.category]
+      return [post.title, post.content, post.authorName, post.authorCollege, post.authorAcademicYear, `level ${post.authorLevel || 1}`, post.category]
         .filter(Boolean).join(' ').toLowerCase().includes(needle);
     });
   }, [posts, query, view]);
