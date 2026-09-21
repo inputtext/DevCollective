@@ -5,12 +5,10 @@ type State = { hasError: boolean };
 
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false };
-  private readonly children: ReactNode;
-
-  constructor(props: Props) {
-    super(props);
-    this.children = props.children;
-  }
+  declare readonly props: Readonly<Props>;
+  declare readonly setState: (
+    state: Partial<State> | ((prevState: Readonly<State>, props: Readonly<Props>) => Partial<State> | null),
+  ) => void;
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
@@ -25,7 +23,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   render() {
-    if (!this.state.hasError) return this.children;
+    if (!this.state.hasError) return this.props.children;
 
     return (
       <div className="dc-app-shell min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
