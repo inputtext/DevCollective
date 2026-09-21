@@ -5,7 +5,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
-import { Button, Goldeneye, GradientText, LogoMarquee, Rotator, SlippyWords } from 'performative-ui';
+import { Button, EyebrowPill, Goldeneye, GradientText, LogoMarquee, Rotator, SlippyWords } from 'performative-ui';
 import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
@@ -129,7 +129,10 @@ export const LandingPage: React.FC = () => {
             <span className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.18em]">DC / 00 — Developer Collective</span>
             <span className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.18em] hidden sm:block">LEARN → BUILD → COLLABORATE → SHIP</span>
           </div>
-          <div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
+          <div className="flex justify-center py-10 sm:py-12">
+            <EyebrowPill>DEVCOLLECTIVE</EyebrowPill>
+          </div>
+          <div className="pt-2 sm:pt-4 lg:pt-6 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
             <div>
               <p className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] mb-6">A technical collective for developers in the making.</p>
               <GradientText
