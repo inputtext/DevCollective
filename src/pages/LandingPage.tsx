@@ -91,6 +91,7 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
             <span className="dn-envelope-seal absolute z-[5] left-1/2 top-[48px] -translate-x-1/2 w-8 h-8 rounded-full bg-[#171717] text-[#F3EBDD] flex items-center justify-center font-mono text-[9px] shadow-md">DC</span>
           </button>
           <span className="mt-7 dc-mono text-[8px] uppercase tracking-[0.18em] text-[#171717]/45">{hovered ? 'CLICK TO OPEN' : 'HOVER TO UNSEAL'}</span>
+          </div>
         </div>
       </div>
     </section>
