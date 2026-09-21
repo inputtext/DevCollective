@@ -39,6 +39,8 @@ export interface CommunityPost {
   authorAvatar: string;
   authorRole: string;
   authorRep: number;
+  authorAcademicYear?: string;
+  authorLevel?: number;
   category: 'Build in Public' | 'Questions' | 'Projects' | 'Hackathons' | 'AI' | 'Android' | 'General';
   title?: string;
   content: string;
@@ -59,6 +61,8 @@ export interface CommunityComment {
   authorAvatar: string;
   authorRole: string;
   authorRep: number;
+  authorAcademicYear?: string;
+  authorLevel?: number;
   content: string;
   createdAt: string;
   updatedAt?: string;
