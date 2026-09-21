@@ -57,9 +57,26 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
       <FluidShader className="absolute inset-0 z-0 h-full w-full" />
       <div className="relative z-10 max-w-[1500px] mx-auto px-5 sm:px-8 lg:px-12 py-20 sm:py-24">
         <div className="flex flex-col items-center text-center">
-          <p className="dc-mono text-[9px] uppercase tracking-[0.22em] mb-4 text-[#171717]/60">[ 07 / A SMALL NOTE ]</p>
-          <h2 className="dc-display text-4xl sm:text-5xl lg:text-6xl text-[#171717]">There is a note behind the work.</h2>
-          <p className="mt-4 max-w-md text-sm sm:text-base text-[#171717]/65 leading-relaxed">Hover the envelope. Open the developer's notebook.</p>
+          <div className="w-full max-w-[1180px] mx-auto mb-16 sm:mb-20 text-left">
+            <div className="flex items-start gap-5">
+              <span className="dc-mono text-[9px] uppercase tracking-[0.2em] text-[#171717]/55 pt-3 shrink-0">04 / THE STACK</span>
+              <div className="flex-1">
+                <h2 className="dc-display text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-[#171717] leading-[0.9]">TOOLS I LIKE TO BUILD WITH.</h2>
+                <p className="mt-8 max-w-4xl text-lg sm:text-xl lg:text-2xl leading-relaxed text-[#171717]/70">
+                  React, TypeScript, Vite, Tailwind CSS, GSAP, ScrollTrigger, Lenis, Three.js, Node.js, Supabase and Clerk — a stack chosen for fast iteration, expressive interfaces and products that can grow beyond a prototype.
+                </p>
+                <div className="mt-10 flex flex-wrap gap-2">
+                  {['REACT', 'TYPESCRIPT', 'VITE', 'TAILWIND', 'GSAP', 'SCROLLTRIGGER', 'LENIS', 'THREE.JS', 'NODE.JS', 'SUPABASE', 'CLERK'].map((tool) => (
+                    <span key={tool} className="dc-mono text-[9px] uppercase tracking-[0.12em] border border-[#171717]/30 px-4 py-3 text-[#171717]/80">{tool}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <p className="dc-mono text-[9px] uppercase tracking-[0.22em] mb-4 text-[#171717]/60">[ 07 / A SMALL NOTE ]</p>
+            <h2 className="dc-display text-4xl sm:text-5xl lg:text-6xl text-[#171717]">There is a note behind the work.</h2>
+            <p className="mt-4 max-w-md text-sm sm:text-base text-[#171717]/65 leading-relaxed">Hover the envelope. Open the developer's notebook.</p>
           <button ref={ref} type="button" aria-label="Open Developer's Note" onMouseEnter={open} onMouseLeave={close} onFocus={open} onBlur={close} onClick={onOpen} className={`group relative mt-12 w-[170px] h-[122px] cursor-pointer [perspective:900px] ${hovered ? 'z-10' : ''}`}>
             <span className="absolute left-1/2 -translate-x-1/2 bottom-[-18px] w-[130px] h-5 rounded-full bg-black/10 blur-xl transition-opacity duration-500 group-hover:opacity-50" />
             <span className="dn-envelope-letter absolute left-[18px] right-[18px] bottom-[13px] h-[86px] bg-[#FFF9F0] border-2 border-[#171717] z-[1] flex flex-col items-center justify-center shadow-[0_8px_0_rgba(23,23,23,0.08)]">
