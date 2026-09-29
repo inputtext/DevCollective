@@ -11,3 +11,13 @@ __pycache__/
 !.env.example
 
 data/sessions.json
+
+repograph/
+
+# Repo analysis generated data
+.repopraph/
+.repograph/
+repoarch-out/
+
+# Brag generated output
+brag-output-*/
