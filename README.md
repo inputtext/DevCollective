@@ -631,3 +631,5 @@ The architecture and feature set may change as the MVP evolves.
 ## 📄 License
 
 Add the project's license here once the licensing decision has been finalized.
+
+## CodeRabbit Review Test
