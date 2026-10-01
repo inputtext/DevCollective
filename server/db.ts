@@ -1,12 +1,40 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { UserProfile, UserRole } from '../src/types';
 
 export interface UserRecord extends UserProfile {
   passwordHash: string;
   resetCodeHash?: string;
   resetCodeExpiresAt?: string;
+}
+
+export interface FacultyInvitationRecord {
+  id: string;
+  email: string;
+  college: string;
+  tokenHash: string;
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  expiresAt: string;
+  acceptedAt?: string;
+  createdAt: string;
+}
+
+export interface FacultyRegistrationRecord {
+  inviteToken: string;
+  email: string;
+  name: string;
+  employeeId: string;
+  department: string;
+  designation: string;
+  phone?: string;
+  subjects?: string[];
+  expertise?: string[];
+  yearsExperience?: number;
+  mentoringAreas?: string[];
+  bio?: string;
+  passwordRaw: string;
 }
 
 export interface SessionRecord {
@@ -19,11 +47,27 @@ export interface SessionRecord {
 const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+const FACULTY_INVITES_FILE = path.join(DATA_DIR, 'faculty-invitations.json');
 
 function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
+}
+
+function getFacultyInvitations(): FacultyInvitationRecord[] {
+  ensureDataDir();
+  if (!fs.existsSync(FACULTY_INVITES_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(FACULTY_INVITES_FILE, 'utf-8')); } catch { return []; }
+}
+
+function saveFacultyInvitations(invitations: FacultyInvitationRecord[]) {
+  ensureDataDir();
+  fs.writeFileSync(FACULTY_INVITES_FILE, JSON.stringify(invitations, null, 2));
+}
+
+function hashInvitationToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 // Read users from storage
@@ -115,6 +159,49 @@ export function saveUsers(users: UserRecord[]) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
+export function createFacultyInvitation(email: string, college = 'GHRCEMN'): { invitation: FacultyInvitationRecord; token: string } {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error('Faculty email is required.');
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const invitation: FacultyInvitationRecord = {
+    id: crypto.randomUUID(),
+    email: normalizedEmail,
+    college,
+    tokenHash: hashInvitationToken(token),
+    status: 'pending',
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const invitations = getFacultyInvitations().filter(
+    (item) => !(item.email === normalizedEmail && item.status === 'pending')
+  );
+  invitations.push(invitation);
+  saveFacultyInvitations(invitations);
+  return { invitation, token };
+}
+
+export function getFacultyInvitation(token: string): FacultyInvitationRecord | undefined {
+  const hash = hashInvitationToken(token);
+  const invitation = getFacultyInvitations().find((item) => item.tokenHash === hash);
+  if (!invitation) return undefined;
+  if (invitation.status === 'pending' && new Date(invitation.expiresAt) < new Date()) {
+    invitation.status = 'expired';
+    saveFacultyInvitations(getFacultyInvitations().map((item) => item.id === invitation.id ? invitation : item));
+    return undefined;
+  }
+  return invitation;
+}
+
+export function markFacultyInvitationAccepted(id: string) {
+  const invitations = getFacultyInvitations();
+  const index = invitations.findIndex((item) => item.id === id);
+  if (index === -1) return;
+  invitations[index] = { ...invitations[index], status: 'accepted', acceptedAt: new Date().toISOString() };
+  saveFacultyInvitations(invitations);
+}
+
 // Find user by email
 export function getUserByEmail(email: string): UserRecord | undefined {
   const users = getUsers();
@@ -128,6 +215,39 @@ export function getUserById(id: string): UserRecord | undefined {
 }
 
 // Create new user with hashed password
+export async function createFacultyUser(data: FacultyRegistrationRecord): Promise<UserRecord> {
+  const users = getUsers();
+  if (users.some((u) => u.email.toLowerCase() === data.email.toLowerCase())) {
+    throw new Error('An account with this email address already exists.');
+  }
+
+  const passwordHash = await bcrypt.hash(data.passwordRaw, 10);
+  const newUser: UserRecord = {
+    id: `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    name: data.name,
+    email: data.email,
+    passwordHash,
+    role: 'faculty',
+    college: 'GHRCEMN',
+    branch: data.department,
+    academicYear: 'Faculty',
+    avatar: `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(data.email)}`,
+    bio: data.bio || 'DevCollective faculty member.',
+    rep: 100,
+    level: 1,
+    streakDays: 1,
+    skills: [...(data.expertise || []), ...(data.subjects || [])],
+    selectedDomains: data.mentoringAreas || [],
+    authProvider: 'email',
+    hasCompletedOnboarding: true,
+    createdAt: new Date().toISOString(),
+  };
+
+  users.push(newUser);
+  saveUsers(users);
+  return newUser;
+}
+
 export async function createUser(data: {
   name: string;
   email: string;
