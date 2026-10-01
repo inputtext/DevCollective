@@ -20,6 +20,7 @@ export interface UserProfile {
   authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
   mentorVerifiedAt?: string | null;
+  accountStatus?: 'active' | 'pending' | 'suspended';
   createdAt: string;
 }
 
