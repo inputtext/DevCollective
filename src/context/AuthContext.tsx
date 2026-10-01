@@ -260,13 +260,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Faculty registration failed.');
-    setMessageSafeFacultyRegistration();
-  };
-
-  const setMessageSafeFacultyRegistration = () => {
-    // Faculty accounts are intentionally not logged in until admin approval.
-    setUser(null);
-    setActiveTab('login');
   };
 
   // 3. Forgot Password & Reset via DevCollective Email SMTP
