@@ -63,7 +63,10 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
   app.get('/api/admin/faculty-invitations', requireAuth, requireAdmin, async (_req, res) => {
     if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase is not configured.' });
     const { data, error } = await supabaseAdmin.from('devcollective_faculty_invitations').select('id,email,college,status,expires_at,created_at,accepted_at').order('created_at', { ascending: false }).limit(50);
-    if (error) {\n      console.error('[faculty] load invitations failed:', error);\n      return res.status(500).json({ error: error.message || 'Could not load faculty invitations.' });\n    }
+    if (error) {
+      console.error('[faculty] load invitations failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not load faculty invitations.' });
+    }
     return res.json({ invitations: data || [] });
   });
 
@@ -121,7 +124,10 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
   app.get('/api/admin/faculty', requireAuth, requireAdmin, async (_req, res) => {
     if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase is not configured.' });
     const { data, error } = await supabaseAdmin.from('devcollective_faculty_profiles').select('*').eq('approval_status', 'pending').order('created_at', { ascending: false });
-    if (error) {\n      console.error('[faculty] load profiles failed:', error);\n      return res.status(500).json({ error: error.message || 'Could not load faculty profiles.' });\n    }
+    if (error) {
+      console.error('[faculty] load profiles failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not load faculty profiles.' });
+    }
     return res.json({ profiles: data || [] });
   });
 
