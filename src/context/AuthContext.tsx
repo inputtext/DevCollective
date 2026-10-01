@@ -3,7 +3,7 @@ import { useAuth as useClerkAuth, useClerk, useUser, useSignIn } from '@clerk/re
 import { UserProfile, TaskItem, CommunityPost, CommunityComment, LeaderboardEntry, Mentor } from '../types';
 import { getPlatformEmailError, isAllowedPlatformEmail } from '../lib/accessControl';
 
-export type PageTab = 'landing' | 'login' | 'register' | 'faculty-register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'profile' | 'admin' | 'level-0' | 'events';
+export type PageTab = 'landing' | 'login' | 'register' | 'faculty-register' | 'profile-setup' | 'choose-path' | 'dashboard' | 'community' | 'roadmap' | 'leaderboard' | 'mentors' | 'faculty-profile' | 'profile' | 'admin' | 'level-0' | 'events';
 interface AuthContextType {
   user: UserProfile | null; loadingAuth: boolean; sidebarCollapsed: boolean; toggleSidebar: () => void; activeTab: PageTab; setActiveTab: (tab: PageTab) => void;
   tasks: TaskItem[]; posts: CommunityPost[]; commentsByPost: Record<string, CommunityComment[]>; leaderboard: LeaderboardEntry[]; mentors: Mentor[];
