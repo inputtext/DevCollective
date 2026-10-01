@@ -91,6 +91,11 @@ const MainContent: React.FC = () => {
   const wasAuthenticatedRef = React.useRef(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (activeTab === 'landing' && params.get('faculty-register') === '1') setActiveTab('faculty-register');
+  }, [activeTab, setActiveTab]);
+
+  useEffect(() => {
     if (loadingAuth) return;
     const isAuthenticated = Boolean(user);
     if (!wasAuthenticatedRef.current && isAuthenticated && activeTab === 'landing') setActiveTab('profile');
