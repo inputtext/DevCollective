@@ -179,7 +179,7 @@ export const FacultyRegisterPage: React.FC = () => {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-8">
                   <div className="grid sm:grid-cols-2 gap-5">
-                    <div className="space-y-2 sm:col-span-2"><label className={labelClass}>Official College Email</label><input value={email} readOnly className={inputClass + ' opacity-80'} /></div>
+                    <div className="space-y-2 sm:col-span-2"><label className={labelClass}>Invited Email</label><input value={email} readOnly className={inputClass + ' opacity-80'} /></div>
                     <div className="space-y-2 sm:col-span-2"><label className={labelClass}>Full Name</label><input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Dr. Jane Doe" className={inputClass} required /></div>
                     {fields.map(([label, value, setter, placeholder, type, required]) => <div key={label} className="space-y-2"><label className={labelClass}>{label}</label><input type={type} value={value} onChange={(e) => setter(e.target.value)} placeholder={placeholder} className={inputClass} required={required} /></div>)}
                     <div className="space-y-2 sm:col-span-2"><label className={labelClass}>Professional Bio</label><textarea value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Teaching, research and mentoring interests." rows={4} className={inputClass + ' resize-none'} /></div>
