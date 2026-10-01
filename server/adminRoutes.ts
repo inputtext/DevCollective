@@ -27,8 +27,9 @@ const emailFromClerkUser = (user: any) =>
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 export const isCollegeEmail = (email: string) => COLLEGE_EMAIL_PATTERN.test(normalizeEmail(email));
+export const isOfficialCollegeEmail = (email: string) => normalizeEmail(email).endsWith('@' + COLLEGE_EMAIL_DOMAIN);
 export const isAdminEmail = (email: string) => ADMIN_EMAILS.has(normalizeEmail(email));
-export const isAllowedPlatformEmail = (email: string) => isCollegeEmail(email) || isAdminEmail(email);
+export const isAllowedPlatformEmail = (email: string) => isCollegeEmail(email) || isOfficialCollegeEmail(email) || isAdminEmail(email);
 
 const getClerkUser = async (userId: string) => clerkClient.users.getUser(userId);
 
