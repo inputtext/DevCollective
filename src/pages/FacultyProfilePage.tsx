@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BriefcaseBusiness, CheckCircle2, MessageSquare, Pencil, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, BriefcaseBusiness, CheckCircle2, MessageSquare, Pencil, Save, ShieldCheck, Handshake } from 'lucide-react';
 import { useAuth, } from '../context/AuthContext';
 import { useAuth as useClerkAuth } from '@clerk/react';
 import { FacultyProfile } from '../types';
@@ -16,6 +16,11 @@ export const FacultyProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+  const [requestTopic, setRequestTopic] = useState('');
+  const [requestMessage, setRequestMessage] = useState('');
+  const [requestBusy, setRequestBusy] = useState(false);
+  const [requests, setRequests] = useState<any[]>([]);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
     designation: '', department: '', phone: '', subjects: '', expertise: '', yearsExperience: '',
@@ -56,6 +61,28 @@ export const FacultyProfilePage: React.FC = () => {
   };
 
   useEffect(() => { void load(); }, [targetId]);
+
+  useEffect(() => {
+    if (!isSelf) return;
+    void authFetch('/api/faculty/mentoring-requests?mode=received').then((data) => setRequests(Array.isArray(data.requests) ? data.requests : [])).catch(() => setRequests([]));
+  }, [isSelf]);
+
+  const sendMentoringRequest = async () => {
+    if (!requestTopic.trim() || !requestMessage.trim()) { setMessage('Add a topic and a short message first.'); return; }
+    setRequestBusy(true);
+    try {
+      await authFetch('/api/faculty/' + encodeURIComponent(profile?.id || targetId) + '/mentoring-requests', { method: 'POST', body: JSON.stringify({ topic: requestTopic, message: requestMessage }) });
+      setRequestOpen(false); setRequestTopic(''); setRequestMessage(''); setMessage('Mentoring request sent.');
+    } catch (error: any) { setMessage(error.message || 'Could not send mentoring request.'); }
+    finally { setRequestBusy(false); }
+  };
+
+  const decideRequest = async (requestId: string, decision: 'accept' | 'decline') => {
+    try {
+      await authFetch('/api/faculty/mentoring-requests/' + encodeURIComponent(requestId) + '/decision', { method: 'POST', body: JSON.stringify({ decision }) });
+      setRequests((current) => current.map((item) => item.id === requestId ? { ...item, status: decision === 'accept' ? 'accepted' : 'declined' } : item));
+    } catch (error: any) { setMessage(error.message || 'Could not update mentoring request.'); }
+  };
 
   const save = async () => {
     setSaving(true); setMessage('');
@@ -110,7 +137,7 @@ export const FacultyProfilePage: React.FC = () => {
             {profile.yearsExperience != null && <span className="border-2 border-outline-variant bg-dc-yellow px-2 py-1 font-label-mono text-[9px] uppercase">{profile.yearsExperience} years experience</span>}
           </div>
         </div>
-        {!isSelf && <DcButton onClick={() => openMessagingForUser(profile.id)}><MessageSquare className="w-4 h-4" /> Message Faculty</DcButton>}
+        {!isSelf && <div className="flex flex-wrap gap-2"><DcButton onClick={() => openMessagingForUser(profile.id)}><MessageSquare className="w-4 h-4" /> Message Faculty</DcButton><DcButton variant="secondary" onClick={() => setRequestOpen(true)}><Handshake className="w-4 h-4" /> Request Mentoring</DcButton></div>}
       </div>
     </DcCard>
 
@@ -147,7 +174,11 @@ export const FacultyProfilePage: React.FC = () => {
 
     <div className="flex flex-wrap gap-3">
       <DcButton variant="secondary" onClick={() => setActiveTab('mentors')}><ArrowLeft className="w-4 h-4" /> Back to Directory</DcButton>
-      {!isSelf && <DcButton onClick={() => openMessagingForUser(profile.id)}><MessageSquare className="w-4 h-4" /> Message Faculty</DcButton>}
+      {!isSelf && <><DcButton onClick={() => openMessagingForUser(profile.id)}><MessageSquare className="w-4 h-4" /> Message Faculty</DcButton><DcButton variant="secondary" onClick={() => setRequestOpen(true)}><Handshake className="w-4 h-4" /> Request Mentoring</DcButton></>}
     </div>
+    {isSelf && requests.length > 0 && <DcCard shadow="sm" className="p-6"><div className="flex items-center gap-2"><Handshake className="w-4 h-4" /><p className="font-label-mono text-[9px] uppercase">Mentoring requests</p></div><div className="space-y-3 mt-4">{requests.map((request) => <div key={request.id} className="border-2 border-outline-variant p-4"><div className="flex justify-between gap-3"><strong>{request.participant?.name || 'Student'}</strong><span className="font-label-mono text-[8px] uppercase">{request.status}</span></div><p className="font-bold mt-2">{request.topic}</p><p className="text-xs text-on-surface-variant mt-1">{request.message}</p>{request.status === 'pending' && <div className="flex gap-2 mt-3"><button onClick={() => void decideRequest(request.id, 'accept')} className="border-2 border-outline-variant bg-dc-mint px-3 py-2 font-label-mono text-[9px] uppercase font-bold">Accept</button><button onClick={() => void decideRequest(request.id, 'decline')} className="border-2 border-outline-variant bg-dc-pink px-3 py-2 font-label-mono text-[9px] uppercase font-bold">Decline</button></div>}</div>)}</div></DcCard>}
+
+    {requestOpen && !isSelf && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"><div className="bg-surface border-2 border-outline-variant p-6 max-w-lg w-full dc-shadow-lg"><p className="font-label-mono text-[10px] uppercase text-on-surface-variant">FACULTY / MENTORING REQUEST</p><h3 className="dc-display text-4xl mt-2">REQUEST A SESSION.</h3><label className="block font-label-mono text-[9px] uppercase mt-5">Topic<input value={requestTopic} onChange={(e) => setRequestTopic(e.target.value)} maxLength={160} placeholder="e.g. DSA placement preparation" className="mt-1 w-full border-2 border-outline-variant bg-background px-3 py-3 text-sm font-sans" /></label><label className="block font-label-mono text-[9px] uppercase mt-4">Message<textarea value={requestMessage} onChange={(e) => setRequestMessage(e.target.value)} maxLength={2000} rows={5} placeholder="Tell the faculty member what you need help with..." className="mt-1 w-full border-2 border-outline-variant bg-background px-3 py-3 text-sm font-sans" /></label><div className="flex gap-2 mt-5"><DcButton disabled={requestBusy} onClick={() => void sendMentoringRequest()}><Handshake className="w-4 h-4" /> {requestBusy ? 'Sending...' : 'Send Request'}</DcButton><DcButton variant="secondary" onClick={() => setRequestOpen(false)}>Cancel</DcButton></div></div></div>}
+
   </div>;
 };
