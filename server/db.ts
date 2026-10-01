@@ -19,6 +19,7 @@ export interface FacultyInvitationRecord {
   expiresAt: string;
   acceptedAt?: string;
   createdAt: string;
+  invitedBy?: string;
 }
 
 export interface FacultyRegistrationRecord {
