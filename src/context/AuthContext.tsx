@@ -1,11 +1,28 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, TaskItem, CommunityPost, LeaderboardEntry, Mentor } from '../types';
+
+interface FacultyRegistrationInput {
+  inviteToken: string;
+  email: string;
+  name: string;
+  employeeId: string;
+  department: string;
+  designation: string;
+  phone?: string;
+  subjects?: string[];
+  expertise?: string[];
+  yearsExperience?: number;
+  mentoringAreas?: string[];
+  bio?: string;
+  password: string;
+}
 import { initialTasks, initialPosts, initialLeaderboard, initialMentors } from '../data/initialData';
 
 export type PageTab =
   | 'landing'
   | 'login'
   | 'register'
+  | 'faculty-register'
   | 'profile-setup'
   | 'choose-path'
   | 'dashboard'
@@ -35,6 +52,7 @@ interface AuthContextType {
   dismissResumePrompt: () => void;
   loginWithEmail: (email: string, password?: string) => Promise<void>;
   registerUser: (details: Partial<UserProfile> & { password?: string }) => Promise<void>;
+  registerFaculty: (details: FacultyRegistrationInput) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updated: Partial<UserProfile>) => Promise<void>;
   toggleTaskCompletion: (taskId: string) => Promise<void>;
@@ -233,6 +251,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setShowResumePrompt(true);
   };
 
+  // Faculty invitation registration
+  const registerFaculty = async (details: FacultyRegistrationInput) => {
+    const res = await fetch('/api/auth/faculty/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(details),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Faculty registration failed.');
+    setMessageSafeFacultyRegistration();
+  };
+
+  const setMessageSafeFacultyRegistration = () => {
+    // Faculty accounts are intentionally not logged in until admin approval.
+    setUser(null);
+    setActiveTab('login');
+  };
+
   // 3. Forgot Password & Reset via DevCollective Email SMTP
   const requestPasswordReset = async (email: string) => {
     const res = await fetch('/api/auth/forgot-password', {
@@ -387,6 +423,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         dismissResumePrompt,
         loginWithEmail,
         registerUser,
+        registerFaculty,
         logout,
         updateProfile,
         toggleTaskCompletion,
