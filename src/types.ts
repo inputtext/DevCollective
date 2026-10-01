@@ -20,6 +20,7 @@ export interface UserProfile {
   authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
   mentorVerifiedAt?: string | null;
+  accountStatus?: 'active' | 'pending' | 'suspended';
   createdAt: string;
 }
 
@@ -84,6 +85,27 @@ export interface NotificationItem {
   commentPreview: string;
   createdAt: string;
   readAt?: string | null;
+}
+
+export interface FacultyProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  college: string;
+  designation: string;
+  department: string;
+  employeeId: string;
+  subjects: string[];
+  expertise: string[];
+  yearsExperience: number | null;
+  mentoringAreas: string[];
+  bio: string;
+  availabilityStatus: 'available' | 'busy' | 'offline';
+  availabilityNote: string;
+  verified: boolean;
+  joinedAt?: string | null;
 }
 
 export interface Mentor {

@@ -26,7 +26,7 @@ export function useDevCollectiveWebSocket() {
     if (manuallyClosedRef.current || !isSignedIn) return;
     if (socketRef.current?.readyState === WebSocket.OPEN || socketRef.current?.readyState === WebSocket.CONNECTING) return;
 
-    const token = await getToken();
+    const token = await getToken({ skipCache: true });
     if (!token || manuallyClosedRef.current || !isSignedIn) return;
 
     const configuredUrl = import.meta.env.VITE_WS_URL as string | undefined;
@@ -51,6 +51,12 @@ export function useDevCollectiveWebSocket() {
       try {
         const event = JSON.parse(message.data) as MessagingEvent;
         if (event.type === 'auth:ok') setConnected(true);
+        if (event.type === 'error') {
+          const message = typeof event.message === 'string' ? event.message : '';
+          if (message.toLowerCase().includes('session token') || message.toLowerCase().includes('authentication')) {
+            socket.close(4001, 'Refresh authentication token');
+          }
+        }
         for (const listener of listenersRef.current) listener(event);
       } catch (error) {
         console.error('Invalid DevCollective WebSocket event:', error);

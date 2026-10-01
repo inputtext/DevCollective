@@ -27,8 +27,9 @@ const emailFromClerkUser = (user: any) =>
 
 export const normalizeEmail = (email: string) => email.trim().toLowerCase();
 export const isCollegeEmail = (email: string) => COLLEGE_EMAIL_PATTERN.test(normalizeEmail(email));
+export const isOfficialCollegeEmail = (email: string) => normalizeEmail(email).endsWith('@' + COLLEGE_EMAIL_DOMAIN);
 export const isAdminEmail = (email: string) => ADMIN_EMAILS.has(normalizeEmail(email));
-export const isAllowedPlatformEmail = (email: string) => isCollegeEmail(email) || isAdminEmail(email);
+export const isAllowedPlatformEmail = (email: string) => isCollegeEmail(email) || isOfficialCollegeEmail(email) || isAdminEmail(email);
 
 const getClerkUser = async (userId: string) => clerkClient.users.getUser(userId);
 
@@ -44,7 +45,16 @@ export const requirePlatformAuth = async (req: Request, res: Response, next: Nex
   try {
     const identity = await getPlatformIdentity(authUserId);
     if (!isAllowedPlatformEmail(identity.email)) {
-      return res.status(403).json({ error: `Use your official college email in the format firstname.surname.cse@${COLLEGE_EMAIL_DOMAIN}.` });
+      const { data: facultyProfile, error: facultyLookupError } = await supabaseAdmin
+        .from('devcollective_profiles')
+        .select('role,account_status')
+        .eq('clerk_user_id', authUserId)
+        .maybeSingle();
+      if (facultyLookupError) throw facultyLookupError;
+      const isActiveFaculty = facultyProfile?.role === 'faculty' && facultyProfile?.account_status === 'active';
+      if (!isActiveFaculty) {
+        return res.status(403).json({ error: `Use your official college email in the format firstname.surname.cse@${COLLEGE_EMAIL_DOMAIN}.` });
+      }
     }
     (req as any).platformIdentity = identity;
     return next();

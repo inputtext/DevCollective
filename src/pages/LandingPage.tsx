@@ -177,7 +177,7 @@ export const LandingPage: React.FC = () => {
                   { c: '  const ', cls: 'key' },
                   { c: 'posts', cls: '' },
                   { c: ' = ', cls: 'key' },
-                  { c: 'await ', cls: 'db.posts', cls: 'fn' },
+                  { c: 'await ', cls: 'fn' },{ c: 'db.posts', cls: 'fn' },
                   { c: '.find({ visibility: ', cls: '' },
                   { c: '"public"', cls: 'str' },
                   { c: ' })\n', cls: '' },

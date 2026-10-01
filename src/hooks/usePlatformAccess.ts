@@ -16,9 +16,6 @@ export const usePlatformAccess = (enabled = true) => {
     }
     const currentEmail = String(clerkUser.primaryEmailAddress?.emailAddress || '').trim().toLowerCase();
     setEmail(currentEmail);
-    if (!isAllowedPlatformEmail(currentEmail)) {
-      setChecked(true); setAllowed(false); setError(getPlatformEmailError()); return;
-    }
     try {
       const token = await getToken();
       if (!token) throw new Error('Your session could not be verified.');
