@@ -78,7 +78,7 @@ export const FacultyRegisterPage: React.FC = () => {
     event.preventDefault(); setError(null); setSuccess(null);
     if (!invite) return setError('A valid faculty invitation is required.');
     if (!fullName.trim() || !employeeId.trim() || !department.trim() || !designation.trim() || !password) return setError('Complete all required faculty fields.');
-    if (!email.toLowerCase().endsWith('@ghrietn.raisoni.net')) return setError('The invitation must use an official @ghrietn.raisoni.net faculty email.');
+    if (!import.meta.env.DEV && !email.toLowerCase().endsWith('@ghrietn.raisoni.net')) return setError('The invitation must use an official @ghrietn.raisoni.net faculty email.');
     if (password.length < 8) return setError('Please choose a password with at least 8 characters.');
     const { firstName, lastName } = splitName(fullName);
     const { error: signUpError } = await signUp.password({ emailAddress: email, password });
@@ -95,7 +95,7 @@ export const FacultyRegisterPage: React.FC = () => {
     const { error: sendError } = await signUp.verifications.sendEmailCode();
     if (sendError) return setError(sendError.message || 'Could not send the verification code.');
     setVerificationMode(true);
-    setSuccess('Verification code sent to your official college email.');
+    setSuccess(import.meta.env.DEV ? 'Verification code sent. Check the invited mailbox.' : 'Verification code sent to your official college email.');
   };
 
   const handleVerify = async (event: React.FormEvent) => {
