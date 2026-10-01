@@ -27,8 +27,14 @@ async function sendInviteEmail(email: string, inviteUrl: string) {
 }
 
 const facultyEmailAllowed = (email: string) => {
+  const normalized = normalizeEmail(email);
   const domain = (process.env.COLLEGE_EMAIL_DOMAIN || 'ghrietn.raisoni.net').toLowerCase();
-  return normalizeEmail(email).endsWith('@' + domain);
+  const official = normalized.endsWith('@' + domain);
+  // Development only: temporary mailboxes are allowed so the complete
+  // invitation -> Clerk verification -> admin approval flow can be tested.
+  // Production remains locked to the official college domain.
+  const developmentTempEmail = process.env.NODE_ENV !== 'production' && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalized);
+  return official || developmentTempEmail;
 };
 
 export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, res: Response, next: NextFunction) => void) {
@@ -47,7 +53,7 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
       if (!supabaseAdmin) throw new Error('Supabase is not configured.');
       const email = normalizeEmail(String(req.body?.email || ''));
       const college = String(req.body?.college || COLLEGE).trim().slice(0, 120);
-      if (!facultyEmailAllowed(email)) return res.status(400).json({ error: 'Use the official faculty college email domain.' });
+      if (!facultyEmailAllowed(email)) return res.status(400).json({ error: 'Use a valid faculty email address.' });
       const token = makeToken();
       const { data, error } = await supabaseAdmin.from('devcollective_faculty_invitations').insert({ email, college, invited_by: (req as any).authUserId, token_hash: hashToken(token) }).select('id,email,college,expires_at,status').single();
       if (error) throw error;
@@ -76,7 +82,7 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
       const userId = (req as any).authUserId as string;
       const clerkUser = await clerkClient.users.getUser(userId);
       const email = normalizeEmail(clerkUser.emailAddresses?.find((item: any) => item.id === clerkUser.primaryEmailAddressId)?.emailAddress || '');
-      if (!email || !facultyEmailAllowed(email)) return res.status(403).json({ error: 'Your Clerk account must use the official college faculty email domain.' });
+      if (!email || !facultyEmailAllowed(email)) return res.status(403).json({ error: 'Your Clerk account must use a valid faculty email address.' });
       if (clerkUser.primaryEmailAddress?.verification?.status !== 'verified') return res.status(403).json({ error: 'Verify your official college email before submitting faculty access.' });
 
       const inviteToken = String(req.body?.inviteToken || '');
