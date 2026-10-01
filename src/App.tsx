@@ -15,6 +15,7 @@ import { ResumeUploadPromptModal } from './components/ResumeUploadPromptModal';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { FacultyRegisterPage } from './pages/FacultyRegisterPage';
 import { ProfileSetupPage } from './pages/ProfileSetupPage';
 import { ChoosePathPage } from './pages/ChoosePathPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -110,7 +111,7 @@ const MainContent: React.FC = () => {
     );
   }
 
-  const isFullLayout = ['landing', 'login', 'register', 'profile-setup', 'choose-path'].includes(
+  const isFullLayout = ['landing', 'login', 'register', 'faculty-register', 'profile-setup', 'choose-path'].includes(
     activeTab
   );
 
@@ -125,6 +126,7 @@ const MainContent: React.FC = () => {
           {activeTab === 'landing' && <LandingPage />}
           {activeTab === 'login' && <LoginPage />}
           {activeTab === 'register' && <RegisterPage />}
+          {activeTab === 'faculty-register' && <FacultyRegisterPage />}
           {activeTab === 'profile-setup' && <ProfileSetupPage />}
           {activeTab === 'choose-path' && <ChoosePathPage />}
           {activeTab === 'dashboard' && <DashboardPage />}
