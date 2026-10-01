@@ -91,6 +91,7 @@ export interface FacultyProfile {
   id: string;
   name: string;
   email: string;
+  phone: string;
   avatar: string;
   college: string;
   designation: string;
