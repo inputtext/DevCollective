@@ -26,6 +26,9 @@ alter table public.devcollective_faculty_profiles
 alter table public.devcollective_faculty_profiles
   alter column clerk_user_id type text using clerk_user_id::text;
 
+alter table public.devcollective_faculty_profiles
+  alter column approved_by type text using approved_by::text;
+
 create index if not exists devcollective_faculty_profiles_approval_idx
   on public.devcollective_faculty_profiles (approval_status);
 
