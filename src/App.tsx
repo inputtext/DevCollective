@@ -86,7 +86,7 @@ const MainContent: React.FC = () => {
   const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'profile', 'admin', 'level-0', 'events'];
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
-  const platformAccess = usePlatformAccess(isProtected);
+  const platformAccess = usePlatformAccess(isProtected && user?.role !== 'faculty');
   const adminAccess = useAdminAccess();
   const wasAuthenticatedRef = React.useRef(false);
 
