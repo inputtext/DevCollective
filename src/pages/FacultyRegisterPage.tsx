@@ -78,7 +78,7 @@ export const FacultyRegisterPage: React.FC = () => {
     event.preventDefault(); setError(null); setSuccess(null);
     if (!invite) return setError('A valid faculty invitation is required.');
     if (!fullName.trim() || !employeeId.trim() || !department.trim() || !designation.trim() || !password) return setError('Complete all required faculty fields.');
-    if (!import.meta.env.DEV && !email.toLowerCase().endsWith('@ghrietn.raisoni.net')) return setError('The invitation must use an official @ghrietn.raisoni.net faculty email.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError('The invitation must use a valid email address.');
     if (password.length < 8) return setError('Please choose a password with at least 8 characters.');
     const { firstName, lastName } = splitName(fullName);
     const { error: signUpError } = await signUp.password({ emailAddress: email, password });
@@ -95,7 +95,7 @@ export const FacultyRegisterPage: React.FC = () => {
     const { error: sendError } = await signUp.verifications.sendEmailCode();
     if (sendError) return setError(sendError.message || 'Could not send the verification code.');
     setVerificationMode(true);
-    setSuccess(import.meta.env.DEV ? 'Verification code sent. Check the invited mailbox.' : 'Verification code sent to your official college email.');
+    setSuccess(import.meta.env.DEV ? 'Verification code sent. Check the invited mailbox.' : 'Verification code sent to your invited email.');
   };
 
   const handleVerify = async (event: React.FormEvent) => {
@@ -148,7 +148,7 @@ export const FacultyRegisterPage: React.FC = () => {
             <aside className="lg:sticky lg:top-10 lg:self-start">
               <p className="dc-mono text-[10px] uppercase tracking-[0.22em] mb-6">[ INVITED FACULTY ]</p>
               <h1 className="dc-display text-[clamp(4rem,8vw,7.5rem)]">JOIN.<br /><span className="text-primary">GUIDE.</span><br />BUILD.</h1>
-              <p className="mt-8 max-w-md text-base sm:text-lg leading-relaxed text-on-surface-variant">Your faculty account is created only from an administrator-issued invitation. Verify the official college email, complete your professional profile, then wait for administrator approval.</p>
+              <p className="mt-8 max-w-md text-base sm:text-lg leading-relaxed text-on-surface-variant">Your faculty account is created only from an administrator-issued invitation. Verify the invited email, complete your professional profile, then wait for administrator approval.</p>
               <div className="mt-10 border-2 border-outline-variant bg-surface dc-hard-shadow-sm">
                 <div className="border-b-2 border-outline-variant px-4 py-3 dc-mono text-[9px] uppercase tracking-[0.16em]">INVITATION / STATUS</div>
                 <div className="p-5 space-y-4 dc-mono text-[10px] uppercase">
