@@ -16,7 +16,7 @@ const splitName = (name: string) => {
 
 export const FacultyRegisterPage: React.FC = () => {
   const { setActiveTab } = useAuth();
-  const { getToken } = useClerkAuth();
+  const { getToken, userId } = useClerkAuth();
   const { signUp, errors, fetchStatus } = useSignUp();
   const [inviteToken] = useState(() => new URLSearchParams(window.location.search).get('invite') || '');
   const [invite, setInvite] = useState<InviteState | null>(null);
@@ -72,6 +72,7 @@ export const FacultyRegisterPage: React.FC = () => {
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error || 'Faculty registration could not be submitted.');
     setSuccess(data.message || 'Faculty registration submitted. Your account is pending admin approval.');
+    if (userId) localStorage.removeItem(`devcollective_profile_cache:${userId}`);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -106,6 +107,7 @@ export const FacultyRegisterPage: React.FC = () => {
     await signUp.finalize({ navigate: () => {} });
     try {
       await submitProfile();
+      if (userId) localStorage.removeItem(`devcollective_profile_cache:${userId}`);
       window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Your account was verified, but faculty profile submission failed. Please contact an administrator.');
