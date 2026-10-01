@@ -21,16 +21,12 @@ export const usePlatformAccess = (enabled = true) => {
       if (!token) throw new Error('Your session could not be verified.');
       const response = await fetch('/api/access/me', { headers: { Authorization: `Bearer ${token}` } });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        if (!isAllowedPlatformEmail(currentEmail)) throw new Error(typeof body?.error === 'string' ? body.error : getPlatformEmailError());
-        throw new Error(typeof body?.error === 'string' ? body.error : getPlatformEmailError());
-      }
+      if (!response.ok) throw new Error(typeof body?.error === 'string' ? body.error : getPlatformEmailError());
       setAllowed(true); setError(null);
     } catch (err) {
       setAllowed(false); setError(err instanceof Error ? err.message : 'Could not verify platform access.');
     } finally { setChecked(true); }
   }, [clerkUser, enabled, getToken, isSignedIn]);
-
 
   useEffect(() => { void check(); }, [check]);
   const rejectAndSignOut = useCallback(async () => { await signOut({ redirectUrl: '/' }); }, [signOut]);
