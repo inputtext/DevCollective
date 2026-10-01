@@ -36,6 +36,7 @@ const toFacultyDirectoryProfile = (profile: any, faculty: any) => ({
   id: profile.clerk_user_id,
   name: profile.name || 'Faculty',
   email: profile.email || '',
+  phone: faculty.phone || '',
   avatar: profile.avatar || '',
   college: profile.college || COLLEGE,
   designation: faculty.designation || 'Faculty',
