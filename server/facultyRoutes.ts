@@ -112,6 +112,7 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
 
   app.get('/api/admin/faculty-invitations', requireAuth, requireAdmin, async (_req, res) => {
     if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase is not configured.' });
+    await supabaseAdmin.from('devcollective_faculty_invitations').update({ status: 'expired' }).eq('status', 'pending').lte('expires_at', new Date().toISOString());
     const { data, error } = await supabaseAdmin.from('devcollective_faculty_invitations').select('id,email,college,status,expires_at,created_at,accepted_at,invited_by').order('created_at', { ascending: false }).limit(100);
     if (error) {
       console.error('[faculty] load invitations failed:', error);
@@ -262,7 +263,7 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
       if (!supabaseAdmin) throw new Error('Supabase is not configured.');
       const userId = (req as any).authUserId as string;
       const { data: profile } = await supabaseAdmin.from('devcollective_profiles').select('role,account_status').eq('clerk_user_id', userId).maybeSingle();
-      if (!profile || profile.role !== 'faculty') return res.status(403).json({ error: 'Faculty access required.' });
+      if (!profile || profile.role !== 'faculty' || profile.account_status !== 'active') return res.status(403).json({ error: 'Active faculty access required.' });
       const updates = {
         designation: String(req.body?.designation || '').trim().slice(0, 200),
         department: String(req.body?.department || '').trim().slice(0, 200),
