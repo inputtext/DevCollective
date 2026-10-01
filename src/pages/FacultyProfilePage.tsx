@@ -44,7 +44,7 @@ export const FacultyProfilePage: React.FC = () => {
       const next = data.profile as FacultyProfile;
       setProfile(next);
       setForm({
-        designation: next.designation || '', department: next.department || '', phone: '',
+        designation: next.designation || '', department: next.department || '', phone: next.phone || '',
         subjects: next.subjects.join(', '), expertise: next.expertise.join(', '),
         yearsExperience: next.yearsExperience == null ? '' : String(next.yearsExperience),
         mentoringAreas: next.mentoringAreas.join(', '), bio: next.bio || '',
