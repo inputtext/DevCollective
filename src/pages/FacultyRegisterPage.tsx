@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth as useClerkAuth, useSignUp } from '@clerk/react';
 import { ArrowLeft, ArrowRight, Building2, CheckCircle2, Eye, EyeOff, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { isAllowedPlatformEmail, getPlatformEmailError } from '../lib/accessControl';
+
 
 type InviteState = { email: string; college: string; expiresAt: string };
 
@@ -78,7 +78,7 @@ export const FacultyRegisterPage: React.FC = () => {
     event.preventDefault(); setError(null); setSuccess(null);
     if (!invite) return setError('A valid faculty invitation is required.');
     if (!fullName.trim() || !employeeId.trim() || !department.trim() || !designation.trim() || !password) return setError('Complete all required faculty fields.');
-    if (!isAllowedPlatformEmail(email)) return setError(getPlatformEmailError());
+    if (!email.toLowerCase().endsWith('@ghrietn.raisoni.net')) return setError('The invitation must use an official @ghrietn.raisoni.net faculty email.');
     if (password.length < 8) return setError('Please choose a password with at least 8 characters.');
     const { firstName, lastName } = splitName(fullName);
     const { error: signUpError } = await signUp.password({ emailAddress: email, password });
