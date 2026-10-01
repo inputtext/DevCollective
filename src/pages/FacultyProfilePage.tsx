@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, BriefcaseBusiness, CheckCircle2, Mail, MessageSquare, Pencil, Save, ShieldCheck, X } from 'lucide-react';
+import { ArrowLeft, BriefcaseBusiness, CheckCircle2, MessageSquare, Pencil, Save, ShieldCheck } from 'lucide-react';
 import { useAuth, } from '../context/AuthContext';
 import { useAuth as useClerkAuth } from '@clerk/react';
 import { FacultyProfile } from '../types';
