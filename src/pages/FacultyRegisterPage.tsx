@@ -108,7 +108,7 @@ export const FacultyRegisterPage: React.FC = () => {
     try {
       await submitProfile();
       if (userId) localStorage.removeItem(`devcollective_profile_cache:${userId}`);
-      window.location.href = '/';
+      window.location.href = '/?faculty-register-complete=1';
     } catch (err: any) {
       setError(err.message || 'Your account was verified, but faculty profile submission failed. Please contact an administrator.');
     }
