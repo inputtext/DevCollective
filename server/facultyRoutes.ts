@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import { clerkClient } from '@clerk/express';
 import { supabaseAdmin } from './supabase';
-import { requireAdmin, isCollegeEmail, normalizeEmail } from './adminRoutes';
+import { requireAdmin, normalizeEmail } from './adminRoutes';
 
 const COLLEGE = 'GHRCEMN';
 
@@ -84,7 +84,7 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
       const required = ['name','employeeId','department','designation'];
       for (const field of required) if (!String(req.body?.[field] || '').trim()) return res.status(400).json({ error: 'Complete all required faculty profile fields.' });
 
-      const { data: existing } = await supabaseAdmin.from('devcollective_faculty_profiles').select('user_id').eq('clerk_user_id', userId).maybeSingle();
+      const { data: existing } = await supabaseAdmin.from('devcollective_faculty_profiles').select('clerk_user_id').eq('clerk_user_id', userId).maybeSingle();
       if (existing) return res.status(409).json({ error: 'Faculty profile already exists for this account.' });
 
       const { error: profileError } = await supabaseAdmin.from('devcollective_profiles').upsert({
