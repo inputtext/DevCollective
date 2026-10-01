@@ -27,7 +27,7 @@ async function sendInviteEmail(email: string, inviteUrl: string) {
 }
 
 const facultyEmailAllowed = (email: string) =>
-  /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizeEmail(email));
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
 
 export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, res: Response, next: NextFunction) => void) {
   app.get('/api/faculty/invitations/:token', async (req, res) => {
