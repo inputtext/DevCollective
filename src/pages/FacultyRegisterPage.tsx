@@ -88,7 +88,8 @@ export const FacultyRegisterPage: React.FC = () => {
       if (nameError) return setError(nameError.message || 'Could not save your name.');
     }
     if (signUp.status === 'complete') {
-      await signUp.finalize({ navigate: ({ session, decorateUrl }) => { if (session?.currentTask) return; window.location.href = decorateUrl('/'); } });
+      await signUp.finalize({ navigate: () => {} });
+      try { await submitProfile(); window.location.href = '/'; } catch (err: any) { setError(err.message || 'Faculty profile submission failed.'); }
       return;
     }
     const { error: sendError } = await signUp.verifications.sendEmailCode();
@@ -102,9 +103,10 @@ export const FacultyRegisterPage: React.FC = () => {
     const { error: verifyError } = await signUp.verifications.verifyEmailCode({ code: verificationCode.trim() });
     if (verifyError) return setError(verifyError.message || 'That verification code is invalid.');
     if (signUp.status !== 'complete') return setError('Email verified, but Clerk has additional sign-up requirements. Check your Clerk configuration.');
-    await signUp.finalize({ navigate: ({ session, decorateUrl }) => { if (session?.currentTask) return; window.location.href = decorateUrl('/'); } });
+    await signUp.finalize({ navigate: () => {} });
     try {
       await submitProfile();
+      window.location.href = '/';
     } catch (err: any) {
       setError(err.message || 'Your account was verified, but faculty profile submission failed. Please contact an administrator.');
     }
