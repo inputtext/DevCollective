@@ -45,7 +45,16 @@ export const requirePlatformAuth = async (req: Request, res: Response, next: Nex
   try {
     const identity = await getPlatformIdentity(authUserId);
     if (!isAllowedPlatformEmail(identity.email)) {
-      return res.status(403).json({ error: `Use your official college email in the format firstname.surname.cse@${COLLEGE_EMAIL_DOMAIN}.` });
+      const { data: facultyProfile, error: facultyLookupError } = await supabaseAdmin
+        .from('devcollective_profiles')
+        .select('role,account_status')
+        .eq('clerk_user_id', authUserId)
+        .maybeSingle();
+      if (facultyLookupError) throw facultyLookupError;
+      const isActiveFaculty = facultyProfile?.role === 'faculty' && facultyProfile?.account_status === 'active';
+      if (!isActiveFaculty) {
+        return res.status(403).json({ error: `Use your official college email in the format firstname.surname.cse@${COLLEGE_EMAIL_DOMAIN}.` });
+      }
     }
     (req as any).platformIdentity = identity;
     return next();
