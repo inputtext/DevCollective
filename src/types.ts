@@ -87,6 +87,26 @@ export interface NotificationItem {
   readAt?: string | null;
 }
 
+export interface FacultyProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string;
+  college: string;
+  designation: string;
+  department: string;
+  employeeId: string;
+  subjects: string[];
+  expertise: string[];
+  yearsExperience: number | null;
+  mentoringAreas: string[];
+  bio: string;
+  availabilityStatus: 'available' | 'busy' | 'offline';
+  availabilityNote: string;
+  verified: boolean;
+  joinedAt?: string | null;
+}
+
 export interface Mentor {
   id: string;
   name: string;
