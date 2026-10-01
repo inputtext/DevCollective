@@ -28,6 +28,7 @@ export const FacultyProfilePage: React.FC = () => {
   });
 
   const targetId = useMemo(() => new URLSearchParams(window.location.search).get('faculty') || user?.id || '', [user?.id]);
+  const isSelf = Boolean(user?.id && targetId && user.id === targetId);
 
   const authFetch = async (url: string, init: RequestInit = {}) => {
     const token = await getToken();
@@ -112,7 +113,6 @@ export const FacultyProfilePage: React.FC = () => {
   if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="border-2 border-outline-variant bg-surface px-5 py-4 dc-hard-shadow-sm font-label-mono text-[10px] uppercase">Loading faculty profile...</div></div>;
   if (!profile) return <div className="max-w-xl mx-auto mt-12"><DcCard className="p-8 text-center"><h2 className="dc-display text-4xl">PROFILE NOT FOUND.</h2><p className="text-sm text-on-surface-variant mt-3">{message || 'This faculty profile is unavailable.'}</p><DcButton className="mt-6" onClick={() => setActiveTab('mentors')}>Back to mentors</DcButton></DcCard></div>;
 
-  const isSelf = user?.id === profile.id;
   return <div className="space-y-6 pb-16">
     <div className="flex items-center justify-between gap-4">
       <DcButton variant="secondary" onClick={() => setActiveTab('mentors')}><ArrowLeft className="w-4 h-4" /> Faculty Directory</DcButton>
