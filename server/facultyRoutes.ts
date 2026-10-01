@@ -287,6 +287,96 @@ export function registerFacultyRoutes(app: Express, requireAuth: (req: Request, 
     }
   });
 
+  app.post('/api/faculty/:clerkUserId/mentoring-requests', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const studentId = (req as any).authUserId as string;
+      const facultyId = String(req.params.clerkUserId);
+      const topic = String(req.body?.topic || '').trim().slice(0, 160);
+      const message = String(req.body?.message || '').trim().slice(0, 2000);
+      if (!topic || !message) return res.status(400).json({ error: 'Topic and message are required.' });
+      if (facultyId === studentId) return res.status(400).json({ error: 'You cannot request mentoring from yourself.' });
+
+      const [{ data: student }, { data: faculty }] = await Promise.all([
+        supabaseAdmin.from('devcollective_profiles').select('role,account_status').eq('clerk_user_id', studentId).maybeSingle(),
+        supabaseAdmin.from('devcollective_profiles').select('role,account_status').eq('clerk_user_id', facultyId).maybeSingle(),
+      ]);
+      if (!student || student.account_status !== 'active') return res.status(403).json({ error: 'Active account required.' });
+      if (student.role === 'faculty') return res.status(403).json({ error: 'Faculty accounts cannot send student mentoring requests.' });
+      if (!faculty || faculty.role !== 'faculty' || faculty.account_status !== 'active') return res.status(404).json({ error: 'Faculty member is not available.' });
+
+      const { data: facultyRecord } = await supabaseAdmin.from('devcollective_faculty_profiles').select('approval_status').eq('clerk_user_id', facultyId).maybeSingle();
+      if (!facultyRecord || facultyRecord.approval_status !== 'approved') return res.status(404).json({ error: 'Faculty member is not available.' });
+
+      const { data: duplicate } = await supabaseAdmin.from('devcollective_faculty_mentoring_requests')
+        .select('id,status').eq('faculty_clerk_user_id', facultyId).eq('student_clerk_user_id', studentId).eq('status', 'pending').maybeSingle();
+      if (duplicate) return res.status(409).json({ error: 'You already have a pending mentoring request with this faculty member.' });
+
+      const { data, error } = await supabaseAdmin.from('devcollective_faculty_mentoring_requests')
+        .insert({ faculty_clerk_user_id: facultyId, student_clerk_user_id: studentId, topic, message }).select('*').single();
+      if (error) throw error;
+      await writeFacultyAudit(facultyId, studentId, 'mentoring_request_created', { requestId: data.id, topic });
+      return res.status(201).json({ request: data });
+    } catch (error: any) {
+      console.error('[faculty] mentoring request failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not send mentoring request.' });
+    }
+  });
+
+  app.get('/api/faculty/mentoring-requests', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const userId = (req as any).authUserId as string;
+      const mode = req.query.mode === 'sent' ? 'sent' : 'received';
+      const column = mode === 'sent' ? 'student_clerk_user_id' : 'faculty_clerk_user_id';
+      const { data: requests, error } = await supabaseAdmin.from('devcollective_faculty_mentoring_requests')
+        .select('*').eq(column, userId).order('created_at', { ascending: false }).limit(50);
+      if (error) throw error;
+      const ids = Array.from(new Set((requests || []).map((item: any) => mode === 'sent' ? item.faculty_clerk_user_id : item.student_clerk_user_id)));
+      const { data: profiles } = ids.length ? await supabaseAdmin.from('devcollective_profiles').select('clerk_user_id,name,email,avatar,role,college,branch').in('clerk_user_id', ids) : { data: [] };
+      const profileMap = new Map((profiles || []).map((profile: any) => [profile.clerk_user_id, profile]));
+      return res.json({ requests: (requests || []).map((request: any) => ({ ...request, participant: profileMap.get(mode === 'sent' ? request.faculty_clerk_user_id : request.student_clerk_user_id) || null })) });
+    } catch (error: any) {
+      console.error('[faculty] mentoring requests load failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not load mentoring requests.' });
+    }
+  });
+
+  app.post('/api/faculty/mentoring-requests/:requestId/decision', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const facultyId = (req as any).authUserId as string;
+      const decision = req.body?.decision === 'accept' ? 'accepted' : req.body?.decision === 'decline' ? 'declined' : '';
+      if (!decision) return res.status(400).json({ error: 'Decision must be accept or decline.' });
+      const now = new Date().toISOString();
+      const { data, error } = await supabaseAdmin.from('devcollective_faculty_mentoring_requests')
+        .update({ status: decision, updated_at: now, responded_at: now })
+        .eq('id', String(req.params.requestId)).eq('faculty_clerk_user_id', facultyId).eq('status', 'pending').select('*').single();
+      if (error || !data) return res.status(404).json({ error: 'Pending mentoring request not found.' });
+      await writeFacultyAudit(facultyId, facultyId, decision === 'accepted' ? 'mentoring_request_accepted' : 'mentoring_request_declined', { requestId: data.id });
+      return res.json({ request: data });
+    } catch (error: any) {
+      console.error('[faculty] mentoring decision failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not update mentoring request.' });
+    }
+  });
+
+  app.post('/api/faculty/mentoring-requests/:requestId/cancel', requireAuth, async (req, res) => {
+    try {
+      if (!supabaseAdmin) throw new Error('Supabase is not configured.');
+      const studentId = (req as any).authUserId as string;
+      const { data, error } = await supabaseAdmin.from('devcollective_faculty_mentoring_requests')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('id', String(req.params.requestId)).eq('student_clerk_user_id', studentId).eq('status', 'pending').select('*').single();
+      if (error || !data) return res.status(404).json({ error: 'Pending mentoring request not found.' });
+      await writeFacultyAudit(data.faculty_clerk_user_id, studentId, 'mentoring_request_cancelled', { requestId: data.id });
+      return res.json({ request: data });
+    } catch (error: any) {
+      console.error('[faculty] mentoring cancellation failed:', error);
+      return res.status(500).json({ error: error.message || 'Could not cancel mentoring request.' });
+    }
+  });
+
   app.get('/api/admin/faculty', requireAuth, requireAdmin, async (_req, res) => {
     if (!supabaseAdmin) return res.status(503).json({ error: 'Supabase is not configured.' });
     const { data, error } = await supabaseAdmin.from('devcollective_faculty_profiles').select('*').order('created_at', { ascending: false });
