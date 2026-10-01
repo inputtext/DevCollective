@@ -19,6 +19,7 @@ export interface UserProfile {
   selectedDomains: string[];
   authProvider: 'email' | 'google' | 'github';
   hasCompletedOnboarding?: boolean;
+  accountStatus?: 'active' | 'pending' | 'suspended';
   createdAt: string;
 }
 
