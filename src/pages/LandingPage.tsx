@@ -116,6 +116,68 @@ const DeveloperNoteEnvelope: React.FC<{ onOpen: () => void }> = ({ onOpen }) => 
 export const LandingPage: React.FC = () => {
   const { setActiveTab } = useAuth();
   const [showDeveloperNote, setShowDeveloperNote] = useState(false);
+  const heroHeadlineRef = React.useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    const headline = heroHeadlineRef.current;
+    if (!headline) return;
+
+    const words = Array.from(headline.querySelectorAll<HTMLElement>('[data-hero-word]'));
+    if (!words.length) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      gsap.set(words, { yPercent: 0, opacity: 1, rotateX: 0 });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      gsap.set(words, {
+        yPercent: 115,
+        opacity: 0,
+        rotateX: -55,
+        transformOrigin: '50% 100%',
+      });
+
+      gsap.to(words, {
+        yPercent: 0,
+        opacity: 1,
+        rotateX: 0,
+        duration: 1.05,
+        stagger: 0.13,
+        delay: 0.08,
+        ease: 'power4.out',
+      });
+
+      const handleEnter = () => {
+        gsap.to(words, {
+          y: -5,
+          duration: 0.35,
+          stagger: 0.035,
+          ease: 'power3.out',
+        });
+      };
+
+      const handleLeave = () => {
+        gsap.to(words, {
+          y: 0,
+          duration: 0.5,
+          stagger: 0.025,
+          ease: 'power3.out',
+        });
+      };
+
+      headline.addEventListener('mouseenter', handleEnter);
+      headline.addEventListener('mouseleave', handleLeave);
+
+      return () => {
+        headline.removeEventListener('mouseenter', handleEnter);
+        headline.removeEventListener('mouseleave', handleLeave);
+      };
+    }, headline);
+
+    return () => ctx.revert();
+  }, []);
 
   useEffect(() => {
     if (!showDeveloperNote) return;
@@ -151,10 +213,20 @@ export const LandingPage: React.FC = () => {
           <div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
             <div>
               <p className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] mb-6">A technical collective for developers in the making.</p>
-              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl text-[#171717] leading-[0.9]">
-                QUALITY<br />
-                OVER<br />
-                <span className="text-[#B34A36]">QUANTITY</span>
+              <h1
+                ref={heroHeadlineRef}
+                aria-label="Quality over Quantity"
+                className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl text-[#171717] leading-[0.9] [perspective:900px]"
+              >
+                <span className="block overflow-hidden">
+                  <span data-hero-word className="inline-block will-change-transform">QUALITY</span>
+                </span>
+                <span className="block overflow-hidden">
+                  <span data-hero-word className="inline-block will-change-transform">OVER</span>
+                </span>
+                <span className="block overflow-hidden">
+                  <span data-hero-word className="inline-block text-[#B34A36] will-change-transform">QUANTITY</span>
+                </span>
               </h1>
               <p className="mt-8 text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-xl">DevCollective connects community, mentorship, learning paths, projects, and reputation into one serious developer workspace.</p>
               <div className="mt-8 flex flex-wrap gap-3"><Button variant="shimmer" onClick={() => setActiveTab('register')} className="font-bold uppercase tracking-wide">Join the collective <ArrowRight className="w-4 h-4" /></Button><Button variant="shimmer" onClick={() => setActiveTab('login')} className="font-bold uppercase tracking-wide">Sign in</Button></div>
