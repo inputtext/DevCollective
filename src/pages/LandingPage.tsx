@@ -5,7 +5,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
-import { Button, Goldeneye, GradientText, MockIDE, LogoMarquee, SlippyWords } from 'performative-ui';
+import { Button, Goldeneye, MockIDE, LogoMarquee, SlippyWords } from 'performative-ui';
 import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
@@ -151,19 +151,11 @@ export const LandingPage: React.FC = () => {
           <div className="pt-12 sm:pt-16 lg:pt-20 grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-16 items-center">
             <div>
               <p className="dc-mono text-[10px] sm:text-xs uppercase tracking-[0.22em] mb-6">A technical collective for developers in the making.</p>
-              <GradientText
-                as="h1"
-                className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl"
-                style={{
-                  ['--pui-grad-from' as string]: '#E83E8C',
-                  ['--pui-grad-mid' as string]: '#F2C14E',
-                  ['--pui-grad-to' as string]: '#8E7CFF',
-                }}
-              >
+              <h1 className="dc-display text-[clamp(4rem,10vw,9.5rem)] max-w-6xl text-[#171717] leading-[0.9]">
                 QUALITY<br />
                 OVER<br />
-                <span className="text-primary">QUANTITY</span>
-              </GradientText>
+                <span className="text-[#B34A36]">QUANTITY</span>
+              </h1>
               <p className="mt-8 text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-xl">DevCollective connects community, mentorship, learning paths, projects, and reputation into one serious developer workspace.</p>
               <div className="mt-8 flex flex-wrap gap-3"><Button variant="shimmer" onClick={() => setActiveTab('register')} className="font-bold uppercase tracking-wide">Join the collective <ArrowRight className="w-4 h-4" /></Button><Button variant="shimmer" onClick={() => setActiveTab('login')} className="font-bold uppercase tracking-wide">Sign in</Button></div>
             </div>
