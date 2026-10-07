@@ -5,7 +5,7 @@ import { ScrollReveal } from '../components/ScrollReveal';
 import { SystemSignal } from '../components/SystemSignal';
 import { FluidShader } from '../components/FluidShader';
 import { DeveloperNotePage } from './DeveloperNotePage';
-import { Button, Goldeneye, GradientText, MockIDE, LogoMarquee, Rotator, SlippyWords } from 'performative-ui';
+import { Button, Goldeneye, GradientText, MockIDE, LogoMarquee, SlippyWords } from 'performative-ui';
 import 'performative-ui/styles.css';
 import gsap from 'gsap';
 import {
