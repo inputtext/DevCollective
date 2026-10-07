@@ -160,8 +160,9 @@ export const LandingPage: React.FC = () => {
                   ['--pui-grad-to' as string]: '#8E7CFF',
                 }}
               >
-                LEARN.<br />
-                <Rotator words={['BUILD.', 'SHIP.']} typeMs={90} deleteMs={55} holdMs={1200} />
+                QUALITY<br />
+                OVER<br />
+                <span className="text-primary">QUANTITY</span>
               </GradientText>
               <p className="mt-8 text-base sm:text-lg leading-relaxed text-on-surface-variant max-w-xl">DevCollective connects community, mentorship, learning paths, projects, and reputation into one serious developer workspace.</p>
               <div className="mt-8 flex flex-wrap gap-3"><Button variant="shimmer" onClick={() => setActiveTab('register')} className="font-bold uppercase tracking-wide">Join the collective <ArrowRight className="w-4 h-4" /></Button><Button variant="shimmer" onClick={() => setActiveTab('login')} className="font-bold uppercase tracking-wide">Sign in</Button></div>
