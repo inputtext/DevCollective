@@ -51,10 +51,15 @@ const Level0Page = lazy(() => import('./pages/Level0Page').then((module) => ({ d
 const EventsPage = lazy(() => import('./pages/EventsPage').then((module) => ({ default: module.EventsPage })));
 
 const PageLoadingFallback: React.FC = () => (
-  <div className="min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6">
-    <div className="flex items-center gap-3 border-2 border-outline-variant bg-surface px-5 py-4 dc-hard-shadow-sm">
-      <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <span className="font-label-mono text-[10px] uppercase tracking-wider">Loading module...</span>
+  <div className="min-h-[50vh] bg-background text-on-background flex items-center justify-center p-6" role="status" aria-live="polite" aria-label="Loading DevCollective workspace">
+    <div className="w-full max-w-md space-y-4">
+      <div className="dc-skeleton h-3 w-28" />
+      <div className="dc-skeleton h-10 w-3/4" />
+      <div className="dc-skeleton h-24 w-full" />
+      <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+        <span className="size-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
+        <span>Loading your workspace…</span>
+      </div>
     </div>
   </div>
 );
@@ -118,7 +123,7 @@ const MainContent: React.FC = () => {
   }
 
   const isFullLayout = ['landing', 'login', 'register', 'faculty-register', 'profile-setup', 'choose-path'].includes(activeTab);
-  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}><ErrorBoundary>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'faculty-register' && <FacultyRegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'faculty-profile' && <FacultyProfilePage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</ErrorBoundary></Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
+  return <div className={`dc-app-shell ${isFullLayout ? "dc-public-shell" : "dc-workspace-shell"} min-h-screen bg-background text-on-background flex flex-col md:flex-row`}><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}><ErrorBoundary>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'faculty-register' && <FacultyRegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'faculty-profile' && <FacultyProfilePage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</ErrorBoundary></Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
 };
 
 export default function App() { return <AuthProvider><NotificationProvider><SocialProvider><MainContent /></SocialProvider></NotificationProvider></AuthProvider>; }

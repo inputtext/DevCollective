@@ -1,0 +1,425 @@
+/* DevCollective Professional UI System
+ * Application/workspace only. Landing-page visuals remain owned by their existing components.
+ */
+
+:root {
+  --dc-radius-sm: 10px;
+  --dc-radius-md: 12px;
+  --dc-radius-lg: 18px;
+  --dc-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 28%, transparent);
+  --dc-content-max: 1440px;
+}
+
+.dc-workspace-shell .dc-app-workspace {
+  width: 100%;
+  max-width: var(--dc-content-max);
+  margin-inline: auto;
+}
+
+/* Consistent keyboard focus. */
+.dc-workspace-shell :where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--dc-focus-ring);
+}
+
+/* Loading: structural skeleton instead of spinner-only feedback. */
+.dc-workspace-shell .dc-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-container-low) 0%,
+    var(--surface-container-high) 45%,
+    var(--surface-container-low) 90%
+  );
+  background-size: 220% 100%;
+  animation: dc-skeleton-shimmer 1.35s ease-in-out infinite;
+  border-radius: var(--dc-radius-sm);
+}
+
+@keyframes dc-skeleton-shimmer {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+
+/* Shared status/error surfaces. */
+.dc-workspace-shell .dc-status {
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--dc-radius-lg);
+}
+
+/* REP identity. */
+.dc-workspace-shell .dc-rep-focus {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 92% 12%, color-mix(in srgb, var(--primary) 16%, transparent), transparent 32%),
+    var(--surface);
+}
+
+.dc-workspace-shell .dc-rep-focus::after {
+  content: "";
+  position: absolute;
+  inset: auto 1.5rem 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), transparent);
+  opacity: .75;
+  pointer-events: none;
+}
+
+.dc-workspace-shell .dc-rep-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+}
+
+.dc-workspace-shell .dc-rep-track {
+  position: relative;
+  background: var(--surface-container-highest);
+  border: 1px solid color-mix(in srgb, var(--outline-variant) 80%, transparent);
+}
+
+.dc-workspace-shell .dc-rep-fill {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+/* Feed/list hierarchy: items should not all feel like generic cards. */
+.dc-workspace-shell .dc-feed-item,
+.dc-workspace-shell .dc-mentor-card {
+  transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+.dc-workspace-shell .dc-feed-item:hover,
+.dc-workspace-shell .dc-mentor-card:hover {
+  transform: translateY(-1px);
+}
+
+/* Empty state language. */
+.dc-workspace-shell .dc-empty-state {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  border: 1px dashed color-mix(in srgb, var(--outline-variant) 90%, transparent);
+  border-radius: var(--dc-radius-lg);
+  background: color-mix(in srgb, var(--surface-container-low) 72%, transparent);
+}
+
+.dc-workspace-shell .dc-empty-state__title {
+  color: var(--on-surface);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.dc-workspace-shell .dc-empty-state__description {
+  max-width: 34rem;
+  color: var(--on-surface-variant);
+  font-size: .875rem;
+  line-height: 1.55;
+}
+
+/* Application pages share a predictable content width and heading rhythm. */
+.dc-workspace-shell .dc-page-dashboard,
+.dc-workspace-shell .dc-page-community,
+.dc-workspace-shell .dc-page-leaderboard,
+.dc-workspace-shell .dc-page-mentors,
+.dc-workspace-shell .dc-page-roadmap,
+.dc-workspace-shell .dc-page-events,
+.dc-workspace-shell .dc-page-profile,
+.dc-workspace-shell .dc-page-faculty-profile,
+.dc-workspace-shell .dc-page-admin {
+  width: 100%;
+  max-width: var(--dc-content-max);
+  margin-inline: auto;
+}
+
+.dc-workspace-shell .dc-page-dashboard h1,
+.dc-workspace-shell .dc-page-dashboard h2,
+.dc-workspace-shell .dc-page-community h1,
+.dc-workspace-shell .dc-page-community h2,
+.dc-workspace-shell .dc-page-leaderboard h1,
+.dc-workspace-shell .dc-page-leaderboard h2,
+.dc-workspace-shell .dc-page-mentors h1,
+.dc-workspace-shell .dc-page-mentors h2,
+.dc-workspace-shell .dc-page-roadmap h1,
+.dc-workspace-shell .dc-page-roadmap h2,
+.dc-workspace-shell .dc-page-events h1,
+.dc-workspace-shell .dc-page-events h2 {
+  text-wrap: balance;
+}
+
+/* Compact application controls. */
+.dc-workspace-shell .dc-interactive {
+  transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+
+.dc-workspace-shell .dc-interactive:active {
+  transform: scale(.985);
+}
+
+/* Better table scanning. */
+.dc-workspace-shell .dc-page-leaderboard tbody tr {
+  transition: background-color 160ms ease;
+}
+
+.dc-workspace-shell .dc-page-leaderboard tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 7%, transparent);
+}
+
+/* Mobile refinement. */
+@media (max-width: 640px) {
+  .dc-workspace-shell .dc-page-dashboard,
+  .dc-workspace-shell .dc-page-community,
+  .dc-workspace-shell .dc-page-leaderboard,
+  .dc-workspace-shell .dc-page-mentors,
+  .dc-workspace-shell .dc-page-roadmap,
+  .dc-workspace-shell .dc-page-events,
+  .dc-workspace-shell .dc-page-profile,
+  .dc-workspace-shell .dc-page-faculty-profile,
+  .dc-workspace-shell .dc-page-admin {
+    max-width: none;
+  }
+
+  .dc-workspace-shell .dc-rep-focus::after {
+    inset-inline: 1rem;
+  }
+}
+
+/* Respect reduced-motion preferences across the workspace. */
+@media (prefers-reduced-motion: reduce) {
+  .dc-workspace-shell .dc-skeleton {
+    animation: none;
+  }
+
+  .dc-workspace-shell .dc-feed-item,
+  .dc-workspace-shell .dc-mentor-card,
+  .dc-workspace-shell .dc-interactive {
+    transition: none;
+  }
+
+  .dc-workspace-shell .dc-feed-item:hover,
+  .dc-workspace-shell .dc-mentor-card:hover,
+  .dc-workspace-shell .dc-interactive:active {
+    transform: none;
+  }
+
+  .dc-workspace-shell :where(.animate-float-rep, .animate-pulse, .animate-spin, [class*="animate-"]) {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/* ============================================================
+   APPLICATION-WIDE PROFESSIONAL PASS
+   Scoped to .dc-workspace-shell so the approved landing is safe.
+   ============================================================ */
+
+.dc-workspace-shell {
+  --dc-workspace-gap: clamp(1rem, 2vw, 1.5rem);
+  --dc-workspace-panel: color-mix(in srgb, var(--surface) 94%, transparent);
+}
+
+/* App chrome */
+.dc-workspace-shell > aside {
+  box-shadow: 1px 0 0 color-mix(in srgb, var(--outline-variant) 35%, transparent);
+}
+
+.dc-workspace-shell header.sticky {
+  border-bottom-width: 1px;
+  background: color-mix(in srgb, var(--background) 88%, transparent);
+}
+
+.dc-workspace-shell header.sticky > div {
+  min-height: 68px;
+}
+
+.dc-workspace-shell header label:focus-within {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 color-mix(in srgb, var(--outline-variant) 75%, transparent);
+}
+
+.dc-workspace-shell main {
+  isolation: isolate;
+}
+
+.dc-workspace-shell main > * {
+  min-width: 0;
+}
+
+/* Consistent application section surfaces. */
+.dc-workspace-shell .dc-card,
+.dc-workspace-shell [class*="bg-surface-container"] {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.dc-workspace-shell .dc-page-dashboard > *,
+.dc-workspace-shell .dc-page-community > *,
+.dc-workspace-shell .dc-page-roadmap > *,
+.dc-workspace-shell .dc-page-leaderboard > *,
+.dc-workspace-shell .dc-page-mentors > *,
+.dc-workspace-shell .dc-page-profile > *,
+.dc-workspace-shell .dc-page-events > *,
+.dc-workspace-shell .dc-page-admin > *,
+.dc-workspace-shell .dc-page-faculty-profile > * {
+  min-width: 0;
+}
+
+/* Dashboard: make the command-center hierarchy clearer. */
+.dc-workspace-shell .dc-dashboard-hero {
+  box-shadow: var(--dc-shadow-md);
+}
+
+.dc-workspace-shell .dc-dashboard-stat,
+.dc-workspace-shell .dc-dashboard-task-row,
+.dc-workspace-shell .dc-dashboard-recommendation,
+.dc-workspace-shell .dc-dashboard-quick {
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.dc-workspace-shell .dc-dashboard-stat:hover,
+.dc-workspace-shell .dc-dashboard-task-row:hover,
+.dc-workspace-shell .dc-dashboard-recommendation:hover,
+.dc-workspace-shell .dc-dashboard-quick:hover {
+  transform: translateY(-2px);
+}
+
+/* Community / leaderboard / mentor listings. */
+.dc-workspace-shell .dc-page-community article,
+.dc-workspace-shell .dc-page-leaderboard tbody tr,
+.dc-workspace-shell .dc-page-mentors article {
+  content-visibility: auto;
+}
+
+.dc-workspace-shell .dc-page-community article:hover,
+.dc-workspace-shell .dc-page-mentors article:hover {
+  border-color: color-mix(in srgb, var(--primary) 70%, var(--outline-variant));
+}
+
+.dc-workspace-shell .dc-page-leaderboard table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dc-workspace-shell .dc-page-leaderboard th {
+  white-space: nowrap;
+}
+
+/* Roadmap: turn the AI workspace into a product surface. */
+.dc-workspace-shell .dc-page-roadmap .bg-surface-container.border-2 {
+  box-shadow: var(--dc-shadow-sm);
+}
+
+.dc-workspace-shell .dc-page-roadmap form input:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.dc-workspace-shell .dc-page-roadmap .max-w-4xl > div {
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+.dc-workspace-shell .dc-page-roadmap .max-w-4xl > div:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 60%, var(--outline-variant));
+}
+
+/* Events: make event tiles feel like an application calendar. */
+.dc-workspace-shell .dc-page-events .grid > button {
+  border-radius: var(--dc-radius-lg);
+  box-shadow: var(--dc-shadow-sm);
+  overflow: hidden;
+}
+
+.dc-workspace-shell .dc-page-events .grid > button:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--dc-shadow-md);
+}
+
+/* Profile / faculty profile surfaces. */
+.dc-workspace-shell .dc-page-profile img,
+.dc-workspace-shell .dc-page-faculty-profile img {
+  object-fit: cover;
+}
+
+.dc-workspace-shell .dc-page-profile section,
+.dc-workspace-shell .dc-page-faculty-profile section {
+  scroll-margin-top: 88px;
+}
+
+/* Admin: dense data, strong hierarchy. */
+.dc-workspace-shell .dc-page-admin article,
+.dc-workspace-shell .dc-page-admin > section {
+  border-radius: var(--dc-radius-lg);
+}
+
+.dc-workspace-shell .dc-page-admin article:hover {
+  border-color: color-mix(in srgb, var(--primary) 50%, var(--outline-variant));
+}
+
+/* Modal polish without changing modal behavior. */
+.dc-workspace-shell .fixed.inset-0 > div.bg-surface,
+.dc-workspace-shell .fixed.inset-0 > div.bg-surface-container {
+  border-radius: var(--dc-radius-lg);
+  box-shadow: var(--dc-shadow-lg);
+}
+
+/* Button language: preserve component colors, normalize physical feedback. */
+.dc-workspace-shell button:not(:disabled) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dc-workspace-shell button:disabled {
+  opacity: .58;
+}
+
+/* Better text wrapping in dense app areas. */
+.dc-workspace-shell p,
+.dc-workspace-shell h1,
+.dc-workspace-shell h2,
+.dc-workspace-shell h3,
+.dc-workspace-shell h4 {
+  overflow-wrap: anywhere;
+}
+
+/* Narrow screens: reduce chrome density and avoid horizontal overflow. */
+@media (max-width: 767px) {
+  .dc-workspace-shell main {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .dc-workspace-shell header.sticky > div {
+    padding-inline: .75rem;
+  }
+
+  .dc-workspace-shell .dc-page-roadmap .flex.items-center.gap-2.bg-surface-container,
+  .dc-workspace-shell .dc-page-roadmap .flex.items-center.gap-2.bg-surface-container > button {
+    width: 100%;
+  }
+
+  .dc-workspace-shell .dc-page-roadmap .flex.items-center.gap-2.bg-surface-container {
+    flex-direction: column;
+  }
+}
+
+/* Motion stays purposeful. */
+@media (prefers-reduced-motion: reduce) {
+  .dc-workspace-shell *,
+  .dc-workspace-shell *::before,
+  .dc-workspace-shell *::after {
+    scroll-behavior: auto !important;
+  }
+
+  .dc-workspace-shell .dc-dashboard-stat:hover,
+  .dc-workspace-shell .dc-dashboard-task-row:hover,
+  .dc-workspace-shell .dc-dashboard-recommendation:hover,
+  .dc-workspace-shell .dc-dashboard-quick:hover,
+  .dc-workspace-shell .dc-page-roadmap .max-w-4xl > div:hover,
+  .dc-workspace-shell .dc-page-events .grid > button:hover,
+  .dc-workspace-shell .dc-feed-item:hover,
+  .dc-workspace-shell .dc-mentor-card:hover {
+    transform: none;
+  }
+}
+
