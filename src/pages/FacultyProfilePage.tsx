@@ -110,7 +110,7 @@ export const FacultyProfilePage: React.FC = () => {
     finally { setSaving(false); }
   };
 
-  if (loading) return <div className="min-h-[60vh] flex items-center justify-center"><div className="border-2 border-outline-variant bg-surface px-5 py-4 dc-hard-shadow-sm font-label-mono text-[10px] uppercase">Loading faculty profile...</div></div>;
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center" role="status" aria-live="polite"><div className="w-full max-w-2xl space-y-4"><div className="dc-skeleton h-4 w-32" /><div className="dc-skeleton h-12 w-2/3" /><div className="dc-skeleton h-32 w-full" /><div className="flex items-center gap-3 text-sm text-on-surface-variant"><span className="size-2 rounded-full bg-primary animate-pulse" aria-hidden="true" /> Loading faculty profile…</div></div></div>;
   if (!profile) return <div className="max-w-xl mx-auto mt-12"><DcCard className="p-8 text-center"><h2 className="dc-display text-4xl">PROFILE NOT FOUND.</h2><p className="text-sm text-on-surface-variant mt-3">{message || 'This faculty profile is unavailable.'}</p><DcButton className="mt-6" onClick={() => setActiveTab('mentors')}>Back to mentors</DcButton></DcCard></div>;
 
   return <div className="space-y-6 pb-16">
