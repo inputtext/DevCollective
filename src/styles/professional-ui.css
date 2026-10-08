@@ -423,14 +423,3 @@
   }
 }
 
-
-/* Ctrl+K command palette: keep the palette clear of the sticky workspace header. */
-.dc-workspace-shell [cmdk-root],
-.dc-workspace-shell [data-cmdk-root] {
-  transform: translateY(12px);
-}
-
-.dc-workspace-shell [role="dialog"]:has(input[placeholder="Search DevCollective..."]),
-.dc-workspace-shell [role="dialog"]:has(input[aria-label="Search DevCollective..."]) {
-  transform: translateY(12px);
-}
