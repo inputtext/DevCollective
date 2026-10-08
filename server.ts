@@ -25,6 +25,7 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 const AI_MODEL = 'gemini-3.6-flash';
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 app.use(express.json());
 
@@ -85,6 +86,9 @@ function friendlyAiError(err: any): string {
   if (rawMessage.includes('503') || rawMessage.toLowerCase().includes('unavailable') || rawMessage.toLowerCase().includes('overloaded') || rawMessage.toLowerCase().includes('high demand')) {
     return "Google's AI model is temporarily overloaded from high demand right now. This usually clears up within a minute or two, please try again shortly.";
   }
+  if (rawMessage.toLowerCase().includes('groq') && (rawMessage.includes('401') || rawMessage.toLowerCase().includes('invalid api key'))) {
+    return 'The Groq AI service is not configured correctly on this server (invalid API key). Please let the site admin know.';
+  }
   if (rawMessage.includes('500') || rawMessage.toLowerCase().includes('internal error')) {
     return 'The AI service hit an internal error on its end. Please try again in a moment.';
   }
@@ -103,6 +107,96 @@ function getGeminiClient(): GoogleGenAI | null {
     apiKey,
     httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
   });
+}
+
+function getGroqApiKey(): string | null {
+  const apiKey = process.env.GROQ_API_KEY;
+  return apiKey?.trim() || null;
+}
+
+function isRetryableGeminiError(err: any): boolean {
+  const message = String(err?.message || '').toLowerCase();
+  const status = Number(err?.status || err?.statusCode || 0);
+  return status === 429 || status === 503 ||
+    message.includes('429') ||
+    message.includes('quota') ||
+    message.includes('rate limit') ||
+    message.includes('resource exhausted') ||
+    message.includes('temporarily unavailable') ||
+    message.includes('overloaded') ||
+    message.includes('high demand');
+}
+
+type GroqMessage = {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+};
+
+async function callGroq(
+  messages: GroqMessage[],
+  options: { json?: boolean; maxTokens?: number } = {},
+): Promise<string> {
+  const apiKey = getGroqApiKey();
+  if (!apiKey) {
+    throw new Error('GROQ_API_KEY is not configured on the server.');
+  }
+
+  const body: any = {
+    model: GROQ_MODEL,
+    messages,
+    temperature: 0.4,
+    max_tokens: options.maxTokens || 2048,
+  };
+
+  if (options.json) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  const raw = await response.text();
+  let data: any = null;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    // Keep the raw body for a useful error below.
+  }
+
+  if (!response.ok) {
+    const error = data?.error?.message || raw || `Groq request failed with HTTP ${response.status}`;
+    const err: any = new Error(error);
+    err.status = response.status;
+    throw err;
+  }
+
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('Groq returned an empty response.');
+  return content;
+}
+
+async function generateChatWithFallback(
+  geminiRequest: (ai: GoogleGenAI) => Promise<string>,
+  groqMessages: GroqMessage[],
+): Promise<{ text: string; provider: 'gemini' | 'groq' }> {
+  const gemini = getGeminiClient();
+
+  if (gemini) {
+    try {
+      return { text: await geminiRequest(gemini), provider: 'gemini' };
+    } catch (err) {
+      if (!isRetryableGeminiError(err) || !getGroqApiKey()) throw err;
+      console.warn('Gemini unavailable/rate-limited; falling back to Groq.');
+    }
+  }
+
+  return { text: await callGroq(groqMessages), provider: 'groq' };
 }
 
 // API Routes
@@ -184,13 +278,6 @@ app.post('/api/ai/roadmap-chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    const ai = getGeminiClient();
-    if (!ai) {
-      return res.status(500).json({
-        error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.',
-      });
-    }
-
     const contents = [
       ...(history || []).slice(-16).map((h) => ({
         role: h.role,
@@ -199,24 +286,77 @@ app.post('/api/ai/roadmap-chat', async (req, res) => {
       { role: 'user', parts: [{ text: message }] },
     ];
 
-    const response = await ai.models.generateContent({
-      model: AI_MODEL,
-      contents,
-      config: {
-        systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT,
-        tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }],
-      },
-    });
+    const groqMessages: GroqMessage[] = [
+      { role: 'system', content: ROADMAP_MENTOR_SYSTEM_PROMPT + `
 
-    const functionCalls = response.functionCalls;
+When using Groq fallback, you cannot call a function. Instead, return ONLY valid JSON:
+- If you need another short question, return {"type":"question","message":"..."}.
+- Once you have enough information, return {"type":"roadmap","roadmap":{...}} using this exact roadmap structure: roadmapTitle, overview, targetRole, estimatedWeeksTotal, recommendedPrerequisites, levels[]. Each level must contain levelNumber, title, description, estimatedWeeks, topics, capstoneProject{title,description,keySkills}, and learningResources[{title,type,description]}.
+Do not wrap the JSON in markdown fences.` },
+      ...(history || []).slice(-16).map((h) => ({
+        role: h.role === 'model' ? 'assistant' as const : 'user' as const,
+        content: h.text,
+      })),
+      { role: 'user', content: message },
+    ];
 
-    if (functionCalls && functionCalls.length > 0 && functionCalls[0].name === 'finalize_roadmap') {
-      const roadmap = functionCalls[0].args;
-      return res.json({ success: true, type: 'roadmap', roadmap });
+    let provider: 'gemini' | 'groq' = 'gemini';
+    let responseText: string;
+
+    const gemini = getGeminiClient();
+    if (gemini) {
+      try {
+        const response = await gemini.models.generateContent({
+          model: AI_MODEL,
+          contents,
+          config: {
+            systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT,
+            tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }],
+          },
+        });
+
+        const functionCalls = response.functionCalls;
+        if (functionCalls && functionCalls.length > 0 && functionCalls[0].name === 'finalize_roadmap') {
+          return res.json({ success: true, type: 'roadmap', roadmap: functionCalls[0].args });
+        }
+
+        return res.json({
+          success: true,
+          type: 'question',
+          message: response.text || "Could you tell me a bit more about what you're interested in?",
+        });
+      } catch (err) {
+        if (!isRetryableGeminiError(err) || !getGroqApiKey()) throw err;
+        provider = 'groq';
+        console.warn('Roadmap Mentor: Gemini unavailable/rate-limited; using Groq fallback.');
+      }
+    } else if (!getGroqApiKey()) {
+      return res.status(500).json({
+        error: 'No AI provider is configured on the server. Add GEMINI_API_KEY or GROQ_API_KEY.',
+      });
     }
 
-    const reply = response.text || "Could you tell me a bit more about what you're interested in?";
-    return res.json({ success: true, type: 'question', message: reply });
+    if (provider === 'groq') {
+      responseText = await callGroq(groqMessages, { json: true, maxTokens: 4096 });
+      let parsed: any;
+      try {
+        parsed = JSON.parse(responseText);
+      } catch {
+        throw new Error('Groq returned invalid JSON for the roadmap response.');
+      }
+
+      if (parsed?.type === 'roadmap' && parsed?.roadmap) {
+        return res.json({ success: true, type: 'roadmap', roadmap: parsed.roadmap });
+      }
+
+      return res.json({
+        success: true,
+        type: 'question',
+        message: parsed?.message || "Could you tell me a bit more about what you're interested in?",
+      });
+    }
+
+    throw new Error('No AI provider available.');
   } catch (err: any) {
     console.error('Error in /api/ai/roadmap-chat:', err);
     return res.status(500).json({ error: friendlyAiError(err) });
@@ -263,13 +403,6 @@ app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, 
       return res.status(400).json({ error: 'No resume file uploaded.' });
     }
 
-    const ai = getGeminiClient();
-    if (!ai) {
-      return res.status(500).json({
-        error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.',
-      });
-    }
-
     // Extract raw text from the PDF
     const { PDFParse } = await import('pdf-parse');
     const parser = new PDFParse({ data: req.file.buffer });
@@ -283,31 +416,61 @@ app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, 
 
     const prompt = `Here is the raw extracted text from a student's resume:\n\n"""\n${resumeText}\n"""\n\nRead it carefully and extract structured profile data for a college developer platform. Only include skills, links, and details that are actually present or strongly implied in the resume text. Do not invent information.`;
 
-    const response = await ai.models.generateContent({
-      model: AI_MODEL,
-      contents: prompt,
-      config: {
-        systemInstruction:
-          'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements that are not evidenced in the text.',
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            branch: { type: Type.STRING, description: 'Academic branch/major, e.g. Computer Science' },
-            academicYear: { type: Type.STRING, description: 'e.g. Third Year, Final Year, if determinable from graduation date, else best guess' },
-            bio: { type: Type.STRING, description: 'A concise 1-2 sentence professional bio written in first person, based on the resume' },
-            skills: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Technical skills, languages, frameworks, tools found in the resume' },
-            githubUrl: { type: Type.STRING, description: 'GitHub profile URL if present in resume, else empty string' },
-            linkedinUrl: { type: Type.STRING, description: 'LinkedIn profile URL if present in resume, else empty string' },
-            confidence: { type: Type.STRING, description: 'One short sentence noting anything the user should double check' },
-          },
-          required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'],
-        },
-      },
-    });
+    const resumeSystemPrompt =
+      'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements that are not evidenced in the text. Return only valid JSON with branch, academicYear, bio, skills, githubUrl, linkedinUrl, and optional confidence.';
 
-    const jsonText = response.text || '{}';
-    const extracted = JSON.parse(jsonText);
+    const groqResumeMessages: GroqMessage[] = [
+      { role: 'system', content: resumeSystemPrompt },
+      { role: 'user', content: prompt },
+    ];
+
+    const gemini = getGeminiClient();
+    let jsonText: string;
+
+    if (gemini) {
+      try {
+        const response = await gemini.models.generateContent({
+          model: AI_MODEL,
+          contents: prompt,
+          config: {
+            systemInstruction: resumeSystemPrompt,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                branch: { type: Type.STRING, description: 'Academic branch/major, e.g. Computer Science' },
+                academicYear: { type: Type.STRING, description: 'e.g. Third Year, Final Year, if determinable from graduation date, else best guess' },
+                bio: { type: Type.STRING, description: 'A concise 1-2 sentence professional bio written in first person, based on the resume' },
+                skills: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'Technical skills, languages, frameworks, tools found in the resume' },
+                githubUrl: { type: Type.STRING, description: 'GitHub profile URL if present in resume, else empty string' },
+                linkedinUrl: { type: Type.STRING, description: 'LinkedIn profile URL if present in resume, else empty string' },
+                confidence: { type: Type.STRING, description: 'One short sentence noting anything the user should double check' },
+              },
+              required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'],
+            },
+          },
+        });
+        jsonText = response.text || '{}';
+      } catch (err) {
+        if (!isRetryableGeminiError(err) || !getGroqApiKey()) throw err;
+        console.warn('Resume parser: Gemini unavailable/rate-limited; using Groq fallback.');
+        jsonText = await callGroq(groqResumeMessages, { json: true, maxTokens: 2048 });
+      }
+    } else {
+      if (!getGroqApiKey()) {
+        return res.status(500).json({
+          error: 'No AI provider is configured on the server. Add GEMINI_API_KEY or GROQ_API_KEY.',
+        });
+      }
+      jsonText = await callGroq(groqResumeMessages, { json: true, maxTokens: 2048 });
+    }
+
+    let extracted: any;
+    try {
+      extracted = JSON.parse(jsonText);
+    } catch {
+      throw new Error('AI returned invalid JSON while parsing the resume.');
+    }
 
     return res.json({ success: true, extracted });
   } catch (err: any) {
@@ -347,13 +510,6 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required.' });
     }
 
-    const ai = getGeminiClient();
-    if (!ai) {
-      return res.status(500).json({
-        error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.',
-      });
-    }
-
     const systemInstruction = `You are the DevCollective Platform Assistant, a friendly guide for college students on the DevCollective platform. You have two jobs:
 
 1. HELP WITH THE PLATFORM: answer questions about how DevCollective works, using ONLY the information below. This is the complete and only source of truth about the platform, do not guess, assume, or make up any feature, button, or page that isn't listed here.
@@ -380,13 +536,40 @@ Keep the tone warm, direct, and encouraging, like a senior student who's happy t
       { role: 'user', parts: [{ text: message }] },
     ];
 
-    const response = await ai.models.generateContent({
-      model: AI_MODEL,
-      contents,
-      config: { systemInstruction },
-    });
+    const groqMessages: GroqMessage[] = [
+      { role: 'system', content: systemInstruction },
+      ...(history || []).slice(-10).map((h) => ({
+        role: h.role === 'model' ? 'assistant' as const : 'user' as const,
+        content: h.text,
+      })),
+      { role: 'user', content: message },
+    ];
 
-    const reply = response.text || "Sorry, I couldn't generate a response. Please try again.";
+    const gemini = getGeminiClient();
+    let reply: string;
+
+    if (gemini) {
+      try {
+        const response = await gemini.models.generateContent({
+          model: AI_MODEL,
+          contents,
+          config: { systemInstruction },
+        });
+        reply = response.text || "Sorry, I couldn't generate a response. Please try again.";
+      } catch (err) {
+        if (!isRetryableGeminiError(err) || !getGroqApiKey()) throw err;
+        console.warn('Platform chatbot: Gemini unavailable/rate-limited; using Groq fallback.');
+        reply = await callGroq(groqMessages);
+      }
+    } else {
+      if (!getGroqApiKey()) {
+        return res.status(500).json({
+          error: 'No AI provider is configured on the server. Add GEMINI_API_KEY or GROQ_API_KEY.',
+        });
+      }
+      reply = await callGroq(groqMessages);
+    }
+
     return res.json({ success: true, reply });
   } catch (err: any) {
     console.error('Error in /api/chat:', err);

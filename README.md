@@ -296,6 +296,8 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret
 # AI
 OPENAI_API_KEY=your_openai_api_key
 GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=openai/gpt-oss-20b
 
 # Redis
 REDIS_URL=redis://localhost:6379
