@@ -68,7 +68,7 @@ export const AdminPage: React.FC = () => {
     } finally { setBusyId(null); }
   };
 
-  if (!checked) return <div className="min-h-[50vh] flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  if (!checked) return <div className="min-h-[50vh] flex items-center justify-center p-6" role="status" aria-live="polite"><div className="w-full max-w-2xl space-y-4"><div className="dc-skeleton h-4 w-40" /><div className="dc-skeleton h-12 w-2/3" /><div className="dc-skeleton h-28 w-full" /><div className="flex items-center gap-3 text-sm text-on-surface-variant"><span className="size-2 rounded-full bg-primary animate-pulse" aria-hidden="true" /> Verifying administrator access…</div></div></div>;
   if (!isAdmin) return <div className="max-w-xl mx-auto p-8 bg-surface border-2 border-outline-variant dc-hard-shadow-sm text-center space-y-4"><ShieldCheck className="w-10 h-10 mx-auto text-error" /><h2 className="dc-display text-3xl">ACCESS DENIED.</h2><p className="text-sm text-on-surface-variant">This administrative workspace is restricted to approved DevCollective administrators.</p></div>;
 
   const cards = [
