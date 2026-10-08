@@ -38,7 +38,7 @@ export const MentorDirectoryPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="dc-page-mentors space-y-10 pb-16">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -118,11 +118,22 @@ export const MentorDirectoryPage: React.FC = () => {
       </div>
 
       {/* Mentors Cards Grid */}
+      {filteredMentors.length === 0 ? (
+        <div className="dc-empty-state" role="status">
+          <div className="size-11 rounded-full bg-tertiary/10 border border-tertiary/20 flex items-center justify-center text-tertiary" aria-hidden="true">
+            <Search className="size-5" />
+          </div>
+          <p className="dc-empty-state__title">No mentors found</p>
+          <p className="dc-empty-state__description">
+            Try a broader search or choose a different mentor role.
+          </p>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredMentors.map((m) => (
-          <div
+          <article
             key={m.id}
-            className="bg-surface-container border-2 border-outline-variant rounded-2xl p-6 flex flex-col justify-between hover:border-primary transition-all group"
+            className="dc-mentor-card bg-surface-container border border-outline-variant rounded-xl p-6 flex flex-col justify-between hover:border-primary group"
           >
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -220,9 +231,10 @@ export const MentorDirectoryPage: React.FC = () => {
                 <span>Message</span>
               </button>
             </div>
-          </div>
+          </article>
         ))}
       </div>
+      )}
 
       {/* Booking Session Modal */}
       {activeBookingMentor && (

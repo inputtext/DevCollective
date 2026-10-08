@@ -50,11 +50,16 @@ const MainContent: React.FC = () => {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen bg-background text-on-background flex flex-col items-center justify-center p-6 space-y-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-label-mono text-sm text-on-surface-variant">
-          Verifying DevCollective session...
-        </p>
+      <div className="min-h-screen bg-background text-on-background flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-4" role="status" aria-live="polite" aria-label="Loading DevCollective">
+          <div className="dc-skeleton h-3 w-28" />
+          <div className="dc-skeleton h-10 w-3/4" />
+          <div className="dc-skeleton h-24 w-full rounded-2xl" />
+          <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+            <span className="size-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
+            <span>Verifying your DevCollective session…</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -66,14 +71,14 @@ const MainContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-background text-on-background">
         <Navbar />
-        <div className="max-w-md mx-auto mt-12 p-6 bg-surface-container border-2 border-outline-variant rounded-2xl text-center space-y-4">
+        <div className="dc-status max-w-md mx-auto mt-12 p-6 bg-surface-container text-center space-y-4">
           <h2 className="font-headline-md text-2xl font-bold text-white">Authentication Required</h2>
           <p className="text-sm text-on-surface-variant">
             Please log in with your email and password to access this page.
           </p>
           <button
             onClick={() => setActiveTab('login')}
-            className="w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-white font-bold rounded-xl shadow-lg hover:brightness-110 transition-all"
+            className="dc-interactive w-full py-3 bg-gradient-to-r from-primary-container to-secondary-container text-white font-bold rounded-xl shadow-lg hover:brightness-110"
           >
             Go to Login
           </button>
@@ -89,7 +94,7 @@ const MainContent: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0">
           <Navbar />
           <main className="flex-1 p-6 md:p-10 min-w-0">
-            <div className="max-w-xl mx-auto p-8 bg-surface-container border-2 border-error/40 rounded-2xl text-center space-y-4">
+            <div className="dc-status max-w-xl mx-auto p-8 bg-surface-container border-error/40 text-center space-y-4">
               <div className="w-16 h-16 bg-error/10 border-2 border-error/40 rounded-full flex items-center justify-center mx-auto text-error font-bold text-xl">
                 403
               </div>

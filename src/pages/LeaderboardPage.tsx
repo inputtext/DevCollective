@@ -17,7 +17,7 @@ export const LeaderboardPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-10 pb-16">
+    <div className="dc-page-leaderboard space-y-10 pb-16">
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -222,7 +222,18 @@ export const LeaderboardPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y border-outline-variant/30 text-sm">
-              {filteredLeaderboard.map((entry) => (
+              {filteredLeaderboard.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-0">
+                    <div className="dc-empty-state min-h-[240px] m-3">
+                      <p className="dc-empty-state__title">No leaderboard matches</p>
+                      <p className="dc-empty-state__description">
+                        Try a different branch or search term to find a contributor.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredLeaderboard.map((entry) => (
                 <tr
                   key={entry.id}
                   className={`transition-colors ${

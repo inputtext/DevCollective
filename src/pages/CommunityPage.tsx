@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Rocket,
   Users,
+  Search,
 } from 'lucide-react';
 
 export const CommunityPage: React.FC = () => {
@@ -53,7 +54,7 @@ export const CommunityPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="dc-page-community space-y-8 pb-16">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
@@ -186,11 +187,28 @@ export const CommunityPage: React.FC = () => {
           {selectedCategory} Posts ({filteredPosts.length})
         </h3>
 
+        {filteredPosts.length === 0 ? (
+          <div className="dc-empty-state" role="status">
+            <div className="size-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary" aria-hidden="true">
+              <Search className="size-5" />
+            </div>
+            <p className="dc-empty-state__title">No posts in this view</p>
+            <p className="dc-empty-state__description">
+              Try another category or start the first discussion for your college community.
+            </p>
+            <button
+              onClick={() => setShowShowNewPostModal(true)}
+              className="dc-interactive mt-2 px-4 py-2 bg-primary text-on-primary rounded-xl text-sm font-semibold"
+            >
+              Start a discussion
+            </button>
+          </div>
+        ) : (
         <div className="space-y-6">
           {filteredPosts.map((post) => (
-            <div
+            <article
               key={post.id}
-              className="bg-surface border-2 border-outline-variant rounded-2xl p-6 sm:p-8 hover:border-secondary transition-all"
+              className="dc-feed-item bg-surface border border-outline-variant rounded-xl p-6 sm:p-8 hover:border-secondary"
             >
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4">
@@ -238,9 +256,10 @@ export const CommunityPage: React.FC = () => {
                   <Share2 className="w-4 h-4" />
                 </button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
+        )}
       </section>
 
       {/* New Post Modal */}

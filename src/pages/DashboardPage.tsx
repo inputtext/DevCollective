@@ -34,7 +34,7 @@ export const DashboardPage: React.FC = () => {
   const currentStreak = user?.streakDays ?? 0;
 
   return (
-    <div className="space-y-10 pb-16 relative">
+    <div className="dc-page-dashboard space-y-10 pb-16 relative">
       {/* First-Time Login Welcome Modal */}
       {user && user.hasCompletedOnboarding === false && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-fade-in">
@@ -67,7 +67,7 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => completeOnboarding()}
-              className="w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-4 rounded-xl shadow-lg hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-2 font-label-mono text-sm uppercase tracking-wider"
+              className="dc-interactive w-full bg-gradient-to-r from-primary to-secondary text-white font-bold py-4 rounded-xl shadow-lg hover:brightness-110 flex items-center justify-center gap-2 font-label-mono text-sm uppercase tracking-wider"
             >
               <span>Start Learning</span>
               <ArrowRight className="w-5 h-5" />
@@ -101,7 +101,7 @@ export const DashboardPage: React.FC = () => {
       {/* Metrics Row */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* REP Status */}
-        <div className="lg:col-span-2 bg-surface border-2 border-outline-variant p-6 rounded-2xl relative overflow-hidden group hover:border-primary transition-all">
+        <div className="dc-rep-focus lg:col-span-2 bg-surface border-2 border-outline-variant p-6 rounded-2xl relative overflow-hidden group hover:border-primary transition-all">
           {/* Floating +50 REP Animation */}
           {repAnimation && (
             <div
@@ -119,7 +119,7 @@ export const DashboardPage: React.FC = () => {
                 Reputation Status
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-white transition-all duration-500">
+                <span className="dc-rep-value text-4xl font-black text-white transition-all duration-500">
                   {currentRep.toLocaleString()}
                 </span>
                 <span className="text-primary font-label-mono text-sm font-bold">/ 500 REP</span>
@@ -129,9 +129,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div>
-            <div className="w-full h-3 bg-surface-container-highest rounded-full overflow-hidden mb-2">
+            <div className="dc-rep-track w-full h-3 rounded-full overflow-hidden mb-2">
               <div
-                className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-700"
+                className="dc-rep-fill h-full transition-all duration-700"
                 style={{ width: `${Math.min(100, (currentRep / 500) * 100)}%` }}
               />
             </div>
