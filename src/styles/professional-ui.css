@@ -10,20 +10,20 @@
   --dc-content-max: 1440px;
 }
 
-.dc-app-shell .dc-app-workspace {
+.dc-workspace-shell .dc-app-workspace {
   width: 100%;
   max-width: var(--dc-content-max);
   margin-inline: auto;
 }
 
 /* Consistent keyboard focus. */
-.dc-app-shell :where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+.dc-workspace-shell :where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
   outline: none;
   box-shadow: var(--dc-focus-ring);
 }
 
 /* Loading: structural skeleton instead of spinner-only feedback. */
-.dc-app-shell .dc-skeleton {
+.dc-workspace-shell .dc-skeleton {
   background: linear-gradient(
     90deg,
     var(--surface-container-low) 0%,
@@ -41,13 +41,13 @@
 }
 
 /* Shared status/error surfaces. */
-.dc-app-shell .dc-status {
+.dc-workspace-shell .dc-status {
   border: 1px solid var(--outline-variant);
   border-radius: var(--dc-radius-lg);
 }
 
 /* REP identity. */
-.dc-app-shell .dc-rep-focus {
+.dc-workspace-shell .dc-rep-focus {
   position: relative;
   isolation: isolate;
   background:
@@ -55,7 +55,7 @@
     var(--surface);
 }
 
-.dc-app-shell .dc-rep-focus::after {
+.dc-workspace-shell .dc-rep-focus::after {
   content: "";
   position: absolute;
   inset: auto 1.5rem 0;
@@ -65,35 +65,35 @@
   pointer-events: none;
 }
 
-.dc-app-shell .dc-rep-value {
+.dc-workspace-shell .dc-rep-value {
   font-variant-numeric: tabular-nums;
   letter-spacing: -.035em;
 }
 
-.dc-app-shell .dc-rep-track {
+.dc-workspace-shell .dc-rep-track {
   position: relative;
   background: var(--surface-container-highest);
   border: 1px solid color-mix(in srgb, var(--outline-variant) 80%, transparent);
 }
 
-.dc-app-shell .dc-rep-fill {
+.dc-workspace-shell .dc-rep-fill {
   background: linear-gradient(90deg, var(--primary), var(--secondary));
   box-shadow: 0 0 18px color-mix(in srgb, var(--primary) 22%, transparent);
 }
 
 /* Feed/list hierarchy: items should not all feel like generic cards. */
-.dc-app-shell .dc-feed-item,
-.dc-app-shell .dc-mentor-card {
+.dc-workspace-shell .dc-feed-item,
+.dc-workspace-shell .dc-mentor-card {
   transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
-.dc-app-shell .dc-feed-item:hover,
-.dc-app-shell .dc-mentor-card:hover {
+.dc-workspace-shell .dc-feed-item:hover,
+.dc-workspace-shell .dc-mentor-card:hover {
   transform: translateY(-1px);
 }
 
 /* Empty state language. */
-.dc-app-shell .dc-empty-state {
+.dc-workspace-shell .dc-empty-state {
   min-height: 220px;
   display: flex;
   flex-direction: column;
@@ -107,13 +107,13 @@
   background: color-mix(in srgb, var(--surface-container-low) 72%, transparent);
 }
 
-.dc-app-shell .dc-empty-state__title {
+.dc-workspace-shell .dc-empty-state__title {
   color: var(--on-surface);
   font-weight: 700;
   font-size: 1rem;
 }
 
-.dc-app-shell .dc-empty-state__description {
+.dc-workspace-shell .dc-empty-state__description {
   max-width: 34rem;
   color: var(--on-surface-variant);
   font-size: .875rem;
@@ -121,91 +121,91 @@
 }
 
 /* Application pages share a predictable content width and heading rhythm. */
-.dc-app-shell .dc-page-dashboard,
-.dc-app-shell .dc-page-community,
-.dc-app-shell .dc-page-leaderboard,
-.dc-app-shell .dc-page-mentors,
-.dc-app-shell .dc-page-roadmap,
-.dc-app-shell .dc-page-events,
-.dc-app-shell .dc-page-profile,
-.dc-app-shell .dc-page-faculty-profile,
-.dc-app-shell .dc-page-admin {
+.dc-workspace-shell .dc-page-dashboard,
+.dc-workspace-shell .dc-page-community,
+.dc-workspace-shell .dc-page-leaderboard,
+.dc-workspace-shell .dc-page-mentors,
+.dc-workspace-shell .dc-page-roadmap,
+.dc-workspace-shell .dc-page-events,
+.dc-workspace-shell .dc-page-profile,
+.dc-workspace-shell .dc-page-faculty-profile,
+.dc-workspace-shell .dc-page-admin {
   width: 100%;
   max-width: var(--dc-content-max);
   margin-inline: auto;
 }
 
-.dc-app-shell .dc-page-dashboard h1,
-.dc-app-shell .dc-page-dashboard h2,
-.dc-app-shell .dc-page-community h1,
-.dc-app-shell .dc-page-community h2,
-.dc-app-shell .dc-page-leaderboard h1,
-.dc-app-shell .dc-page-leaderboard h2,
-.dc-app-shell .dc-page-mentors h1,
-.dc-app-shell .dc-page-mentors h2,
-.dc-app-shell .dc-page-roadmap h1,
-.dc-app-shell .dc-page-roadmap h2,
-.dc-app-shell .dc-page-events h1,
-.dc-app-shell .dc-page-events h2 {
+.dc-workspace-shell .dc-page-dashboard h1,
+.dc-workspace-shell .dc-page-dashboard h2,
+.dc-workspace-shell .dc-page-community h1,
+.dc-workspace-shell .dc-page-community h2,
+.dc-workspace-shell .dc-page-leaderboard h1,
+.dc-workspace-shell .dc-page-leaderboard h2,
+.dc-workspace-shell .dc-page-mentors h1,
+.dc-workspace-shell .dc-page-mentors h2,
+.dc-workspace-shell .dc-page-roadmap h1,
+.dc-workspace-shell .dc-page-roadmap h2,
+.dc-workspace-shell .dc-page-events h1,
+.dc-workspace-shell .dc-page-events h2 {
   text-wrap: balance;
 }
 
 /* Compact application controls. */
-.dc-app-shell .dc-interactive {
+.dc-workspace-shell .dc-interactive {
   transition: transform 160ms ease, border-color 160ms ease, background-color 160ms ease;
 }
 
-.dc-app-shell .dc-interactive:active {
+.dc-workspace-shell .dc-interactive:active {
   transform: scale(.985);
 }
 
 /* Better table scanning. */
-.dc-app-shell .dc-page-leaderboard tbody tr {
+.dc-workspace-shell .dc-page-leaderboard tbody tr {
   transition: background-color 160ms ease;
 }
 
-.dc-app-shell .dc-page-leaderboard tbody tr:hover {
+.dc-workspace-shell .dc-page-leaderboard tbody tr:hover {
   background: color-mix(in srgb, var(--primary) 7%, transparent);
 }
 
 /* Mobile refinement. */
 @media (max-width: 640px) {
-  .dc-app-shell .dc-page-dashboard,
-  .dc-app-shell .dc-page-community,
-  .dc-app-shell .dc-page-leaderboard,
-  .dc-app-shell .dc-page-mentors,
-  .dc-app-shell .dc-page-roadmap,
-  .dc-app-shell .dc-page-events,
-  .dc-app-shell .dc-page-profile,
-  .dc-app-shell .dc-page-faculty-profile,
-  .dc-app-shell .dc-page-admin {
+  .dc-workspace-shell .dc-page-dashboard,
+  .dc-workspace-shell .dc-page-community,
+  .dc-workspace-shell .dc-page-leaderboard,
+  .dc-workspace-shell .dc-page-mentors,
+  .dc-workspace-shell .dc-page-roadmap,
+  .dc-workspace-shell .dc-page-events,
+  .dc-workspace-shell .dc-page-profile,
+  .dc-workspace-shell .dc-page-faculty-profile,
+  .dc-workspace-shell .dc-page-admin {
     max-width: none;
   }
 
-  .dc-app-shell .dc-rep-focus::after {
+  .dc-workspace-shell .dc-rep-focus::after {
     inset-inline: 1rem;
   }
 }
 
 /* Respect reduced-motion preferences across the workspace. */
 @media (prefers-reduced-motion: reduce) {
-  .dc-app-shell .dc-skeleton {
+  .dc-workspace-shell .dc-skeleton {
     animation: none;
   }
 
-  .dc-app-shell .dc-feed-item,
-  .dc-app-shell .dc-mentor-card,
-  .dc-app-shell .dc-interactive {
+  .dc-workspace-shell .dc-feed-item,
+  .dc-workspace-shell .dc-mentor-card,
+  .dc-workspace-shell .dc-interactive {
     transition: none;
   }
 
-  .dc-app-shell .dc-feed-item:hover,
-  .dc-app-shell .dc-mentor-card:hover,
-  .dc-app-shell .dc-interactive:active {
+  .dc-workspace-shell .dc-feed-item:hover,
+  .dc-workspace-shell .dc-mentor-card:hover,
+  .dc-workspace-shell .dc-interactive:active {
     transform: none;
   }
 
-  .dc-app-shell :where(.animate-float-rep, .animate-pulse, .animate-spin, [class*="animate-"]) {
+  .dc-workspace-shell :where(.animate-float-rep, .animate-pulse, .animate-spin, [class*="animate-"]) {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
   }
