@@ -1,3 +1,7 @@
+import dns from 'node:dns';
+import net from 'node:net';
+dns.setDefaultResultOrder('ipv4first');
+try { net.setDefaultAutoSelectFamily(true); net.setDefaultAutoSelectFamilyAttemptTimeout(1000); } catch { /* older Node */ }
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
@@ -11,15 +15,33 @@ import { getPlatformIdentity, registerAdminRoutes } from './server/adminRoutes';
 import { registerFacultyRoutes } from './server/facultyRoutes';
 
 dotenv.config();
-const app = express(); const PORT = 3000; const AI_MODEL = 'gemini-3.6-flash';
-app.use(clerkMiddleware()); app.use(express.json());
+const app = express(); const PORT = 3000; const AI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+// Tried in order when the main model is overloaded (503/429). Override with GEMINI_FALLBACK_MODELS=a,b,c
+const AI_FALLBACK_MODELS = (process.env.GEMINI_FALLBACK_MODELS || 'gemini-3.5-flash,gemini-2.5-flash,gemini-3.1-flash-lite').split(',').map((m) => m.trim()).filter(Boolean);
+app.use(clerkMiddleware()); app.use(express.json({ limit: '12mb' }));
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => { if (file.mimetype === 'application/pdf') cb(null, true); else cb(new Error('Only PDF files are supported.')); } });
 function getAppBaseUrl(req: express.Request): string { return process.env.APP_URL || `http://${req.headers.host || 'localhost:3000'}`; }
 function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) { const { isAuthenticated, userId } = getAuth(req); if (!isAuthenticated || !userId) return res.status(401).json({ error: 'Not authenticated.' }); (req as any).authUserId = userId; next(); }
 registerLearningProgressRoutes(app, requireAuth);
 registerAdminRoutes(app, requireAuth);
 registerFacultyRoutes(app, requireAuth);
-function friendlyAiError(err: any): string { const rawMessage: string = err?.message || ''; if (rawMessage.includes('API key not valid') || rawMessage.includes('API_KEY_INVALID') || rawMessage.includes('403')) return 'The AI service is not configured correctly on this server (invalid API key). Please let the site admin know.'; if (rawMessage.includes('429') || rawMessage.toLowerCase().includes('quota') || rawMessage.toLowerCase().includes('rate limit')) return 'The AI service is getting a lot of requests right now (or the account is out of quota). Please try again shortly.'; if (rawMessage.includes('503') || rawMessage.toLowerCase().includes('unavailable') || rawMessage.toLowerCase().includes('overloaded') || rawMessage.toLowerCase().includes('high demand')) return "Google's AI model is temporarily overloaded from high demand right now. This usually clears up within a minute or two, please try again shortly."; if (rawMessage.includes('500') || rawMessage.toLowerCase().includes('internal error')) return 'The AI service hit an internal error on its end. Please try again in a moment.'; const looksLikeRawJson = rawMessage.trim().startsWith('{') || rawMessage.trim().startsWith('['); return !rawMessage || looksLikeRawJson ? 'Something went wrong reaching the AI service. Please try again in a moment.' : rawMessage; }
+function friendlyAiError(err: any): string { const rawMessage: string = err?.message || ''; const causeCode = String(err?.cause?.code || ''); if (/fetch failed|ENOTFOUND|ETIMEDOUT|ECONNRESET|ECONNREFUSED|EAI_AGAIN|UND_ERR/i.test(rawMessage + ' ' + causeCode)) return 'The server could not connect to Google AI. Check your internet, turn off any VPN or proxy, and try again. (Network error' + (causeCode ? ': ' + causeCode : '') + ')'; if (rawMessage.includes('API key not valid') || rawMessage.includes('API_KEY_INVALID') || rawMessage.includes('403')) return 'The AI service is not configured correctly on this server (invalid API key). Please let the site admin know.'; if (rawMessage.includes('429') || rawMessage.toLowerCase().includes('quota') || rawMessage.toLowerCase().includes('rate limit')) return 'The AI service is getting a lot of requests right now (or the account is out of quota). Please try again shortly.'; if (rawMessage.includes('503') || rawMessage.toLowerCase().includes('unavailable') || rawMessage.toLowerCase().includes('overloaded') || rawMessage.toLowerCase().includes('high demand')) return "Google's AI model is temporarily overloaded from high demand right now. This usually clears up within a minute or two, please try again shortly."; if (rawMessage.includes('500') || rawMessage.toLowerCase().includes('internal error')) return 'The AI service hit an internal error on its end. Please try again in a moment.'; const looksLikeRawJson = rawMessage.trim().startsWith('{') || rawMessage.trim().startsWith('['); return !rawMessage || looksLikeRawJson ? 'Something went wrong reaching the AI service. Please try again in a moment.' : rawMessage; }
+
+const isRetryableAiError = (err: any) => { const m = String(err?.message || '').toLowerCase(); return m.includes('503') || m.includes('429') || m.includes('overloaded') || m.includes('unavailable') || m.includes('high demand') || m.includes('resource_exhausted') || m.includes('deadline'); };
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Retries the main model with short backoff, then walks the fallback models. Only retryable errors trigger a retry.
+async function generateWithFallback(ai: GoogleGenAI, params: { contents: any; config?: any }) {
+  const models = [AI_MODEL, ...AI_FALLBACK_MODELS.filter((m) => m !== AI_MODEL)];
+  let lastErr: any;
+  for (let i = 0; i < models.length; i++) {
+    const attempts = i === 0 ? 2 : 1;
+    for (let a = 0; a < attempts; a++) {
+      try { return await ai.models.generateContent({ model: models[i], ...params }); }
+      catch (err: any) { lastErr = err; console.warn(`[ai] ${models[i]} failed (attempt ${a + 1}):`, String(err?.message || err).slice(0, 160), err?.cause?.code || err?.cause?.message || ''); if (/fetch failed|ENOTFOUND|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN/i.test(String(err?.message || '') + String(err?.cause?.code || ''))) throw err; if (!isRetryableAiError(err)) throw err; if (a < attempts - 1) await sleep(1200); }
+    }
+  }
+  throw lastErr;
+}
 function getGeminiClient(): GoogleGenAI | null { const apiKey = process.env.GEMINI_API_KEY; return apiKey ? new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } }) : null; }
 function emptyProfile(userId: string, clerkUser: any, pending: any = {}) { const email = clerkUser.emailAddresses?.find((e: any) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress || clerkUser.emailAddresses?.[0]?.emailAddress || ''; const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || clerkUser.username || email.split('@')[0] || 'Developer'; return { clerk_user_id: userId, name: pending.name || name, email, role: pending.role || 'student', college: pending.college || '', branch: pending.branch || '', academic_year: pending.academicYear || '', avatar: clerkUser.imageUrl || '', bio: '', rep: 0, level: 1, streak_days: 0, github_url: '', linkedin_url: '', skills: [], selected_domains: [], auth_provider: 'clerk', has_completed_onboarding: false, created_at: new Date().toISOString() }; }
 function toUserProfile(row: any) { return row ? { id: row.clerk_user_id, name: row.name, email: row.email, role: row.role, college: row.college, branch: row.branch, academicYear: row.academic_year, avatar: row.avatar, bio: row.bio, rep: row.rep, level: row.level, streakDays: row.streak_days, githubUrl: row.github_url, linkedinUrl: row.linkedin_url, skills: row.skills || [], selectedDomains: row.selected_domains || [], authProvider: 'clerk', createdAt: row.created_at, accountStatus: row.account_status || 'active', hasCompletedOnboarding: row.has_completed_onboarding ?? false } : null; }
@@ -117,8 +139,145 @@ app.patch('/api/users/profile', requireAuth, async (req, res) => { try { if (!su
 const ROADMAP_JSON_SCHEMA = { type: Type.OBJECT, properties: { roadmapTitle: { type: Type.STRING }, overview: { type: Type.STRING }, targetRole: { type: Type.STRING }, estimatedWeeksTotal: { type: Type.INTEGER }, recommendedPrerequisites: { type: Type.ARRAY, items: { type: Type.STRING } }, levels: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { levelNumber: { type: Type.INTEGER }, title: { type: Type.STRING }, description: { type: Type.STRING }, estimatedWeeks: { type: Type.INTEGER }, topics: { type: Type.ARRAY, items: { type: Type.STRING } }, capstoneProject: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, keySkills: { type: Type.ARRAY, items: { type: Type.STRING } } }, required: ['title', 'description', 'keySkills'] }, learningResources: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, type: { type: Type.STRING }, description: { type: Type.STRING } }, required: ['title', 'type', 'description'] } } }, required: ['levelNumber', 'title', 'description', 'estimatedWeeks', 'topics', 'capstoneProject', 'learningResources'] } } }, required: ['roadmapTitle', 'overview', 'targetRole', 'estimatedWeeksTotal', 'levels'] };
 const ROADMAP_MENTOR_SYSTEM_PROMPT = `You are an expert tech career mentor and roadmap architect for college engineering students on DevCollective. Your job is to have a short, natural conversation with the student to understand: (1) which technology or field they're interested in, (2) their current skill level (beginner, intermediate, or advanced), and (3) what they already know. Ask ONE short question at a time. Once you have enough information, usually after 2 to 4 exchanges, call finalize_roadmap with a complete, realistic, progressive roadmap. If they're a true beginner, start with real fundamentals and never skip ahead. Use plain, encouraging language and concrete topics, capstones, and learning resources.`;
 const finalizeRoadmapFunctionDeclaration = { name: 'finalize_roadmap', description: "Generate the student's complete personalized learning roadmap once enough information is known.", parameters: ROADMAP_JSON_SCHEMA as any };
-app.post('/api/ai/roadmap-chat', async (req, res) => { try { const { message, history } = req.body as { message: string; history?: { role: 'user' | 'model'; text: string }[] }; if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const contents = [...(history || []).slice(-16).map((h) => ({ role: h.role, parts: [{ text: h.text }] })), { role: 'user', parts: [{ text: message }] }]; const response = await ai.models.generateContent({ model: AI_MODEL, contents, config: { systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT, tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }] } }); const functionCalls = response.functionCalls; if (functionCalls?.length && functionCalls[0].name === 'finalize_roadmap') return res.json({ success: true, type: 'roadmap', roadmap: functionCalls[0].args }); return res.json({ success: true, type: 'question', message: response.text || "Could you tell me a bit more about what you're interested in?" }); } catch (err: any) { console.error('Error in /api/ai/roadmap-chat:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
-app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, res) => { try { if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const { PDFParse } = await import('pdf-parse'); const parser = new PDFParse({ data: req.file.buffer }); const textResult = await parser.getText(); await parser.destroy(); const resumeText = textResult.text.slice(0, 15000); if (!resumeText.trim()) return res.status(422).json({ error: 'Could not extract any text from this PDF. Try a text-based PDF, not a scanned image.' }); const prompt = `Here is the raw extracted text from a student's resume:\n\n"""\n${resumeText}\n"""\n\nRead it carefully and extract structured profile data for a college developer platform. Only include information actually present or strongly implied. Do not invent information.`; const response = await ai.models.generateContent({ model: AI_MODEL, contents: prompt, config: { systemInstruction: 'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements.', responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { branch: { type: Type.STRING }, academicYear: { type: Type.STRING }, bio: { type: Type.STRING }, skills: { type: Type.ARRAY, items: { type: Type.STRING } }, githubUrl: { type: Type.STRING }, linkedinUrl: { type: Type.STRING }, confidence: { type: Type.STRING } }, required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'] } } }); const parsed = JSON.parse(response.text || '{}'); return res.json({ success: true, extracted: parsed }); } catch (err: any) { console.error('Error parsing resume:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
+app.post('/api/ai/roadmap-chat', async (req, res) => { try { const { message, history } = req.body as { message: string; history?: { role: 'user' | 'model'; text: string }[] }; if (!message || !message.trim()) return res.status(400).json({ error: 'Message is required.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const contents = [...(history || []).slice(-16).map((h) => ({ role: h.role, parts: [{ text: h.text }] })), { role: 'user', parts: [{ text: message }] }]; const response = await generateWithFallback(ai, { contents, config: { systemInstruction: ROADMAP_MENTOR_SYSTEM_PROMPT, tools: [{ functionDeclarations: [finalizeRoadmapFunctionDeclaration] }] } }); const functionCalls = response.functionCalls; if (functionCalls?.length && functionCalls[0].name === 'finalize_roadmap') return res.json({ success: true, type: 'roadmap', roadmap: functionCalls[0].args }); return res.json({ success: true, type: 'question', message: response.text || "Could you tell me a bit more about what you're interested in?" }); } catch (err: any) { console.error('Error in /api/ai/roadmap-chat:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
+app.post('/api/resume/parse', requireAuth, upload.single('resume'), async (req, res) => { try { if (!req.file) return res.status(400).json({ error: 'No resume file uploaded.' }); const ai = getGeminiClient(); if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' }); const { PDFParse } = await import('pdf-parse'); const parser = new PDFParse({ data: req.file.buffer }); const textResult = await parser.getText(); await parser.destroy(); const resumeText = textResult.text.slice(0, 15000); if (!resumeText.trim()) return res.status(422).json({ error: 'Could not extract any text from this PDF. Try a text-based PDF, not a scanned image.' }); const prompt = `Here is the raw extracted text from a student's resume:\n\n"""\n${resumeText}\n"""\n\nRead it carefully and extract structured profile data for a college developer platform. Only include information actually present or strongly implied. Do not invent information.`; const response = await generateWithFallback(ai, { contents: prompt, config: { systemInstruction: 'You are a resume parser for a student developer platform. Extract accurate, grounded structured data only. Never fabricate skills, links, or achievements.', responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { branch: { type: Type.STRING }, academicYear: { type: Type.STRING }, bio: { type: Type.STRING }, skills: { type: Type.ARRAY, items: { type: Type.STRING } }, githubUrl: { type: Type.STRING }, linkedinUrl: { type: Type.STRING }, confidence: { type: Type.STRING } }, required: ['branch', 'academicYear', 'bio', 'skills', 'githubUrl', 'linkedinUrl'] } } }); const parsed = JSON.parse(response.text || '{}'); return res.json({ success: true, extracted: parsed }); } catch (err: any) { console.error('Error parsing resume:', err); return res.status(500).json({ error: friendlyAiError(err) }); } });
+
+// ---------------------------------------------------------------------------
+// AI assistants: platform chatbot, roadmap study buddy, project generator agent
+// All three share the same helpers (retry + fallback models, image input, history cleanup).
+// ---------------------------------------------------------------------------
+type ChatTurn = { role: 'user' | 'model'; text: string };
+type ChatImage = { mimeType: string; data: string };
+
+function cleanHistory(history: any): ChatTurn[] {
+  const turns: ChatTurn[] = (Array.isArray(history) ? history : [])
+    .filter((h: any) => h && (h.role === 'user' || h.role === 'model') && typeof h.text === 'string' && h.text.trim())
+    .map((h: any) => ({ role: h.role, text: String(h.text).slice(0, 4000) }));
+  while (turns.length && turns[0].role === 'model') turns.shift(); // Gemini wants the first turn from the user
+  const merged: ChatTurn[] = [];
+  for (const t of turns) { const last = merged[merged.length - 1]; if (last && last.role === t.role) last.text += `\n${t.text}`; else merged.push({ ...t }); }
+  return merged.slice(-16);
+}
+function cleanImage(img: any): ChatImage | null {
+  if (!img || typeof img.data !== 'string' || typeof img.mimeType !== 'string') return null;
+  if (!/^image\/(png|jpe?g|webp|gif)$/i.test(img.mimeType)) return null;
+  if (img.data.length > 7_000_000) return null; // roughly 5 MB of image after base64
+  return { mimeType: img.mimeType, data: img.data.replace(/^data:[^;]+;base64,/, '') };
+}
+function buildContents(history: any, message: string, image: ChatImage | null) {
+  const parts: any[] = [{ text: message }];
+  if (image) parts.unshift({ inlineData: { mimeType: image.mimeType, data: image.data } });
+  return [...cleanHistory(history).map((h) => ({ role: h.role, parts: [{ text: h.text }] })), { role: 'user', parts }];
+}
+function clip(value: any, max = 600): string { return String(value ?? '').slice(0, max); }
+function describeLearner(ctx: any, facts: any): string {
+  const p = ctx?.profile || {};
+  const lines = [
+    p.name && `Name: ${clip(p.name, 80)}`,
+    (p.branch || facts?.branch) && `Branch: ${clip(p.branch || facts?.branch, 80)}`,
+    (p.academicYear || facts?.academic_year) && `Academic year: ${clip(p.academicYear || facts?.academic_year, 40)}`,
+    Array.isArray(p.skills) && p.skills.length && `Skills: ${p.skills.slice(0, 20).map((s: any) => clip(s, 40)).join(', ')}`,
+    (p.rep ?? facts?.rep) !== undefined && `REP points: ${Number(p.rep ?? facts?.rep) || 0}`,
+    (p.level ?? facts?.level) !== undefined && `Platform level: ${Number(p.level ?? facts?.level) || 1}`,
+  ].filter(Boolean);
+  const r = ctx?.roadmap;
+  if (r?.roadmapTitle) {
+    lines.push(`Chosen roadmap: ${clip(r.roadmapTitle, 120)} (target role: ${clip(r.targetRole, 80)}, ${Number(r.estimatedWeeksTotal) || '?'} weeks)`);
+    if (Array.isArray(r.levels)) lines.push('Roadmap levels: ' + r.levels.slice(0, 8).map((l: any) => `L${l.levelNumber} ${clip(l.title, 60)} [${(l.topics || []).slice(0, 6).map((t: any) => clip(t, 40)).join(', ')}]`).join(' | '));
+  }
+  if (ctx?.project?.title) lines.push(`Current project: ${clip(ctx.project.title, 120)}; completed phases: ${Number(ctx.project.completedPhases) || 0} of ${Number(ctx.project.totalPhases) || '?'}`);
+  return lines.length ? lines.join('\n') : 'No learner details are available yet.';
+}
+async function loadLearnerFacts(req: express.Request): Promise<any> {
+  try { const { userId } = getAuth(req); if (!userId || !supabaseAdmin) return null; const { data } = await supabaseAdmin.from('devcollective_profiles').select('rep, level, branch, academic_year').eq('clerk_user_id', userId).maybeSingle(); return data || null; } catch { return null; }
+}
+const STYLE_RULES = `Style rules: write like a friendly senior who explains things simply. Short paragraphs, plain words, no buzzwords. Use **bold** for key terms and "- " bullets for lists. Never use em dashes. If the person sends an image, look at it carefully and answer based on what you see (errors, code, diagrams, screenshots).`;
+
+const PLATFORM_ASSISTANT_PROMPT = `You are the DevCollective Assistant, the helper inside DevCollective, a college-only platform for engineering students. The platform has: a Dashboard, Community (posts and replies), Events, Roadmaps (an AI Roadmap Mentor builds a personalized learning plan), Level 0 (foundation learning), a Leaderboard ranked by REP points, a Mentor Directory (seniors who guide juniors), a Project Generator (a game-style project builder), CRT (placement training, coming soon), and Profile (resume upload auto-fills the profile).
+Answer questions about the platform, courses, learning paths, careers, and study problems. Answer exactly what was asked first, then add one short helpful next step. If you do not know a platform detail, say so instead of guessing. ${STYLE_RULES}`;
+
+const STUDY_BUDDY_PROMPT = `You are the Study Buddy for one learner on DevCollective. They are following a personalized roadmap and you help them while they learn it. Explain concepts at their level, give small examples, suggest what to study next from THEIR roadmap, help debug, and keep them motivated. Prefer to teach with tiny exercises instead of long lectures. If a question is outside their roadmap, still help, then connect it back to the roadmap. ${STYLE_RULES}`;
+
+const PROJECT_AGENT_PROMPT = `You are the Project Generator Agent on DevCollective. You help a student build a real, job-worthy project in a game-like way. You can see the learner details below.
+How you work:
+1. If the learner asks for ideas, suggest 3 ideas, each with a one-line pitch, why recruiters care about it right now, and a difficulty tag. Make the FIRST one a beginner-friendly warm-up. The others should be unique and modern for the learner's domain (for example AI agents, RAG apps, computer vision, real-time systems, cloud and DevOps automation), inspired by real problem statements like Smart India Hackathon, IEEE and open civic problems. Avoid overused ideas such as calculators, library management, or basic to-do apps.
+2. When they pick an idea, ask at most 3 short questions only if you really need them (skills, time per week, tools). Use the learner details to avoid asking things you already know.
+3. When you have enough, call the create_project_plan function. The plan has a title, a plain-language problem statement, who it helps, the expected result, a suggested tech stack, an architecture summary, and 4 to 5 phases. Phase 1 must be small and quick to finish (a "level 1 win"). Each phase has a goal, 3 to 5 concrete tasks, a "you will learn" line, a checkpoint question to prove they understood, and an XP reward (50 to 150).
+4. After the plan exists, act as a coach. Explain the current phase, answer questions, and celebrate wins. Keep it fun, like a game quest, but never childish.
+Always keep things easy to understand. Never overwhelm the learner with more than one phase at a time. ${STYLE_RULES}`;
+
+const PROJECT_REVIEW_PROMPT = `You are a kind but honest senior engineer reviewing a student's project on DevCollective. Use the description, the repository details if provided, and any screenshot. Respond in this exact structure using markdown:
+**What I understood** (2 to 3 lines on what the project does and how it seems to be built)
+**What is good** (2 to 4 bullets)
+**What to improve** (3 to 6 bullets, most important first, each with a concrete how-to)
+**Missing pieces recruiters look for** (bullets, for example tests, README, deployment link, error handling, security, architecture diagram)
+**Next 3 actions** (numbered, each doable in under a day)
+**Score** (one line like "Project strength: 6/10" plus one sentence why)
+Be specific, never vague. If information is missing, say what you could not see instead of guessing. ${STYLE_RULES}`;
+
+const createProjectPlanDeclaration = {
+  name: 'create_project_plan',
+  description: 'Create the full game-style project plan once the learner has chosen an idea and you have enough information.',
+  parameters: { type: Type.OBJECT, properties: {
+    title: { type: Type.STRING }, tagline: { type: Type.STRING },
+    problemStatement: { type: Type.STRING, description: 'Plain-language explanation of the real-world problem.' },
+    whoItHelps: { type: Type.STRING }, expectedOutput: { type: Type.STRING },
+    difficulty: { type: Type.STRING }, whyRecruitersCare: { type: Type.STRING },
+    techStack: { type: Type.ARRAY, items: { type: Type.STRING } },
+    architecture: { type: Type.STRING, description: 'Short system architecture summary, one line per component.' },
+    phases: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
+      title: { type: Type.STRING }, goal: { type: Type.STRING },
+      tasks: { type: Type.ARRAY, items: { type: Type.STRING } },
+      youWillLearn: { type: Type.STRING }, checkpoint: { type: Type.STRING },
+      xp: { type: Type.INTEGER },
+    }, required: ['title', 'goal', 'tasks', 'youWillLearn', 'checkpoint', 'xp'] } },
+  }, required: ['title', 'problemStatement', 'expectedOutput', 'techStack', 'architecture', 'phases'] } as any,
+};
+
+async function fetchRepoSummary(url: string): Promise<string> {
+  try {
+    const m = String(url || '').match(/github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git|\/|$)/i);
+    if (!m) return '';
+    const [, owner, repo] = m;
+    const headers = { 'User-Agent': 'devcollective', Accept: 'application/vnd.github+json' };
+    const meta: any = await (await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers })).json();
+    const tree: any = await (await fetch(`https://api.github.com/repos/${owner}/${repo}/contents`, { headers })).json();
+    let readme = '';
+    try { readme = (await (await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, { headers: { ...headers, Accept: 'application/vnd.github.raw+json' } })).text()).slice(0, 4000); } catch {}
+    const files = Array.isArray(tree) ? tree.map((f: any) => `${f.type === 'dir' ? '[dir] ' : ''}${f.name}`).slice(0, 40).join(', ') : '';
+    return `GitHub repo ${owner}/${repo}: ${meta?.description || 'no description'}; main language: ${meta?.language || 'unknown'}; stars: ${meta?.stargazers_count ?? 0}; last push: ${meta?.pushed_at || 'unknown'}.\nTop-level files: ${files}\nREADME excerpt:\n${readme || '(no README found)'}`;
+  } catch { return ''; }
+}
+
+async function runChat(req: express.Request, res: express.Response, system: string, opts: { tools?: any[]; useFacts?: boolean; extraContext?: string } = {}) {
+  try {
+    const { message, history, image, context } = req.body || {};
+    const text = typeof message === 'string' ? message.trim() : '';
+    const img = cleanImage(image);
+    if (!text && !img) return res.status(400).json({ error: 'Message is required.' });
+    const ai = getGeminiClient();
+    if (!ai) return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.' });
+    const facts = opts.useFacts === false ? null : await loadLearnerFacts(req);
+    const systemInstruction = `${system}\n\nLEARNER DETAILS:\n${describeLearner(context, facts)}${opts.extraContext ? `\n\n${opts.extraContext}` : ''}`;
+    const response = await generateWithFallback(ai, { contents: buildContents(history, text || 'Please look at the attached image and help me.', img), config: { systemInstruction, ...(opts.tools ? { tools: [{ functionDeclarations: opts.tools }] } : {}) } });
+    const call = response.functionCalls?.[0];
+    if (call?.name === 'create_project_plan') return res.json({ success: true, reply: `Your quest is ready: "${(call.args as any)?.title}". Check the project board and start with Phase 1.`, plan: call.args });
+    return res.json({ success: true, reply: response.text || "I could not come up with an answer. Could you rephrase that?" });
+  } catch (err: any) { console.error('AI chat error:', err); return res.status(500).json({ error: friendlyAiError(err) }); }
+}
+
+app.post('/api/chat', (req, res) => runChat(req, res, PLATFORM_ASSISTANT_PROMPT));
+app.post('/api/ai/study-buddy', (req, res) => runChat(req, res, STUDY_BUDDY_PROMPT));
+app.post('/api/ai/project-chat', (req, res) => runChat(req, res, PROJECT_AGENT_PROMPT, { tools: [createProjectPlanDeclaration] }));
+app.post('/api/ai/project-review', async (req, res) => {
+  const repo = await fetchRepoSummary(String(req.body?.repoUrl || ''));
+  const plan = req.body?.context?.plan;
+  const extra = [repo && `REPOSITORY DETAILS:\n${repo}`, plan?.title && `The learner's planned project was "${clip(plan.title, 120)}" with phases: ${(plan.phases || []).map((p: any) => clip(p.title, 60)).join(' > ')}`].filter(Boolean).join('\n\n');
+  return runChat(req, res, PROJECT_REVIEW_PROMPT, { extraContext: extra });
+});
+
+// Any unknown /api route must answer with JSON, never with the website HTML.
+app.use('/api', (_req, res) => res.status(404).json({ error: 'This API route does not exist.' }));
 
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {

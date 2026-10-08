@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { initialRoadmapLevels } from '../data/initialData';
+import { RoadmapStudyBuddy } from '../components/RoadmapStudyBuddy';
+import { postJson } from '../lib/aiClient';
 import {
   Check,
   Zap,
@@ -130,19 +132,10 @@ export const RoadmapPage: React.FC = () => {
     setIsRoadmapSending(true);
 
     try {
-      const response = await fetch('/api/ai/roadmap-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: trimmed,
-          history: nextMessages.slice(0, -1),
-        }),
+      const data = await postJson<any>('/api/ai/roadmap-chat', {
+        message: trimmed,
+        history: nextMessages.slice(0, -1),
       });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Failed to reach the roadmap mentor.');
-      }
 
       let finalMessages: RoadmapChatMessage[];
       if (data.type === 'roadmap') {
@@ -162,6 +155,8 @@ export const RoadmapPage: React.FC = () => {
       if (chatStorageKey) localStorage.setItem(chatStorageKey, JSON.stringify(finalMessages));
     } catch (err: any) {
       console.error('Roadmap chat failed:', err);
+      // keep the user's message saved even when the AI call fails, so nothing disappears
+      if (chatStorageKey) localStorage.setItem(chatStorageKey, JSON.stringify(nextMessages));
       setRoadmapError(err.message || 'Something went wrong talking to the roadmap mentor.');
     } finally {
       setIsRoadmapSending(false);
@@ -279,7 +274,7 @@ export const RoadmapPage: React.FC = () => {
                 <div
                   className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                     m.role === 'user'
-                      ? 'bg-primary-container text-white rounded-br-sm'
+                      ? 'bg-primary-container text-on-primary border border-outline-variant/60 rounded-br-sm'
                       : 'bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-bl-sm'
                   }`}
                 >
@@ -312,7 +307,7 @@ export const RoadmapPage: React.FC = () => {
               onChange={(e) => setRoadmapInput(e.target.value)}
               placeholder="Type your answer..."
               disabled={isRoadmapSending}
-              className="flex-1 bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-white placeholder:text-outline focus:outline-none focus:border-primary transition-all disabled:opacity-60"
+              className="flex-1 bg-surface-container-low border border-outline-variant/80 rounded-xl px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary transition-all disabled:opacity-60"
             />
             <button
               type="submit"
@@ -391,6 +386,8 @@ export const RoadmapPage: React.FC = () => {
                   </div>
                 )}
             </div>
+
+            <RoadmapStudyBuddy roadmap={generatedRoadmap} />
 
             {/* Generated Level Milestones */}
             <div className="relative max-w-4xl mx-auto space-y-12">

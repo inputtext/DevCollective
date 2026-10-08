@@ -48,6 +48,8 @@ const FacultyProfilePage = lazy(() => import('./pages/FacultyProfilePage').then(
 const StudentProfilePage = lazy(() => import('./pages/StudentProfilePage').then((module) => ({ default: module.StudentProfilePage })));
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const Level0Page = lazy(() => import('./pages/Level0Page').then((module) => ({ default: module.Level0Page })));
+const ProjectGeneratorPage = lazy(() => import('./pages/ProjectGeneratorPage').then((module) => ({ default: module.ProjectGeneratorPage })));
+const CRTPage = lazy(() => import('./pages/CRTPage').then((module) => ({ default: module.CRTPage })));
 const EventsPage = lazy(() => import('./pages/EventsPage').then((module) => ({ default: module.EventsPage })));
 
 const PageLoadingFallback: React.FC = () => (
@@ -84,7 +86,7 @@ const RepRewardToast: React.FC = () => {
 const MainContent: React.FC = () => {
   const { user, loadingAuth, activeTab, setActiveTab } = useAuth();
   const publicTabs = ['landing', 'login', 'register', 'faculty-register'];
-  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'faculty-profile', 'profile', 'admin', 'level-0', 'events'];
+  const protectedTabs = ['dashboard', 'community', 'roadmap', 'leaderboard', 'mentors', 'faculty-profile', 'profile', 'admin', 'level-0', 'events', 'project-generator', 'crt'];
   const isProtected = protectedTabs.includes(activeTab);
   const needsAuthHydration = !publicTabs.includes(activeTab);
   const platformAccess = usePlatformAccess(isProtected && user?.role !== 'faculty');
@@ -118,7 +120,7 @@ const MainContent: React.FC = () => {
   }
 
   const isFullLayout = ['landing', 'login', 'register', 'faculty-register', 'profile-setup', 'choose-path'].includes(activeTab);
-  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}><ErrorBoundary>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'faculty-register' && <FacultyRegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'faculty-profile' && <FacultyProfilePage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</ErrorBoundary></Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
+  return <div className="dc-app-shell min-h-screen bg-background text-on-background flex flex-col md:flex-row"><MotionSystem /><RepRewardToast />{!isFullLayout && <Sidebar />}<div className="flex-1 flex flex-col min-w-0"><Navbar /><main className={`flex-1 min-w-0 dc-page-${activeTab} ${isFullLayout ? 'w-full' : 'p-4 sm:p-8 lg:p-10'}`}><Suspense fallback={<PageLoadingFallback />}><ErrorBoundary>{activeTab === 'landing' && <><LandingPage /><LandingEventsSection /></>}{activeTab === 'login' && <LoginPage />}{activeTab === 'register' && <RegisterPage />}{activeTab === 'faculty-register' && <FacultyRegisterPage />}{activeTab === 'profile-setup' && <ProfileSetupPage />}{activeTab === 'choose-path' && <ChoosePathPage />}{activeTab === 'dashboard' && <DashboardPage />}{activeTab === 'community' && <CommunityPage />}{activeTab === 'roadmap' && <RoadmapPage />}{activeTab === 'project-generator' && <ProjectGeneratorPage />}{activeTab === 'crt' && <CRTPage />}{activeTab === 'leaderboard' && <LeaderboardPage />}{activeTab === 'mentors' && <MentorDirectoryPage />}{activeTab === 'faculty-profile' && <FacultyProfilePage />}{activeTab === 'profile' && <StudentProfilePage />}{activeTab === 'admin' && <AdminPage />}{activeTab === 'level-0' && <Level0Page />}{activeTab === 'events' && <EventsPage />}</ErrorBoundary></Suspense></main></div><OAuthGuideModal />{user && <ChatWidget />}{user && <ResumeUploadPromptModal />}<SocialProfileOverlay /><SocialProfileMessagingAction /></div>;
 };
 
 export default function App() { return <AuthProvider><NotificationProvider><SocialProvider><MainContent /></SocialProvider></NotificationProvider></AuthProvider>; }

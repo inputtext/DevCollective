@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth, PageTab } from '../context/AuthContext';
 import { useAdminAccess } from '../hooks/useAdminAccess';
-import { LayoutDashboard, Users, Map, Trophy, UserCheck, User, ShieldCheck, PlusCircle, Settings, HelpCircle, Terminal, PanelLeftClose, PanelLeftOpen, BookOpen, CalendarDays, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, Map, Trophy, UserCheck, User, ShieldCheck, PlusCircle, Settings, HelpCircle, Terminal, PanelLeftClose, PanelLeftOpen, BookOpen, CalendarDays, ChevronRight, Rocket, Briefcase } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const { activeTab, setActiveTab, user, sidebarCollapsed, toggleSidebar } = useAuth();
@@ -14,6 +14,8 @@ export const Sidebar: React.FC = () => {
     { id: 'roadmap', label: 'Roadmaps', icon: <Map className="h-[18px] w-[18px]" /> },
     { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="h-[18px] w-[18px]" /> },
     { id: 'mentors', label: 'Mentors', icon: <UserCheck className="h-[18px] w-[18px]" /> },
+    { id: 'project-generator' as PageTab, label: 'Project Generator', icon: <Rocket className="h-[18px] w-[18px]" /> },
+    { id: 'crt' as PageTab, label: 'CRT', icon: <Briefcase className="h-[18px] w-[18px]" /> },
     { id: 'profile', label: 'Profile', icon: <User className="h-[18px] w-[18px]" /> },
     ...(isAdmin ? [{ id: 'admin' as PageTab, label: 'Admin Terminal', icon: <ShieldCheck className="h-[18px] w-[18px]" /> }] : []),
   ];
