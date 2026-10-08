@@ -192,7 +192,7 @@ export const DashboardPage: React.FC = () => {
       )}
 
       {paletteOpen && (
-        <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 md:p-10 bg-background/65 backdrop-blur-sm" onMouseDown={() => setPaletteOpen(false)}>
+        <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[90px] md:p-10 md:pt-[104px] bg-background/65 backdrop-blur-sm" onMouseDown={() => setPaletteOpen(false)}>
           <div className="dc-dashboard-command" onMouseDown={(event) => event.stopPropagation()}>
             <div className="dc-dashboard-command-search">
               <Search className="w-4 h-4 shrink-0" />
