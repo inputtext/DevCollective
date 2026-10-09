@@ -17,8 +17,10 @@ export interface UserProfile {
   linkedinUrl?: string;
   skills: string[];
   selectedDomains: string[];
-  authProvider: 'email' | 'google' | 'github';
+  authProvider: 'email' | 'google' | 'github' | 'clerk';
   hasCompletedOnboarding?: boolean;
+  mentorVerifiedAt?: string | null;
+  accountStatus?: 'active' | 'pending' | 'suspended';
   createdAt: string;
 }
 
@@ -38,6 +40,8 @@ export interface CommunityPost {
   authorAvatar: string;
   authorRole: string;
   authorRep: number;
+  authorAcademicYear?: string;
+  authorLevel?: number;
   category: 'Build in Public' | 'Questions' | 'Projects' | 'Hackathons' | 'AI' | 'Android' | 'General';
   title?: string;
   content: string;
@@ -45,7 +49,63 @@ export interface CommunityPost {
   likes: number;
   commentsCount: number;
   createdAt: string;
+  updatedAt?: string;
   likedByMe?: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  postId: string;
+  parentCommentId?: string | null;
+  authorId: string;
+  authorName: string;
+  authorAvatar: string;
+  authorRole: string;
+  authorRep: number;
+  authorAcademicYear?: string;
+  authorLevel?: number;
+  content: string;
+  createdAt: string;
+  updatedAt?: string;
+  likes: number;
+  likedByMe?: boolean;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: 'post_like' | 'comment_like' | 'comment_reply' | 'follow' | 'connection_request' | 'connection_accepted';
+  actorId: string;
+  actorName: string;
+  actorAvatar: string;
+  actorGithubUrl?: string | null;
+  actorLinkedinUrl?: string | null;
+  postId?: string | null;
+  commentId?: string | null;
+  postTitle: string;
+  commentPreview: string;
+  createdAt: string;
+  readAt?: string | null;
+}
+
+export interface FacultyProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  college: string;
+  designation: string;
+  department: string;
+  employeeId: string;
+  subjects: string[];
+  expertise: string[];
+  yearsExperience: number | null;
+  mentoringAreas: string[];
+  bio: string;
+  availabilityStatus: 'available' | 'busy' | 'offline';
+  availabilityNote: string;
+  verified: boolean;
+  joinedAt?: string | null;
 }
 
 export interface Mentor {
@@ -64,6 +124,7 @@ export interface Mentor {
   bio: string;
   availability: string;
   isBusy?: boolean;
+  verified?: boolean;
 }
 
 export interface RoadmapLevel {
@@ -91,4 +152,50 @@ export interface LeaderboardEntry {
   level: number;
   streakDays: number;
   isUser?: boolean;
+}
+
+export interface DevEventDetails {
+  specialNote?: string;
+  quote?: string;
+  presidedBy?: string;
+  presidedByTitle?: string;
+  organizedBy?: string;
+  mainDate?: string;
+  mainTime?: string;
+  instructions?: string[];
+  schedule?: Array<{
+    date: string;
+    day: string;
+    morning: string;
+    afternoon: string;
+  }>;
+}
+
+export interface DevEvent {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  venue: string;
+  city: string;
+  organizer: string;
+  registrationUrl?: string | null;
+  sourceUrl?: string | null;
+  ticketInfo?: string | null;
+  theme: {
+    background: string;
+    foreground: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  speakers: string[];
+  coordinators: string[];
+  contactInfo?: string | null;
+  details?: DevEventDetails;
+  createdAt: string;
+  updatedAt: string;
 }
